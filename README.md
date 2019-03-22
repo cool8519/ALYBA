@@ -17,17 +17,17 @@ Excutable Binary 파일(exe)은 CPU 비트수에 따라 수행이 안될 수 있다. 이 경우는 JA
 
 Screenshot
 ---------------
-![Screenhot](screenshots/01.png)
-![Screenhot](screenshots/02.png)
-![Screenhot](screenshots/03.png)
-![Screenhot](screenshots/04.png)
-![Screenhot](screenshots/05.png)
-![Screenhot](screenshots/06.png)
-![Screenhot](screenshots/07.png)
-![Screenhot](screenshots/08.png)
-![Screenhot](screenshots/09.png)
-![Screenhot](screenshots/10.png)
-![Screenhot](screenshots/11.png)
+![Screenhot](screenshots/01.jpg)
+![Screenhot](screenshots/02.jpg)
+![Screenhot](screenshots/03.jpg)
+![Screenhot](screenshots/04.jpg)
+![Screenhot](screenshots/05.jpg)
+![Screenhot](screenshots/06.jpg)
+![Screenhot](screenshots/07.jpg)
+![Screenhot](screenshots/08.jpg)
+![Screenhot](screenshots/09.jpg)
+![Screenhot](screenshots/10.jpg)
+![Screenhot](screenshots/11.jpg)
 
 Usage
 ---------------
@@ -44,7 +44,7 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
 * 마우스(Drag&Drop) 사용 가능
 * 파일 드래그 : 해당 파일이 추가
 * 폴더 드래그 : 폴더 내 전체 파일이 추가
-* <kbd>Ctrl<kbd> + 폴더 드래그 : 폴더 내 파일명이 패턴과 일치하는 파일만 추가
+* <kbd>Ctrl</kbd> + 폴더 드래그 : 폴더 내 파일명이 패턴과 일치하는 파일만 추가
 
 선택된 파일을 Double-Click 함으로써 파일의 내용을 확인할 수 있으며 아래의 항목을 확인할 수 있다.
 * Show headers : 파일에 헤더부분이 있을 경우, 내용과 필드 이름을 보여준다.
@@ -69,7 +69,7 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
  * 좌측의 필드 데이터를 드래그하여 오른쪽의 적절한 필드에 드롭한다.
  * Request Time은 필수 매핑 항목이며, 나머지는 선택이다.
  * 좌측의 필드 데이터에 공백으로 구분된 Delimeter가 있을 경우, 선택적으로 매핑이 가능하다.
- * <kbd>Del<kbd>키로 매핑된 필드를 취소할 수 있다.
+ * <kbd>Del</kbd>키로 매핑된 필드를 취소할 수 있다.
  * 시간은 기본적으로 UTC+0 기준으로 입력되므로, 로그가 기록된 서버의 TimeZone이 있는 경우는 Hour 단위로 Offset 설정을 한다. (예: IST=5.5시간)
 
 ##### 4. 필터링
@@ -141,9 +141,9 @@ Result Analyzer
 조회 조건을 지정하여 쿼리할 수 있으며, 쿼리 형식은 표준 SQL의 WHERE 절 구문을 사용할 수 있다.  컬럼명 앞에는 테이블을 의미하는 "t." 을 prefix로 붙이면 된다.
 > 조건절 예) t.req_count > 100 and t.err_count = 0
 
-Export 버튼을 통해 CSV 형식으로 데이터를 내려받을 수 있다. 전체 데이터 또는 분석기에 보이는 데이터 중 하나를 선택하면 된다. 데이터가 많은 경우, 전체 데이터를 내려 받으면 프로그램이 느려질 수 있으므로 주의한다. 분석기 화면의 데이터는 마우스 스크롤 또는 <kbd>PgDn<kbd>키를 통해 추가로 가져올 수 있다.
+Export 버튼을 통해 CSV 형식으로 데이터를 내려받을 수 있다. 전체 데이터 또는 분석기에 보이는 데이터 중 하나를 선택하면 된다. 데이터가 많은 경우, 전체 데이터를 내려 받으면 프로그램이 느려질 수 있으므로 주의한다. 분석기 화면의 데이터는 마우스 스크롤 또는 <kbd>PgDn</kbd>키를 통해 추가로 가져올 수 있다.
 
-선택된 컬럼에서 <kbd>Ctrl<kbd> + <kbc>c<kbd>를 누르면 해당 컬럼의 데이터가 클립보드에 복사된다.
+선택된 컬럼에서 <kbd>Ctrl</kbd> + <kbd>c</kbd>를 누르면 해당 컬럼의 데이터가 클립보드에 복사된다.
 
 ##### Chart
 분석된 결과를 그래프로 볼 수 있다.
