@@ -15,20 +15,6 @@ ALYBA 실행파일을 클릭하거나, 커맨드 창에서 실행시키면 된다.
 Excutable Binary 파일(exe)은 CPU 비트수에 따라 수행이 안될 수 있다. 이 경우는 JAVA Archive 파일(jar)을 아래와 같이 수행한다.
 `C:\> java -jar ALYBA.jar`
 
-Screenshot
----------------
-![Screenhot](screenshots/01.jpg)
-![Screenhot](screenshots/02.jpg)
-![Screenhot](screenshots/03.jpg)
-![Screenhot](screenshots/04.jpg)
-![Screenhot](screenshots/05.jpg)
-![Screenhot](screenshots/06.jpg)
-![Screenhot](screenshots/07.jpg)
-![Screenhot](screenshots/08.jpg)
-![Screenhot](screenshots/09.jpg)
-![Screenhot](screenshots/10.jpg)
-![Screenhot](screenshots/11.jpg)
-
 Usage
 ---------------
 ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
@@ -36,6 +22,8 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
 ##### 1. 제목 입력
 툴의 가장 상단에 위치한 Title 부분에 분석에 대한 제목을 입력한다.
 텍스트 형태로 입력이 가능하며, 입력한 Title은 출력 결과물의 파일명에 사용된다. 그러므로 Title은 공백을 지양하고 Underscore(_) 사용을 권장한다. 동일한 파일명이 존재할 때는 “_번호”를 suffix로 붙인다. Title을 “WAS1_업무1”로 입력한 경우, 출력 파일의 이름은 “ALYBA_WAS1_업무1”이 된다.
+![Screenhot](screenshots/01.jpg)
+
 
 ##### 2. 파일 선택
 분석을 수행 할 대상 로그파일을 지정한다.
@@ -45,6 +33,7 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
 * 파일 드래그 : 해당 파일이 추가
 * 폴더 드래그 : 폴더 내 전체 파일이 추가
 * <kbd>Ctrl</kbd> + 폴더 드래그 : 폴더 내 파일명이 패턴과 일치하는 파일만 추가
+![Screenhot](screenshots/02.jpg)
 
 선택된 파일을 Double-Click 함으로써 파일의 내용을 확인할 수 있으며 아래의 항목을 확인할 수 있다.
 * Show headers : 파일에 헤더부분이 있을 경우, 내용과 필드 이름을 보여준다.
@@ -71,6 +60,7 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
  * 좌측의 필드 데이터에 공백으로 구분된 Delimeter가 있을 경우, 선택적으로 매핑이 가능하다.
  * <kbd>Del</kbd>키로 매핑된 필드를 취소할 수 있다.
  * 시간은 기본적으로 UTC+0 기준으로 입력되므로, 로그가 기록된 서버의 TimeZone이 있는 경우는 Hour 단위로 Offset 설정을 한다. (예: IST=5.5시간)
+![Screenhot](screenshots/03.jpg)
 
 ##### 4. 필터링
 필터링을 통해 전체 로그 중 일부만 내용만을 분석하는 것이 가능하다. 전체 로그를 분석하는 경우는 필터링 과정이 불필요하다.
@@ -80,6 +70,7 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
 * Exclude Filter : 조건에 맞는 경우는 분석에서 제외
 
 필터링 조건 입력은 패턴(*,?)를 통해 입력이 가능하며, 2개 이상일 경우는 컴마(,)를 구분자로 입력한다.
+![Screenhot](screenshots/04.jpg)
 
 ##### 5. 출력 지정
 필요시 출력되는 파일에 대한 설정이 가능하다.
@@ -106,6 +97,7 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
 
 ##### 7. 분석 수행
 위의 모든 설정이 완료되면 우측 상단에 Analyze 버튼이 활성화되고, 버튼을 클릭하면 설정이 맞는지 확인 후 Accesslog에 대한 실제 분석이 진행된다.
+![Screenhot](screenshots/05.jpg)
 
 분석이 완료되면 결과파일이 저장되며, 결과분석기 또는 생성된 파일을 버튼을 통해 열 수 있다.
 
@@ -134,9 +126,11 @@ Result Analyzer
 ##### Summary
 분석된 결과의 요약된 내용이다.
 분석시간, 필터링 정보, 집계된 데이터 건수, Peak 시점, 비정상(시간/크기/에러) 건수를 확인할 수 있다.
+![Screenhot](screenshots/06.jpg)
 
 ##### Data
 분석 항목별 데이터를 테이블 형태로 확인할 수 있다.
+![Screenhot](screenshots/07.jpg)
 
 조회 조건을 지정하여 쿼리할 수 있으며, 쿼리 형식은 표준 SQL의 WHERE 절 구문을 사용할 수 있다.  컬럼명 앞에는 테이블을 의미하는 "t." 을 prefix로 붙이면 된다.
 > 조건절 예) t.req_count > 100 and t.err_count = 0
@@ -153,6 +147,10 @@ Export 버튼을 통해 CSV 형식으로 데이터를 내려받을 수 있다. 전체 데이터 또는 분석
 * 시계열 데이터 : Line Chart
 * 키값 데이터 : Vertical Bar Chart, Horizontal Bar Chart, Pie Chart
 * 산포 데이터 : Plot Chart
+![Screenhot](screenshots/08.jpg)
+![Screenhot](screenshots/09.jpg)
+![Screenhot](screenshots/10.jpg)
+![Screenhot](screenshots/11.jpg)
 
 그래프 영역에서 특정 데이터를 클릭하거나 드래그하여 상세하게 확인할 수 있다.
 
