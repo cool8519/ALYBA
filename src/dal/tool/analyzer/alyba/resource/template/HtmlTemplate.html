@@ -1,0 +1,597 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<title> AccessLog Report </title>
+<META http-equiv=Content-Type content="text/html; charset=euc-kr">
+<style>
+<!--
+body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt }
+td { font-family: Arial, Helvetica, sans-serif; font-size: 8pt }
+a:active { color: #0000CC; text-decoration: none }
+a:link { color: #0000CC; text-decoration: none }
+a:visited { color: #0000FF; text-decoration: none }
+a:hover { color: #0000FF; text-decoration: underline }
+.TableTitleRow { background-color: #C8D6E5; font-weight: bold; text-align: center }
+.Title { font-weight: bold; text-align: center; font-size: 20pt }
+.TableTitle { font-weight: bold; text-align: center; font-size: 15pt }
+.TableRow1 { background-color: #FFFFFF }
+.TableRow2 { background-color: #EEEEEE }
+.TableSolidRow { font-weight: bold; background-color: #C8D6E5 }
+.TableSummaryRow { font-weight: bold; background-color: #E0E9F3 }
+.TableCell { padding-left: 4pt; padding-right: 4pt}
+.TableCellCenter { padding-left: 4pt; padding-right: 4pt; text-align: center }
+.TableCellRight { padding-left: 4pt; padding-right: 4pt; text-align: right }
+.TableCellLeft { padding-left: 4pt; padding-right: 4pt; text-align: left }
+.ReportTitle { font-weight: bold; font-size: 13pt }
+.CategoryTitle { font-weight: bold; font-size: 13pt }
+.ChartTitle { font-weight: bold; text-align: center; font-size: 10pt }
+.SectionTitle { font-weight: bold; text-align: center; font-size: 10pt; background-color: #6699CC; color: #FFFFFF }
+.TOC { background-image: url(contents_back.gif); background-repeat: repeat-x }
+//-->
+</style>
+</head>
+<body bgcolor="#FFFFFF" text="#000000" leftmargin="0" topmargin="0" rightmargin="0" bottommargin="0" marginwidth="0" marginheight="0">
+<center>
+<br><br>
+<table cellpadding="0" border="0" cellspacing="0" width="97%">
+<tr>
+<td class="Title" nowrap>Result of Accesslog Analysis</td>
+</tr>
+</table>
+<br><br>
+<table cellpadding="0" border="0" cellspacing="0" width="97%">
+<tr>
+<td class="TableTitle" nowrap>Summary</td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+       <table border=0 cellspacing=1 cellpadding=2 width="100%" style="table-layout:fixed">
+           <tr class="TableRow2">
+                   <td width="15%" class="TableCell">Title</td>
+                   <td class="TableCell">${TITLE}</td>
+           </tr>
+           <tr class="TableRow1">
+                   <td width="15%" class="TableCell">Parsed Date</td>
+                   <td class="TableCell">${PARSED_DATE}</td>
+           </tr>
+           <tr class="TableRow2">
+                   <td width="15%" class="TableCell">Created Date</td>
+                   <td class="TableCell">${CREATED_DATE}</td>
+           </tr>
+           <tr class="TableRow1">
+                   <td class="TableCell">Request Range</td>
+                   <td class="TableCell">${REQUEST_RANGE}</td>
+           </tr>
+           <tr class="TableRow2">
+                   <td class="TableCell">Total Requests</td>
+                   <td class="TableCell">${TOTAL_REQ_COUNT}</td>
+           </tr>
+           <tr class="TableRow1">
+                   <td class="TableCell">Total Errors</td>
+                   <td class="TableCell">${TOTAL_ERR_COUNT}</td>
+           </tr>
+           <tr class="TableRow2">
+                   <td class="TableCell" style="word-wrap:break-word;word-break:break-all">Time Range Filter</td>
+                   <td class="TableCell">${TIME_RANGE_FILTER}</td>
+           </tr>
+           <tr class="TableRow1">
+                   <td class="TableCell" style="word-wrap:break-word;word-break:break-all">Include Filter</td>
+                   <td class="TableCell">${INCLUDE_FILTER}</td>
+           </tr>
+           <tr class="TableRow2">
+                   <td class="TableCell" style="word-wrap:break-word;word-break:break-all">Exclude Filter</td>
+                   <td class="TableCell">${EXCLUDE_FILTER}</td>
+           </tr>
+           <tr class="TableRow1">
+                   <td class="TableCell">Filtered Requests</td>
+                   <td class="TableCell">${FILTERED_REQ_COUNT}</td>
+           </tr>
+           <tr class="TableRow2">
+                   <td class="TableCell">Filtered Errors</td>
+                   <td class="TableCell">${FILTERED_ERR_COUNT}</td>
+           </tr>
+           <tr class="TableRow1">
+                   <td class="TableCell">Filtered URIs</td>
+                   <td class="TableCell">${FILTERED_URI_COUNT}</td>
+           </tr>
+           <tr class="TableRow2">
+                   <td class="TableCell">Filtered IPs</td>
+                   <td class="TableCell">${FILTERED_IP_COUNT}</td>
+           </tr>
+           <tr class="TableRow1">
+                   <td class="TableCell">Filtered METHODs</td>
+                   <td class="TableCell">${FILTERED_METHOD_COUNT}</td>
+           </tr>
+           <tr class="TableRow2">
+                   <td class="TableCell">Filtered EXTs</td>
+                   <td class="TableCell">${FILTERED_EXT_COUNT}</td>
+           </tr>
+           <tr class="TableRow1">
+                   <td class="TableCell">Filtered CODEs</td>
+                   <td class="TableCell">${FILTERED_CODE_COUNT}</td>
+           </tr>     
+           <tr class="TableRow2">
+                   <td class="TableCell">Daily Peak Time</td>
+                   <td class="TableCell">${PEAK_DAILY_DATE}</td>
+           </tr>
+           <tr class="TableRow1">
+                   <td class="TableCell">Daily Peak Requests</td>
+                   <td class="TableCell">${PEAK_DAILY_COUNT}</td>
+           </tr>
+           <tr class="TableRow2">
+                   <td class="TableCell">Hourly Peak Time</td>
+                   <td class="TableCell">${PEAK_HOURLY_DATE}</td>
+           </tr>
+           <tr class="TableRow1">
+                   <td class="TableCell">Hourly Peak Requests</td>
+                   <td class="TableCell">${PEAK_HOURLY_COUNT}</td>
+           </tr>
+           <tr class="TableRow2">
+                   <td class="TableCell">Minutely Peak Time</td>
+                   <td class="TableCell">${PEAK_MINUTELY_DATE}</td>
+           </tr>
+           <tr class="TableRow1">
+                   <td class="TableCell">Minutely Peak Requests</td>
+                   <td class="TableCell">${PEAK_MINUTELY_COUNT}</td>
+           </tr>
+           <tr class="TableRow2">
+                   <td class="TableCell">Bad Response Time</td>
+                   <td class="TableCell">${BAD_RESPONSE_TIME}</td>
+           </tr>
+           <tr class="TableRow1">
+                   <td class="TableCell">Bad Response Byte</td>
+                   <td class="TableCell">${BAD_RESPONSE_BYTE}</td>
+           </tr>
+           <tr class="TableRow2">
+                   <td class="TableCell">Bad Response Code</td>
+                   <td class="TableCell">${BAD_RESPONSE_CODE}</td>
+           </tr>
+       </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+
+<div id="tpm_div" style="display:block;">
+<table cellpadding="0" border="0" cellspacing="0" width="90%">
+<tr>
+<td class="TableTitle" nowrap>Transactions Per ${TPM_AGGR_UNIT}Minute</td>
+</tr>
+<tr>
+<td align="center"><br></td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+           <table border=0 cellspacing=1 cellpadding=2 width="100%">
+           <tr class="TableTitleRow">
+                   <td class="TableCell">TIME</td>
+                   <td class="TableCell">REQ IP</td>
+                   <td class="TableCell">COUNT</td>
+                   <td class="TableCell">RATIO(%)</td>
+                   <td class="TableCell">AVG RESP(ms)</td>
+                   <td class="TableCell">MAX RESP(ms)</td>
+                   <td class="TableCell">MAX RESP TIME</td>
+                   <td class="TableCell">AVG BYTE</td>
+                   <td class="TableCell">MAX BYTE</td>
+                   <td class="TableCell">MAX BYTE TIME</td>
+                   <td class="TableCell">ERROR</td>
+                   <td class="TableCell">ERR RATIO(%)</td>
+                   <td class="TableCell">LAST ERROR</td>
+                   <td class="TableCell">LAST ERROR TIME</td>
+           </tr>
+           ${TPM_AGGR_DATA}
+           </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+</div>
+
+<div id="day_div" style="display:block;">
+<table cellpadding="0" border="0" cellspacing="0" width="90%">
+<tr>
+<td class="TableTitle" nowrap>Day Aggregation</td>
+</tr>
+<tr>
+<td align="center"><br></td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+           <table border=0 cellspacing=1 cellpadding=2 width="100%">
+           <tr class="TableTitleRow">
+                   <td class="TableCell">DATE</td>
+                   <td class="TableCell">REQ IP</td>
+                   <td class="TableCell">COUNT</td>
+                   <td class="TableCell">RATIO(%)</td>
+                   <td class="TableCell">AVG RESP(ms)</td>
+                   <td class="TableCell">MAX RESP(ms)</td>
+                   <td class="TableCell">MAX RESP TIME</td>
+                   <td class="TableCell">AVG BYTE</td>
+                   <td class="TableCell">MAX BYTE</td>
+                   <td class="TableCell">MAX BYTE TIME</td>
+                   <td class="TableCell">ERROR</td>
+                   <td class="TableCell">ERR RATIO(%)</td>
+                   <td class="TableCell">LAST ERROR</td>
+                   <td class="TableCell">LAST ERROR TIME</td>
+           </tr>
+           ${DAY_AGGR_DATA}
+           </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+</div>
+
+<div id="hour_div" style="display:block;">
+<table cellpadding="0" border="0" cellspacing="0" width="90%">
+<tr>
+<td class="TableTitle" nowrap>Hour Aggregation</td>
+</tr>
+<tr>
+<td align="center"><br></td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+           <table border=0 cellspacing=1 cellpadding=2 width="100%">
+           <tr class="TableTitleRow">
+                   <td class="TableCell">HOUR</td>
+                   <td class="TableCell">REQ IP</td>
+                   <td class="TableCell">COUNT</td>
+                   <td class="TableCell">RATIO(%)</td>
+                   <td class="TableCell">AVG RESP(ms)</td>
+                   <td class="TableCell">MAX RESP(ms)</td>
+                   <td class="TableCell">MAX RESP TIME</td>
+                   <td class="TableCell">AVG BYTE</td>
+                   <td class="TableCell">MAX BYTE</td>
+                   <td class="TableCell">MAX BYTE TIME</td>
+                   <td class="TableCell">ERROR</td>
+                   <td class="TableCell">ERR RATIO(%)</td>
+                   <td class="TableCell">LAST ERROR</td>
+                   <td class="TableCell">LAST ERROR TIME</td>
+           </tr>
+           ${HOUR_AGGR_DATA}
+           </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+</div>
+
+<div id="uri_div" style="display:block;">
+<table cellpadding="0" border="0" cellspacing="0" width="90%">
+<tr>
+<td class="TableTitle" nowrap>Request URI Aggregation</td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+           <table border=0 cellspacing=1 cellpadding=2 width="100%">
+           <tr class="TableTitleRow">
+                   <td width="20" class="TableCell">No.</td>
+                   <td class="TableCell">URI</td>
+                   <td class="TableCell">COUNT</td>
+                   <td class="TableCell">RATIO(%)</td>
+                   <td class="TableCell">AVG RESP(ms)</td>
+                   <td class="TableCell">MAX RESP(ms)</td>
+                   <td class="TableCell">MAX RESP TIME</td>
+                   <td class="TableCell">AVG BYTE</td>
+                   <td class="TableCell">MAX BYTE</td>
+                   <td class="TableCell">MAX BYTE TIME</td>
+                   <td class="TableCell">ERROR</td>
+                   <td class="TableCell">ERR RATIO(%)</td>
+                   <td class="TableCell">LAST ERROR</td>
+                   <td class="TableCell">LAST ERROR TIME</td>
+           </tr>
+           ${URI_AGGR_DATA}
+           </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+</div>
+
+<div id="ip_div" style="display:block;">
+<table cellpadding="0" border="0" cellspacing="0" width="90%">
+<tr>
+<td class="TableTitle" nowrap>IP Aggregation</td>
+</tr>
+<tr>
+<td align="center"><br></td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+           <table border=0 cellspacing=1 cellpadding=2 width="100%">
+           <tr class="TableTitleRow">
+                   <td width="20" class="TableCell">No.</td>
+                   <td class="TableCell">IP</td>
+                   <td class="TableCell">COUNTRY</td>
+                   <td class="TableCell">COUNT</td>
+                   <td class="TableCell">RATIO(%)</td>
+                   <td class="TableCell">AVG RESP(ms)</td>
+                   <td class="TableCell">MAX RESP(ms)</td>
+                   <td class="TableCell">MAX RESP TIME</td>
+                   <td class="TableCell">AVG BYTE</td>
+                   <td class="TableCell">MAX BYTE</td>
+                   <td class="TableCell">MAX BYTE TIME</td>
+                   <td class="TableCell">ERROR</td>
+                   <td class="TableCell">ERR RATIO(%)</td>
+                   <td class="TableCell">LAST ERROR</td>
+                   <td class="TableCell">LAST ERROR TIME</td>
+           </tr>
+           ${IP_AGGR_DATA}
+           </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+</div>
+
+<div id="method_div" style="display:block;">
+<table cellpadding="0" border="0" cellspacing="0" width="90%">
+<tr>
+<td class="TableTitle" nowrap>METHOD Aggregation</td>
+</tr>
+<tr>
+<td align="center"><br></td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+           <table border=0 cellspacing=1 cellpadding=2 width="100%">
+           <tr class="TableTitleRow">
+                   <td width="20" class="TableCell">No.</td>
+                   <td class="TableCell">METHOD</td>
+                   <td class="TableCell">COUNT</td>
+                   <td class="TableCell">RATIO(%)</td>
+                   <td class="TableCell">AVG RESP(ms)</td>
+                   <td class="TableCell">MAX RESP(ms)</td>
+                   <td class="TableCell">MAX RESP TIME</td>
+                   <td class="TableCell">AVG BYTE</td>
+                   <td class="TableCell">MAX BYTE</td>
+                   <td class="TableCell">MAX BYTE TIME</td>
+                   <td class="TableCell">ERROR</td>
+                   <td class="TableCell">ERR RATIO(%)</td>
+                   <td class="TableCell">LAST ERROR</td>
+                   <td class="TableCell">LAST ERROR TIME</td>
+           </tr>
+           ${METHOD_AGGR_DATA}
+           </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+</div>
+
+<div id="version_div" style="display:block;">
+<table cellpadding="0" border="0" cellspacing="0" width="90%">
+<tr>
+<td class="TableTitle" nowrap>VERSION Aggregation</td>
+</tr>
+<tr>
+<td align="center"><br></td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+           <table border=0 cellspacing=1 cellpadding=2 width="100%">
+           <tr class="TableTitleRow">
+                   <td width="20" class="TableCell">No.</td>
+                   <td class="TableCell">VERSION</td>
+                   <td class="TableCell">COUNT</td>
+                   <td class="TableCell">RATIO(%)</td>
+                   <td class="TableCell">AVG RESP(ms)</td>
+                   <td class="TableCell">MAX RESP(ms)</td>
+                   <td class="TableCell">MAX RESP TIME</td>
+                   <td class="TableCell">AVG BYTE</td>
+                   <td class="TableCell">MAX BYTE</td>
+                   <td class="TableCell">MAX BYTE TIME</td>
+                   <td class="TableCell">ERROR</td>
+                   <td class="TableCell">ERR RATIO(%)</td>
+                   <td class="TableCell">LAST ERROR</td>
+                   <td class="TableCell">LAST ERROR TIME</td>
+           </tr>
+           ${VERSION_AGGR_DATA}
+           </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+</div>
+
+<div id="ext_div" style="display:block;">
+<table cellpadding="0" border="0" cellspacing="0" width="90%">
+<tr>
+<td class="TableTitle" nowrap>EXTENSION Aggregation</td>
+</tr>
+<tr>
+<td align="center"><br></td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+           <table border=0 cellspacing=1 cellpadding=2 width="100%">
+           <tr class="TableTitleRow">
+                   <td width="20" class="TableCell">No.</td>
+                   <td class="TableCell">EXTENSION</td>
+                   <td class="TableCell">COUNT</td>
+                   <td class="TableCell">RATIO(%)</td>
+                   <td class="TableCell">AVG RESP(ms)</td>
+                   <td class="TableCell">MAX RESP(ms)</td>
+                   <td class="TableCell">MAX RESP TIME</td>
+                   <td class="TableCell">AVG BYTE</td>
+                   <td class="TableCell">MAX BYTE</td>
+                   <td class="TableCell">MAX BYTE TIME</td>
+                   <td class="TableCell">ERROR</td>
+                   <td class="TableCell">ERR RATIO(%)</td>
+                   <td class="TableCell">LAST ERROR</td>
+                   <td class="TableCell">LAST ERROR TIME</td>
+           </tr>
+           ${EXT_AGGR_DATA}
+           </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+</div>
+
+<div id="code_div" style="display:block;">
+<table cellpadding="0" border="0" cellspacing="0" width="90%">
+<tr>
+<td class="TableTitle" nowrap>CODE Aggregation</td>
+</tr>
+<tr>
+<td align="center"><br></td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+           <table border=0 cellspacing=1 cellpadding=2 width="100%">
+           <tr class="TableTitleRow">
+                   <td width="20" class="TableCell">No.</td>
+                   <td class="TableCell">CODE</td>
+                   <td class="TableCell">DESCRIPTION</td>
+                   <td class="TableCell">COUNT</td>
+                   <td class="TableCell">RATIO(%)</td>
+                   <td class="TableCell">AVG RESP(ms)</td>
+                   <td class="TableCell">MAX RESP(ms)</td>
+                   <td class="TableCell">MAX RESP TIME</td>
+                   <td class="TableCell">AVG BYTE</td>
+                   <td class="TableCell">MAX BYTE</td>
+                   <td class="TableCell">MAX BYTE TIME</td>
+                   <td class="TableCell">ERROR</td>
+                   <td class="TableCell">ERR RATIO(%)</td>
+                   <td class="TableCell">LAST ERROR</td>
+                   <td class="TableCell">LAST ERROR TIME</td>
+           </tr>
+           ${CODE_AGGR_DATA}
+           </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+</div>
+
+<div id="restime_div" style="display:block;">
+<table cellpadding="0" border="0" cellspacing="0" width="90%">
+<tr>
+<td class="TableTitle" nowrap>Bad Response Time Aggregation (over ${BAD_RESPONSE_TIME_AGGR_MS}ms)</td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+           <table border=0 cellspacing=1 cellpadding=2 width="100%">
+           <tr class="TableTitleRow">
+                   <td width="20" class="TableCell">No.</td>
+                   <td class="TableCell">REQ TIME</td>
+                   <td class="TableCell">RES TIME</td>
+                   <td class="TableCell">IP</td>
+                   <td class="TableCell">URI</td>
+                   <td class="TableCell">RESP TIME(ms)</td>
+                   <td class="TableCell">RESP BYTE</td>
+                   <td class="TableCell">CODE</td>
+                   <td class="TableCell">METHOD</td>
+                   <td class="TableCell">VERSION</td>
+                   <td class="TableCell">EXT</td>
+           </tr>
+           ${BAD_RESPONSE_TIME_AGGR_DATA}
+           </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+</div>
+
+<div id="resbyte_div" style="display:block;">
+<table cellpadding="0" border="0" cellspacing="0" width="90%">
+<tr>
+<td class="TableTitle" nowrap>Bad Response Byte Aggregation (over ${BAD_RESPONSE_BYTE_AGGR_KB}KB)</td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+           <table border=0 cellspacing=1 cellpadding=2 width="100%">
+           <tr class="TableTitleRow">
+                   <td width="20" class="TableCell">No.</td>
+                   <td class="TableCell">REQ TIME</td>
+                   <td class="TableCell">RES TIME</td>
+                   <td class="TableCell">IP</td>
+                   <td class="TableCell">URI</td>
+                   <td class="TableCell">RESP TIME(ms)</td>
+                   <td class="TableCell">RESP BYTE</td>
+                   <td class="TableCell">CODE</td>
+                   <td class="TableCell">METHOD</td>
+                   <td class="TableCell">VERSION</td>
+                   <td class="TableCell">EXT</td>
+           </tr>
+           ${BAD_RESPONSE_BYTE_AGGR_DATA}
+           </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+</div>
+
+<div id="rescode_div" style="display:block;">
+<table cellpadding="0" border="0" cellspacing="0" width="90%">
+<tr>
+<td class="TableTitle" nowrap>Bad Response Code Aggregation</td>
+</tr>
+</table>
+<table border=0 cellspacing=0 cellpadding=0 height=6><tr><td></td></tr></table>
+<table border=0 bgcolor="#000000" cellspacing=0 cellpadding=0 width="97%">
+<tr>
+   <td>
+           <table border=0 cellspacing=1 cellpadding=2 width="100%">
+           <tr class="TableTitleRow">
+                   <td width="20" class="TableCell">No.</td>
+                   <td class="TableCell">REQ TIME</td>
+                   <td class="TableCell">RES TIME</td>
+                   <td class="TableCell">IP</td>
+                   <td class="TableCell">URI</td>
+                   <td class="TableCell">RESP TIME(ms)</td>
+                   <td class="TableCell">RESP BYTE</td>
+                   <td class="TableCell">CODE</td>
+                   <td class="TableCell">METHOD</td>
+                   <td class="TableCell">VERSION</td>
+                   <td class="TableCell">EXT</td>
+           </tr>
+           ${BAD_RESPONSE_CODE_AGGR_DATA}
+           </table>
+   </td>
+</tr>
+</table>
+<br><br><br><br>
+</div>
+
+</center>
+</body>
+</html>

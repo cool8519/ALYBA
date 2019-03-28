@@ -9,11 +9,19 @@ Requirements
 
 Getting Started
 ---------------
+아래의 두개 버전 중 하나를 다운로드 한다.
+* Windows Executable : [ALYBA_v1.5.0.exe](dist/ALYBA_v1.5.0.exe)
+* Java Archive File : [ALYBA_v1.5.0.jar](dist/ALYBA_v1.5.0.jar)
+
 ALYBA 실행파일을 클릭하거나, 커맨드 창에서 실행시키면 된다.
 `C:\> ALYBA.exe`
 
 Excutable Binary 파일(exe)은 CPU 비트수에 따라 수행이 안될 수 있다. 이 경우는 JAVA Archive 파일(jar)을 아래와 같이 수행한다.
 `C:\> java -jar ALYBA.jar`
+
+결과 분석창은 메인화면에서 "Result Analyzer"버튼을 눌러서 열 수 있다. 그러나 아래와 같이 별도의 결과 분석창을 열 수 있다.
+`C:\> ALYBA.exe -result [path_to_alyba_db]`
+`C:\> java -jar ALYBA.jar -result [path_to_alyba_db]`
 
 Usage
 ---------------
