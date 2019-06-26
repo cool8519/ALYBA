@@ -2,7 +2,8 @@ package dal.tool.analyzer.alyba.ui.comp;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +57,7 @@ public class FieldMapping extends Composite {
 
 	private FilterSetting filterSetting;
 	private TableItem draggingItem;
+	private List<String> fileEncoding;
 	private HashMap<String, String> mappingData;
 	private int fieldCount;
 	private Locale timeLocale;
@@ -94,6 +96,7 @@ public class FieldMapping extends Composite {
 		super(parent, style);
 		createContents();
 		addEventListener();
+		fileEncoding = new ArrayList<String>();
 		mappingData = new HashMap<String, String>();
 	}
 	
@@ -121,6 +124,10 @@ public class FieldMapping extends Composite {
 		return cb_elapsedUnit.getText();
 	}
 
+	public List<String> getFileEncoding() {
+		return fileEncoding;
+	}
+	
 	public HashMap<String, String> getMappingData() {
 		return mappingData;
 	}
@@ -403,14 +410,9 @@ public class FieldMapping extends Composite {
 		cb_timeFormat.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				String timeStr = txt_time.getText();
-				Object complete = cb_timeFormat.getData("complete");
-				boolean isComplete = (complete == null) ? false : (Boolean)complete;
-				if(timeStr.length() > 0 && !isComplete) {
+				if(timeStr.length() > 0) {
 					debug("Check TimeFormat : " + timeStr + ", " + cb_timeFormat.getText());
 					checkTimeString(new String[] { cb_timeFormat.getText() }, timeStr);
-				}
-				if(isComplete) {
-					cb_timeFormat.setData("complete", null);
 				}
 			}
 		});
@@ -809,8 +811,9 @@ public class FieldMapping extends Composite {
 		} else {
 			lb_resultTimeChk.setText("OK");
 			lb_resultTimeChk.setForeground(SWTResourceManager.getColor(SWT.COLOR_BLUE));
-			cb_timeFormat.setData("complete", true);
-			cb_timeFormat.setText((String)matchFormat[1]);
+			if(formats.length > 1) {
+				cb_timeFormat.setText((String)matchFormat[1]);
+			}
 			timeLocale = (Locale)matchFormat[0];
 		}
 		AlybaGUI.getInstance().toggleAnalyzingButton(checkParsingAvailable());
@@ -847,18 +850,28 @@ public class FieldMapping extends Composite {
 	protected String getSampleLogLine() throws Exception {
 		TableItem[] items = AlybaGUI.getInstance().tbl_files.getItems();
 		File logfile = null;
+		int idx = -1;
 		int cnt = 0;
 		do {
 			if(cnt == Constant.MAX_SAMPLING_COUNT)
 				break;
-			logfile = (File)items[NumberUtil.getRandomNumber(items.length)].getData("file");
+			idx = NumberUtil.getRandomNumber(items.length);
+			logfile = (File)items[idx].getData("file");
 			cnt++;
 		} while(logfile.length() == 0);
-
+		
 		if(cnt == Constant.MAX_SAMPLING_COUNT) {
 			debug("Failed to sample a file.");
 			return null;
 		} else {
+			String logfile_encoding = FileUtil.getFileEncoding(logfile.getPath());
+			if("WINDOWS-1252".equals(logfile_encoding)) {
+				String default_encoding = System.getProperty("file.encoding");
+				debug("Unknown file encoding : " + logfile_encoding + ". It will be set to default(" + default_encoding + ")");
+				logfile_encoding = default_encoding;
+			}
+			debug("File encoding : path='" + logfile.getPath() + "', encoding=" + logfile_encoding);
+			
 			int bound = 100 * 2;
 			int line_number = 0;
 			String line = null;
@@ -869,22 +882,15 @@ public class FieldMapping extends Composite {
 				int temp = (int)(bound / 2);
 				bound = (temp < 1) ? 1 : temp;
 				line_number = NumberUtil.getRandomNumber(bound) + 1;
-				line = FileUtil.readFileLine(logfile, line_number);
+				line = FileUtil.readFileLine(logfile, line_number, logfile_encoding);
 				cnt++;
-				debug("sample a line : " + line);
+				debug("sample a line(" + line_number + ") : " + line);
 			} while(line == null || line.trim().equals("") || line.startsWith("#") || line.startsWith("format="));
 			if(cnt == Constant.MAX_SAMPLING_COUNT) {
 				debug("Failed to sample a line : " + logfile.getCanonicalPath());
 				return null;
 			} else {
 				debug("Sampled Line(" + logfile.getCanonicalPath() + ":" + line_number + ") : \n" + line);
-				char c = line.charAt(0);
-				if(c < 32 || c > 126) {
-					debug("The line includes unknown character : " + c);
-					String msg = "Invalid log file : \n" + logfile.getCanonicalPath() + "(" + line_number + ")";
-					MessageUtil.showErrorMessage(getShell(), msg);
-					return "";
-				}
 				return line;
 			}
 		}
@@ -894,6 +900,8 @@ public class FieldMapping extends Composite {
 		TableItem[] items = AlybaGUI.getInstance().tbl_files.getItems();
 		for(int i = 0; i < items.length; i++) {
 			File logfile = (File)items[i].getData("file");
+			String logfile_encoding = FileUtil.getFileEncoding(logfile.getPath());
+			fileEncoding.add(logfile_encoding);
 			BufferedReader br = null;
 			String line = null;
 			try {
@@ -903,7 +911,11 @@ public class FieldMapping extends Composite {
 				String[] uri_idx_arr = (uri_idx==null) ? new String[0] : uri_idx.split(",");
 				String delimeter = StringUtil.replaceMetaCharacter(getDelimeter(), false);
 				String[] bracelets = StringUtil.getArrayFromString(getBracelet(), " ");
-				br = new BufferedReader(new FileReader(logfile));
+				if(logfile_encoding == null) {
+					br = new BufferedReader(new InputStreamReader(new FileInputStream(logfile)));
+				} else {
+					br = new BufferedReader(new InputStreamReader(new FileInputStream(logfile), logfile_encoding));
+				}
 				while((line = br.readLine()) != null) {
 					if(line.startsWith("#") || line.startsWith("format=") || line.trim().equals("")) {
 						continue;

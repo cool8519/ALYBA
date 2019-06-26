@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import dal.util.DateUtil;
 
@@ -12,8 +13,10 @@ public class AnalyzerSetting {
 	private static SimpleDateFormat sdf_datetime_tz = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss z");
 
 	public String title;
+	public TimeZone analyzerTimezone;
 	public Date analyzeDate;
 	public List<String> logFileList;
+	public List<String> logFileEncodingList;
 	public FieldMappingInfo fieldMapping;
 	public FilterSettingInfo filterSetting;
 	public boolean outputExcelType;
@@ -47,6 +50,14 @@ public class AnalyzerSetting {
 		this.title = title;
 	}
 
+	public TimeZone getAnalyzerTimezone() {
+		return analyzerTimezone;
+	}
+	
+	public void setAnalyzerTimezone(TimeZone tz) {
+		this.analyzerTimezone = tz;
+	}
+	
 	public Date getAnalyzeDate() {
 		return analyzeDate;
 	}
@@ -61,6 +72,14 @@ public class AnalyzerSetting {
 
 	public void setLogFileList(List<String> logFileList) {
 		this.logFileList = logFileList;
+	}
+
+	public List<String> getLogFileEncodingList() {
+		return logFileEncodingList;
+	}
+
+	public void setLogFileEncodingList(List<String> logFileEncodingList) {
+		this.logFileEncodingList = logFileEncodingList;
 	}
 
 	public FieldMappingInfo getFieldMapping() {
@@ -246,6 +265,7 @@ public class AnalyzerSetting {
 		sb.append("Title : " + title + "\n");
 		sb.append("Files\n");
 		sb.append("    FILELIST : " + getLogFileList() + "\n");
+		sb.append("    ENCODINGLIST : " + getLogFileEncodingList() + "\n");
 		sb.append("Mapping\n");
 		sb.append("    DELIMETER : " + fieldMapping.getFieldDelimeter() + "\n");
 		sb.append("    BRACELET : " + Arrays.asList(fieldMapping.getFieldBracelets()) + "\n");

@@ -9,7 +9,7 @@ import org.eclipse.swt.dnd.Transfer;
 
 public class Constant {
 
-	public static final String PROGRAM_VERSION = "1.5.0";
+	public static final String PROGRAM_VERSION = "1.5.1";
 
 	public static final String DEFAULT_FONT_NAME = "Segoe UI";
 	public static final int DEFAULT_FONT_SIZE = 9;

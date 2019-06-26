@@ -2,7 +2,8 @@ package dal.tool.analyzer.alyba.parser;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 
 import dal.tool.analyzer.alyba.task.AnalyzeTask;
@@ -13,6 +14,7 @@ public class LogReaderThread extends Task {
 
 	private AnalyzeTask caller;
 	private File[] logfiles;
+	private String[] fileEncodings;
 	private LogLineParser parser;
 	private int[] fileIdxs;
 	private int allowErrorCnt;
@@ -28,6 +30,14 @@ public class LogReaderThread extends Task {
 
 	public void setLogfiles(File[] logfiles) {
 		this.logfiles = logfiles;
+	}
+	
+	public void setLogfileEncoding(String encoding) {
+		this.fileEncodings = new String[] { encoding };
+	}
+	
+	public void setLogfileEncodings(String[] encodings) {
+		this.fileEncodings = encodings;
 	}
 
 	public void setLogfileIndex(int fileIdx) {
@@ -72,7 +82,11 @@ public class LogReaderThread extends Task {
 
 			try {
 				String line;
-				br = new BufferedReader(new FileReader(logfiles[i]));
+				if(fileEncodings[i] == null) {
+					br = new BufferedReader(new InputStreamReader(new FileInputStream(logfiles[i])));
+				} else {
+					br = new BufferedReader(new InputStreamReader(new FileInputStream(logfiles[i]), fileEncodings[i]));
+				}
 				lr = new LineNumberReader(br);
 				int lineCnt = 0;
 				int errCnt = 0;

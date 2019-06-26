@@ -84,6 +84,7 @@ public class AlybaGUI {
 
 	public static AlybaGUI instance = null;
 	public static boolean debugMode = false;
+	public static TimeZone timeZone = TimeZone.getDefault();
 	public DebugConsole console = null;
 	public ResultAnalyzer resultAnalyzer = null;
 
@@ -744,7 +745,10 @@ public class AlybaGUI {
 				DefaultParser parser = new DefaultParser(getAnalyzerSetting());
 				for(int i = 0; i < items.length; i++) {
 					item = items[i];
-					lines = FileUtil.head((File)item.getData("file"), 10);
+					File logfile = (File)item.getData("file");
+					String logfile_encoding = FileUtil.getFileEncoding(logfile.getPath());
+					debug("File encoding : path='" + logfile.getPath() + "', encoding=" + logfile_encoding);
+					lines = FileUtil.head(logfile, 10, logfile_encoding);
 					Date dt;
 					for(String line : lines) {
 						dt = parser.getParsedDate(line);
@@ -752,7 +756,7 @@ public class AlybaGUI {
 						if(from == null || dt.before(from)) from = DateUtil.getFirstOfDay(dt);
 						if(to == null || dt.after(to)) to = DateUtil.getLastOfDay(dt);
 					}
-					lines = FileUtil.tail((File)item.getData("file"), 10);
+					lines = FileUtil.tail(logfile, 10, logfile_encoding);
 					for(String line : lines) {
 						dt = parser.getParsedDate(line);
 						if(dt == null) continue;
@@ -1212,7 +1216,9 @@ public class AlybaGUI {
 
 		AnalyzerSetting setting = new AnalyzerSetting();
 		setting.setTitle(txt_title.getText());
+		setting.setAnalyzerTimezone(timeZone);
 		setting.setLogFileList(getLogFileList());
+		setting.setLogFileEncodingList(fieldMapping.getFileEncoding());
 		setting.setOutputExcelType(outputSetting.checkExcelType());
 		setting.setOutputHtmlType(outputSetting.checkHtmlType());
 		setting.setOutputTextType(outputSetting.checkTextType());

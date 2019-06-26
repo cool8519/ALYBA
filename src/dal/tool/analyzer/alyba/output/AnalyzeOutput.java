@@ -1,7 +1,6 @@
 package dal.tool.analyzer.alyba.output;
 
 import java.io.File;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,12 +16,6 @@ import dal.util.db.ObjectDBUtil;
 
 public class AnalyzeOutput {
 
-	public static DecimalFormat DF_Percent = new DecimalFormat("##0.000");
-	public static DecimalFormat DF_FloatPoint = new DecimalFormat("0.0");
-	public static SimpleDateFormat SDF_DateSecond = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
-	public static SimpleDateFormat SDF_DateOnly = new SimpleDateFormat("yyyy.MM.dd");
-	public static SimpleDateFormat SDF_DateMinute = new SimpleDateFormat("yyyy.MM.dd HH:mm");
-	public static SimpleDateFormat SDF_NoDateMinute = new SimpleDateFormat("HH:mm");
 	public static SimpleDateFormat SDF_OuputFile = new SimpleDateFormat("yyyyMMdd.HHmmss");
 
 	private AnalyzerSetting setting = null;
@@ -31,6 +24,7 @@ public class AnalyzeOutput {
 
 	public AnalyzeOutput(AnalyzerSetting setting) {
 		this.setting = setting;
+		SDF_OuputFile.setTimeZone(setting.getAnalyzerTimezone());
 	}
 
 	public AnalyzerSetting getAnalyzerSetting() {

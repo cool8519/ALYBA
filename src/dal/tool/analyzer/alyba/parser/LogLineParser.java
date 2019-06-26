@@ -1,11 +1,11 @@
 package dal.tool.analyzer.alyba.parser;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -68,6 +68,7 @@ public abstract class LogLineParser {
 	protected SimpleDateFormat sdf_date = null;
 	protected SimpleDateFormat sdf_datetime = null;
 	protected String under_second_format = null;
+	protected DateTimeFormatter usf = null;
 	protected String delimeter = null;
 	protected String[] bracelets = null;
 
@@ -821,15 +822,11 @@ public abstract class LogLineParser {
 				if(under_second_format == null) {
 					dt = sdf.parse(date_str);
 				} else {
-					int idx = setting.fieldMapping.timeFormat.indexOf(under_second_format);
-					String prefix = setting.fieldMapping.timeFormat.substring(0, idx);
-					String suffix = setting.fieldMapping.timeFormat.substring(idx+under_second_format.length());
-					DateTimeFormatter formatter = new DateTimeFormatterBuilder()
-			        .appendPattern(prefix)
-			        .appendFraction(ChronoField.NANO_OF_SECOND, 0, under_second_format.length(), false)
-			        .appendPattern(suffix)
-			        .toFormatter();
-					LocalDateTime localDateTime = LocalDateTime.parse(date_str, formatter);
+					if(usf == null) {
+						usf = DateTimeFormatter.ofPattern(setting.fieldMapping.timeFormat, setting.fieldMapping.timeLocale);
+					}
+					LocalTime localTime = LocalTime.parse(date_str, usf);
+					LocalDateTime localDateTime = localTime.atDate(LocalDate.ofEpochDay(0));
 					dt = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());		
 				}				
 			}

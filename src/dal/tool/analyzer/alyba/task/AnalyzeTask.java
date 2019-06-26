@@ -60,6 +60,7 @@ public class AnalyzeTask extends ProgressBarTask {
 	private <P extends LogLineParser> void parseLogs() throws Exception {
 		File f;
 		List<String> fileList = setting.getLogFileList();
+		List<String> encodingList = setting.getLogFileEncodingList();
 		long totalBytes = 0L;
 
 		setDetailMessage("Initializing counter");
@@ -86,6 +87,7 @@ public class AnalyzeTask extends ProgressBarTask {
 					logReaders[i].setCaller(this);
 					logReaders[i].setParser(parser[i]);
 					logReaders[i].setLogfile(f);
+					logReaders[i].setLogfileEncoding(encodingList.get(i));
 					logReaders[i].setLogfileIndex(i);
 				}
 				setDetailMessage("Starting Multi-thread parsers");
@@ -102,15 +104,18 @@ public class AnalyzeTask extends ProgressBarTask {
 				}
 			} else {
 				File[] file_arr = new File[fileList.size()];
+				String[] enc_arr = new String[encodingList.size()];
 				int[] idx_arr = new int[fileList.size()];
 				for(int i = 0; i < fileList.size(); i++) {
 					file_arr[i] = new File(fileList.get(i));
+					enc_arr[i] = new String(encodingList.get(i));
 					idx_arr[i] = i;
 				}
 				LogReaderThread logReader = new LogReaderThread(1);
 				logReader.setCaller(this);
 				logReader.setParser(parser[0]);
 				logReader.setLogfiles(file_arr);
+				logReader.setLogfileEncodings(enc_arr);
 				logReader.setLogfileIndexes(idx_arr);
 				setDetailMessage("Starting Single-thread parsers");
 				Thread.currentThread().setName("ThreadManager");

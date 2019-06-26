@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
+import org.mozilla.universalchardet.UniversalDetector;
+
 public class FileUtil {
 
 	public static final class TYPE {
@@ -158,11 +160,11 @@ public class FileUtil {
 		return df.format(f.length());
 	}
 
-	public static String readFileLine(File f, int line) {
+	public static String readFileLine(File f, int line, String file_encoding) {
 		if(f == null)
 			return null;
 		try {
-			List<String> result = readFileLine(new FileInputStream(f), line, 1);
+			List<String> result = readFileLine(new FileInputStream(f), line, 1, file_encoding);
 			if(result.size() > 0) {
 				return (String)(result.get(0));
 			}
@@ -172,25 +174,29 @@ public class FileUtil {
 		return null;
 	}
 
-	public static List<String> readFileLine(File f, int from_line, int line) {
+	public static List<String> readFileLine(File f, int from_line, int line, String file_encoding) {
 		if(f == null)
 			return null;
 		try {
-			return readFileLine(new FileInputStream(f), from_line, line);
+			return readFileLine(new FileInputStream(f), from_line, line, file_encoding);
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
 
-	public static List<String> readFileLine(InputStream is, int from_line, int line) {
-		if(is == null)
+	public static List<String> readFileLine(FileInputStream fis, int from_line, int line) {
+		return readFileLine(fis, from_line, line, null);
+	}
+
+	public static List<String> readFileLine(FileInputStream fis, int from_line, int line, String file_encoding) {
+		if(fis == null)
 			return null;
 		BufferedReader br = null;
 		List<String> result = null;
 		try {
 			result = new ArrayList<String>();
-			br = new BufferedReader(new InputStreamReader(is));
+			br = new BufferedReader(file_encoding==null ? new InputStreamReader(fis) : new InputStreamReader(fis, file_encoding));
 			int cnt = 1;
 			int getLines = 0;
 			String s;
@@ -215,19 +221,19 @@ public class FileUtil {
 		return result;
 	}
 	
-	public static List<String> head(File f, int line) {
+	public static List<String> head(File f, int line, String file_encoding) {
 		if(f == null || line < 0) {
 			return null;
 		}
 		try {
-			return readFileLine(new FileInputStream(f), 0, line);
+			return readFileLine(new FileInputStream(f), 0, line, file_encoding);
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
 
-	public static List<String> tail(File f, int line) {
+	public static List<String> tail(File f, int line, String file_encoding) {
 		if(f == null || line < 0) {
 			return null;
 		}
@@ -253,8 +259,13 @@ public class FileUtil {
 					}
 				}
 				file.seek(pos+1);
-				for(int i = 0; i < lineCnt; i++) {
-					lst.add(file.readLine());
+				for(int i = 0; i < line; i++) {
+					String s = file.readLine();
+					if(file_encoding == null) {
+						lst.add(s);
+					} else {
+						lst.add(new String(s.getBytes("ISO-8859-1"), file_encoding));
+					}
 				}
 			}
 			return lst;
@@ -466,5 +477,31 @@ public class FileUtil {
 			return null;
 		}
 	}
-
+	
+	public static String getFileEncoding(String file_path) {
+		byte[] buf = new byte[4096];
+		FileInputStream fis = null;
+		UniversalDetector detector = null;
+		try {
+			fis = new FileInputStream(file_path);
+			detector = new UniversalDetector(null);
+			int nread;
+			while ((nread = fis.read(buf)) > 0 && !detector.isDone()) {
+				detector.handleData(buf, 0, nread);
+			}
+			detector.dataEnd();
+			return detector.getDetectedCharset();
+		} catch(Exception e) {
+			return null;
+		} finally {
+			if(fis != null) {
+				try { fis.close(); } catch(Exception e) {}
+			}
+			if(detector != null) {
+				try { detector.reset(); } catch(Exception e) {}
+			}
+		}
+	}	
+	
+	
 }

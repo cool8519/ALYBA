@@ -10,8 +10,8 @@ Requirements
 Getting Started
 ---------------
 아래의 두개 버전 중 하나를 다운로드 한다.
-* Windows Executable : [ALYBA.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA.exe)
-* Java Archive File : [ALYBA.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA.jar)
+* Windows Executable : [ALYBA_v1.5.1.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.5.1.exe)
+* Java Archive File : [ALYBA_v1.5.1.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.5.1.jar)
 
 ALYBA 실행파일을 클릭하거나, 커맨드 창에서 실행시키면 된다.
 `C:\> ALYBA.exe`
@@ -172,6 +172,12 @@ Export 버튼을 통해 CSV 형식으로 데이터를 내려받을 수 있다. 전체 데이터 또는 분석
 ![Screenhot](screenshots/11.jpg)
 
 그래프 영역에서 특정 데이터를 클릭하거나 드래그하여 상세하게 확인할 수 있다.
+
+Release Note
+--------------
+##### v1.5.1
+- (Bug) 필드 매핑시 TIME에 날짜가 없이 시간만 있는 경우 인식이 안되는 문제
+- 로그파일 Encoding 자동 인식
 
 To-do
 --------------
