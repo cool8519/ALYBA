@@ -9,19 +9,23 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 
+import dal.tool.analyzer.alyba.setting.AnalyzerSetting;
+
 @Entity
 public class KeyEntryVO extends EntryVO {
 
-	public static enum Type { URI, IP, METHOD, VERSION, EXT, CODE };
 	private static final long serialVersionUID = 1L;
-
-	private static DecimalFormat ratioFormat = new DecimalFormat("##0.000");
+	
+	public static enum Type { URI, IP, METHOD, VERSION, EXT, CODE };
+	
+	private static final DecimalFormat DF_RATIO = new DecimalFormat("##0.000");
 
 	@Id
 	private String key;
 	@Id
 	private String type;
 
+	private String description = null;
 	private int req_total = 0;
 	private int filter_req_total = 0;
 	private int req_count = 0;
@@ -62,27 +66,43 @@ public class KeyEntryVO extends EntryVO {
 		req_count++;
 	}
 
-	public void addData(ResponseEntryVO vo) {
+	public void addData(ResponseEntryVO vo, AnalyzerSetting setting) {
 		req_count++;
-		if(vo.getRequestIP() != null) {
-			if(request_ip_list.contains(vo.getRequestIP()) == false) {
-				request_ip_list.add(vo.getRequestIP());
+		if(setting.fieldMapping.isMappedIP()) {
+			if(vo.getRequestIP() != null) {
+				if(request_ip_list.contains(vo.getRequestIP()) == false) {
+					request_ip_list.add(vo.getRequestIP());
+				}
 			}
 		}
-		avg_response_time = ((avg_response_time * (req_count - 1)) + vo.getResponseTime()) / req_count;
-		if(max_response_time == null || vo.getResponseTime() > max_response_time.getResponseTime()) {
-			max_response_time = vo;
-		}
-		avg_response_byte = ((avg_response_byte * (req_count - 1)) + vo.getResponseBytes()) / req_count;
-		if(max_response_byte == null || vo.getResponseBytes() > max_response_byte.getResponseBytes()) {
-			max_response_byte = vo;
-		}
-		if(vo.getResponseCode() != null && (vo.getResponseCode().startsWith("4") || vo.getResponseCode().startsWith("5"))) {
-			if(last_error == null || vo.getResponseDate().compareTo(last_error.getResponseDate()) > 0) {
-				last_error = vo;
+		if(setting.fieldMapping.isMappedElapsed()) {
+			avg_response_time = ((avg_response_time * (req_count - 1)) + vo.getResponseTime()) / req_count;
+			if(max_response_time == null || vo.getResponseTime() > max_response_time.getResponseTime()) {
+				max_response_time = vo;
 			}
-			err_count++;
+		} else {
+			avg_response_time = -1D;
 		}
+		if(setting.fieldMapping.isMappedBytes()) {
+			avg_response_byte = ((avg_response_byte * (req_count - 1)) + vo.getResponseBytes()) / req_count;
+			if(max_response_byte == null || vo.getResponseBytes() > max_response_byte.getResponseBytes()) {
+				max_response_byte = vo;
+			}
+		} else {
+			avg_response_byte = -1D;
+		}
+		if(setting.fieldMapping.isMappedCode()) {
+			if(vo.getResponseCode() != null && (vo.getResponseCode().startsWith("4") || vo.getResponseCode().startsWith("5"))) {
+				if(last_error == null || vo.getResponseDate().compareTo(last_error.getResponseDate()) > 0) {
+					last_error = vo;
+				}
+				err_count++;
+			}
+			setErrorRatio();
+		}
+	}
+
+	public void setErrorRatio() {
 		entry_err_ratio = ((float)err_count / req_count) * 100;
 	}
 
@@ -97,6 +117,10 @@ public class KeyEntryVO extends EntryVO {
 		filter_err_ratio = ((float)err_count / total) * 100;
 	}
 
+	public String getDescription() {
+		return description;
+	}
+	
 	public int getTotal() {
 		return req_total;
 	}
@@ -110,11 +134,11 @@ public class KeyEntryVO extends EntryVO {
 	}
 
 	public String getTotalRequestRatio() {
-		return ratioFormat.format(req_ratio);
+		return DF_RATIO.format(req_ratio);
 	}
 
 	public String getFilterdRequestRatio() {
-		return ratioFormat.format(filter_req_ratio);
+		return DF_RATIO.format(filter_req_ratio);
 	}
 
 	public double getAverageResponseTime() {
@@ -138,17 +162,21 @@ public class KeyEntryVO extends EntryVO {
 	}
 
 	public String getFilterErrorRatio() {
-		return ratioFormat.format(filter_err_ratio);
+		return DF_RATIO.format(filter_err_ratio);
 	}
 
 	public String getEntryErrorRatio() {
-		return ratioFormat.format(entry_err_ratio);
+		return DF_RATIO.format(entry_err_ratio);
 	}
 
 	public ResponseEntryVO getLastError() {
 		return (last_error == null) ? new ResponseEntryVO() : last_error;
 	}
 
+	public void setDescription(String desc) {
+		description = desc;
+	}
+	
 	public void setRequestCount(int count) {
 		req_count = count;
 	}
@@ -202,6 +230,9 @@ public class KeyEntryVO extends EntryVO {
 		KeyEntryVO vo = createEntryVO();
 		vo.setRequestCount(getRequestCount() + subVO.getRequestCount());
 		vo.setErrorCount(getErrorCount() + subVO.getErrorCount());
+		if(getDescription() != null) {
+			vo.setDescription(subVO.getDescription());
+		}
 		if(getLastError().getResponseDate() == null) {
 			vo.setLastError(subVO.getLastError());
 		} else if(subVO.getLastError().getResponseDate() == null) {

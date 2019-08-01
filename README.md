@@ -10,8 +10,8 @@ Requirements
 Getting Started
 ---------------
 아래의 두개 버전 중 하나를 다운로드 한다.
-* Windows Executable : [ALYBA_v1.5.1.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.5.1.exe)
-* Java Archive File : [ALYBA_v1.5.1.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.5.1.jar)
+* Windows Executable : [ALYBA_v1.6.0.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.6.0.exe)
+* Java Archive File : [ALYBA_v1.6.0.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.6.0.jar)
 
 ALYBA 실행파일을 클릭하거나, 커맨드 창에서 실행시키면 된다.
 `C:\> ALYBA.exe`
@@ -164,12 +164,13 @@ Export 버튼을 통해 CSV 형식으로 데이터를 내려받을 수 있다. 전체 데이터 또는 분석
 집계된 데이터의 타입에 따라 가능한 차트 종류를 선택할 수 있다.
 * 시계열 데이터 : Line Chart
 * 키값 데이터 : Vertical Bar Chart, Horizontal Bar Chart, Pie Chart
-* 산포 데이터 : Plot Chart
+* 산포 데이터 : Vertical Bar Chart, Horizontal Bar Chart, Pie Chart, Plot Chart
 
 ![Screenhot](screenshots/08.jpg)
 ![Screenhot](screenshots/09.jpg)
 ![Screenhot](screenshots/10.jpg)
 ![Screenhot](screenshots/11.jpg)
+![Screenhot](screenshots/12.jpg)
 
 그래프 영역에서 특정 데이터를 클릭하거나 드래그하여 상세하게 확인할 수 있다.
 
@@ -178,6 +179,15 @@ Release Note
 ##### v1.5.1
 - (Bug) 필드 매핑시 TIME에 날짜가 없이 시간만 있는 경우 인식이 안되는 문제
 - 로그파일 Encoding 자동 인식
+
+##### v1.6.0
+- 매핑정보를 설정파일에 저장 가능
+- 설정파일 Drag & Drop
+- Table에 복합데이터 내 상세데이터 출력
+- Table 선택시 불필요한 컬럼을 자동으로 숨김
+- 산포도에서 점 클릭시 상세 데이터 표시
+- 산포도에서 분포 그래프 지원(경계값 변경 가능)
+- IP 지역 기반 그래프 지원  
 
 To-do
 --------------

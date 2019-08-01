@@ -26,4 +26,16 @@ public class UserDefinedChart extends Chart {
 		
 	}
 
+	@Override
+	public Type[] getSupportChartTypes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Type getDefaultChartType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

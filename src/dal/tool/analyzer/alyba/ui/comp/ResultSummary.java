@@ -37,18 +37,20 @@ public class ResultSummary extends Composite {
 
 	private ObjectDBUtil db = null;
 	private EntityManager em = null;
+	private SettingEntryVO settingVo = null;
 
 	public ResultSummary(Composite parent, int style) {
 		super(parent, style);
 		createContents();
 	}
 
-	public void initDatabase() {
+	public void initDatabase() throws Exception {
 		if(db != null) {
 			db.close(em);
 		}
 		this.db = ObjectDBUtil.getInstance();
 		this.em = db.createEntityManager();		
+		this.settingVo = db.select(em, SettingEntryVO.class);
 	}
 
 	public void closeDatabase() {
@@ -162,7 +164,6 @@ public class ResultSummary extends Composite {
 		initDatabase();
 		
 		SummaryEntryVO summaryVo = db.select(em, SummaryEntryVO.class);
-		SettingEntryVO settingVo = db.select(em, SettingEntryVO.class);
 		TableItem item;
 		DecimalFormat DF_Percent = new DecimalFormat("##0.000");
 		SimpleDateFormat local_tz_sdf = (SimpleDateFormat)DateUtil.SDF_DATETIME_TZ.clone();

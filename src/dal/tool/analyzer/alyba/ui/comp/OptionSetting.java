@@ -1,8 +1,6 @@
 package dal.tool.analyzer.alyba.ui.comp;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -268,10 +266,7 @@ public class OptionSetting extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				File f = FileDialogUtil.openReadDialogFile(getShell(), Constant.SETTING_FILTER_NAMES, Constant.SETTING_FILTER_EXTS, Constant.DIALOG_INIT_PATH);
 				if(f != null) {
-					String msg = "The current setting will be replaced with this setting.\nThe mapping data won't be applied.\n\nDo you really want to load this setting?";
-					if(MessageUtil.showConfirmMessage(getShell(), msg)) {
-						AlybaGUI.getInstance().loadSetting(f);
-					}
+					AlybaGUI.getInstance().loadSetting(f);
 				}
 			}
 		});
@@ -287,23 +282,12 @@ public class OptionSetting extends Composite {
 
 		btn_defaultSetting.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				String msg = "The current setting will be replaced with default setting.\nThe mapping data won't be applied.\n\nDo you really want to load default setting?";
+				String msg = "The current setting will be replaced with default setting.\n\nDo you really want to load default setting?";
 				if(MessageUtil.showConfirmMessage(getShell(), msg)) {
-					reset();
+					AlybaGUI.getInstance().resetSetting();
 				}
 			}
 		});
 
-	}
-
-	public void reset() {
-		InputStream is = null;
-		try {
-			is = ClassLoader.getSystemResource(Constant.FILE_PATH_DEFAULTSETTING).openStream();
-			AlybaGUI.getInstance().loadSetting(is);
-			AlybaGUI.getInstance().outputSetting.txt_directory.setText(Constant.OUTPUT_DEFAULT_DIRECTORY);
-		} catch(IOException ioe) {
-			AlybaGUI.getInstance().debug(ioe);
-		}
 	}
 }

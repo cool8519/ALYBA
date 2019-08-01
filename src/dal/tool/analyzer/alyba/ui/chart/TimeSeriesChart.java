@@ -28,8 +28,9 @@ import dal.tool.analyzer.alyba.output.vo.DateEntryVO;
 
 public abstract class TimeSeriesChart extends Chart {
 
-	protected static DecimalFormat DF_NUMBER = new DecimalFormat("0");
-	protected static Class<?> dataClass = DateEntryVO.class;
+	protected static final DecimalFormat DF_NUMBER = new DecimalFormat("0");
+	
+	protected static final Class<?> DATA_CLASS = DateEntryVO.class;
 
 	protected String label_x = "Time";
 	protected String label_y = "Value";
@@ -160,9 +161,13 @@ public abstract class TimeSeriesChart extends Chart {
 		this.unit_str = unit_str;
 	}
 
-	public boolean checkChartType(Type chartType) {
-		return chartType == Type.TimeSeries;
+	public Type[] getSupportChartTypes() {
+		return new Type[] { Type.TimeSeries };
 	}
+	
+	public Type getDefaultChartType() {
+		return Type.TimeSeries;
+	}	
 	
 	public void createChart() {
 		jfreeChart = ChartFactory.createTimeSeriesChart(title, label_x, label_y, dataset, true, true, false);

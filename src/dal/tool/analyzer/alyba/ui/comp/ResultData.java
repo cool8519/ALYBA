@@ -4,6 +4,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,8 +47,10 @@ import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.HourlyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
+import dal.tool.analyzer.alyba.output.vo.SettingEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPSEntryVO;
+import dal.tool.analyzer.alyba.setting.FieldMappingInfo;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
@@ -95,6 +98,7 @@ public class ResultData extends Composite {
 	private ObjectDBUtil db = null;
 	private EntityManager em = null;
 	private String last_saved_dir = null;
+	private SettingEntryVO settingVo = null;
 
 	static {
 		map_table.put("Transaction Per Second", TPSEntryVO.class);
@@ -119,12 +123,13 @@ public class ResultData extends Composite {
 		addEventListener();
 	}
 
-	public void initDatabase() {
+	public void initDatabase() throws Exception {
 		if(db != null) {
 			db.close(em);
 		}
 		this.db = ObjectDBUtil.getInstance();
-		this.em = db.createEntityManager();		
+		this.em = db.createEntityManager();
+		this.settingVo = db.select(em, SettingEntryVO.class);
 	}
 
 	public void closeDatabase() {
@@ -348,7 +353,7 @@ public class ResultData extends Composite {
 		tbl_columns.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event e) {
 		        if(e.detail == SWT.CHECK) {
-		        	toggleColumnVisible(tbl_data, ((TableItem)e.item).getText());
+		        	toggleColumnVisible(tbl_data, ((TableItem)e.item).getText(), ((TableItem)e.item).getChecked());
 		        	refreshColumnCount();
 		        }
 			}
@@ -360,7 +365,7 @@ public class ResultData extends Composite {
 				boolean checkFlag = !"Uncheck all".equals(column.getText());
 				for(TableItem item : tbl_columns.getItems()) {
 					if(item.getChecked() != checkFlag) {
-						toggleColumnVisible(tbl_data, item.getText());
+						toggleColumnVisible(tbl_data, item.getText(), checkFlag);
 						item.setChecked(checkFlag);
 					}
 				}
@@ -453,10 +458,10 @@ public class ResultData extends Composite {
 						}
 					}
 					String itemValue = item.getText(columnIdx);
-					if(itemValue.startsWith("ResponseEntryVO")) {
-						String column_name = tbl_data.getColumn(columnIdx).getText();
-						ResponseEntryVO vo = (ResponseEntryVO)item.getData(column_name);
-						tbl_data.setToolTipText(vo.toPrettyString());
+					String column_name = tbl_data.getColumn(columnIdx).getText();
+					Object hidden_data = item.getData(column_name);
+					if(hidden_data != null && hidden_data instanceof ResponseEntryVO) {
+						tbl_data.setToolTipText(((ResponseEntryVO)hidden_data).toPrettyString());
 					} else if(itemValue.startsWith("[") && itemValue.endsWith("]")) {
 						String listValue = itemValue.substring(1, itemValue.length()-1);
 						if(listValue.length() > 0) {
@@ -520,27 +525,50 @@ public class ResultData extends Composite {
 			tbl_data.getColumns()[0].dispose();
 		}		
 	    tbl_columns.getColumns()[0].setText("Uncheck all");
-		int columnIdx = 0;
+	    int columnIdx = 0;
 		List<Field> fields = ReflectionUtil.getFields(map_table.get(table_name));
 		for(Field f : fields) {
 			if(!Modifier.isStatic(f.getModifiers()) && !"type".equals(f.getName())) {
 				TableItem tbli = new TableItem(tbl_columns, SWT.NONE);
 				tbli.setText(f.getName());
 				tbli.setChecked(true);
-				int align = ReflectionUtil.isNumberType(f) ? SWT.RIGHT : SWT.NONE;
+				int align = (ReflectionUtil.isNumberType(f)||f.getType()==ResponseEntryVO.class) ? SWT.RIGHT : SWT.NONE;
 				TableColumn tblc = new TableColumn(tbl_data, align);
 				tblc.setText(f.getName());
 				tblc.setMoveable(true);
-				if(columnIdx++ == 0) {
+				if(columnIdx == 0 || tblc.getText().endsWith("_date")) {
 					tblc.setWidth(130);
+				} else if(tblc.getText().equals("request_uri")) {
+					tblc.setWidth(120);
+				} else if(tblc.getText().equals("request_ip")) {
+					tblc.setWidth(100);
 				} else {
 					tblc.pack();
 				}
+				columnIdx++;
 			}
 		}
 		addColumnListener();
-		tbl_data.setSortDirection(SWT.NONE);
+		uncheckUselessColumn(table_name);		
 		refreshColumnCount();
+		tbl_data.setSortDirection(SWT.NONE);
+	}
+	
+	private void uncheckUselessColumn(String table_name) {
+		for(TableItem item : tbl_columns.getItems()) {
+			if((item.getText().indexOf("total") > -1) ||
+			   (item.getText().indexOf("request_date") > -1) ||		
+			   ((item.getText().indexOf("response_time") > -1 || item.getText().indexOf("response_date") > -1) && !FieldMappingInfo.isMappedElapsed(settingVo.getMappingInfo())) ||
+			   (item.getText().indexOf("response_byte") > -1 && !FieldMappingInfo.isMappedBytes(settingVo.getMappingInfo())) ||
+			   ((item.getText().indexOf("error") > -1 || item.getText().indexOf("response_code") > -1) && !FieldMappingInfo.isMappedCode(settingVo.getMappingInfo())) ||
+			   (item.getText().indexOf("request_method") > -1 && !FieldMappingInfo.isMappedMethod(settingVo.getMappingInfo())) ||
+			   (item.getText().indexOf("request_version") > -1 && !FieldMappingInfo.isMappedVersion(settingVo.getMappingInfo())) ||
+			   (item.getText().indexOf("description") > -1 && (!table_name.equals("IP Aggregation") && !table_name.equals("CODE Aggregation"))) ||
+			   (item.getText().indexOf("request_ip") > -1 && (table_name.equals("IP Aggregation") || !FieldMappingInfo.isMappedIP(settingVo.getMappingInfo())))) {
+				item.setChecked(false);
+				toggleColumnVisible(tbl_data, item.getText(), false);
+			}
+		}		
 	}
 
 	private void refreshColumnCount() {
@@ -650,7 +678,7 @@ public class ResultData extends Composite {
 				if(!Modifier.isStatic(f.getModifiers()) && !"type".equals(f.getName())) {
 					f.setAccessible(true);
 					Object value = f.get(entry);
-					item.setText(columnIdx++, objectToString(value));
+					item.setText(columnIdx++, objectToStringByColumn(f.getName(), value));
 					if(value instanceof ResponseEntryVO) {
 						item.setData(f.getName(), value);
 					}
@@ -677,24 +705,30 @@ public class ResultData extends Composite {
 					tbl_data.setSortColumn(column);
 					tbl_data.setSortDirection(SWT.DOWN);
 				}
-				sort_query = "t." + column.getText() + (tbl_data.getSortDirection() == SWT.DOWN ? " DESC" : "");
+				String sort_column = column.getText();
+				if(sort_column.startsWith("max_")) {
+					sort_column += "." + column.getText().substring(4);
+				} else if(sort_column.startsWith("last_error")) {
+					sort_column += ".response_code"; 
+				}
+				sort_query = "t." + sort_column + (tbl_data.getSortDirection() == SWT.DOWN ? " DESC" : "");
 				loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_query.getText().trim(), sort_query, false, true);
 			}
 		};
 		for(TableColumn column : tbl_data.getColumns()) {
 			column.addListener(SWT.Selection, sortListener);
-		}		
+		}
 	}
 	
-	private void toggleColumnVisible(Table tbl, String column_name) {
+	private void toggleColumnVisible(Table tbl, String column_name, boolean flag) {
 		for(TableColumn column : tbl.getColumns()) {
 			if(column_name.equals(column.getText())) {
-				if(column.getWidth() > 0) {
-					column.setData(new Integer(column.getWidth()));
-					column.setWidth(0);
-				} else {
+				if(flag) {
 					column.setWidth((Integer)column.getData());
 					column.setData(null);
+				} else {
+					column.setData(new Integer(column.getWidth()));
+					column.setWidth(0);
 				}
 				break;
 			}
@@ -729,9 +763,26 @@ public class ResultData extends Composite {
 		table_idx = -1;
 	}
 
+	private String objectToStringByColumn(String column, Object obj) {
+		if(obj instanceof ResponseEntryVO) {
+			ResponseEntryVO vo = (ResponseEntryVO)obj;
+			if("max_response_time".equals(column)) {
+				return objectToString(vo.getResponseTime());
+			} else if("max_response_byte".equals(column)) {
+				return objectToString(vo.getResponseBytes());
+			} else if("last_error".equals(column)) {
+				return objectToString(vo.getResponseCode());
+			}
+		}
+		return objectToString(obj);
+	}
+
+	@SuppressWarnings("rawtypes")
 	private String objectToString(Object obj) {
 		if(obj == null) {
-			return "null";
+			return "";
+		} else if(obj instanceof Collection && ((Collection)obj).size() < 1) {
+			return "";
 		} else if(obj instanceof Date) {
 			return DateUtil.dateToString((Date)obj, DateUtil.SDF_DATETIME);
 		} else if(obj instanceof Float) {
@@ -750,12 +801,13 @@ public class ResultData extends Composite {
 			List<String> visibleCol = new ArrayList<String>();
 			List<String> header = new ArrayList<String>();
 			List<List<?>> data = new ArrayList<List<?>>();
-			for(int i = 0; i < tbl_data.getColumnCount(); i++) {
-				TableColumn column = tbl_data.getColumn(i);
-				if(column.getData() == null) {
-					visibleIdx.add(i);
-					visibleCol.add(column.getText());
-					header.add(column.getText());
+			int[] dataColIdx = tbl_data.getColumnOrder(); 
+			for(int i = 0; i < tbl_columns.getItemCount(); i++) {
+				if(tbl_columns.getItem(i).getChecked()) {
+					int realIdx = dataColIdx[i];
+					visibleIdx.add(realIdx);
+					visibleCol.add(tbl_data.getColumn(realIdx).getText());
+					header.add(tbl_data.getColumn(realIdx).getText());
 				}
 			}
 			if(visibleIdx.size() < 1 || tbl_data.getItemCount() < 1) {
@@ -781,7 +833,7 @@ public class ResultData extends Composite {
 					}
 					List<String> row = new ArrayList<String>();
 					for(Field f : visibleFields) {
-						row.add(objectToString(f.get(entry)));
+						row.add(objectToStringByColumn(f.getName(), f.get(entry)));
 					}
 					data.add(row);
 				}

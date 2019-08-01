@@ -20,7 +20,7 @@ import dal.util.DateUtil;
 
 public class TxDailyPerMinChart extends TimeSeriesChart {
 
-	protected static Class<?> dataClass = TPMEntryVO.class;
+	protected static final Class<?> DATA_CLASS = TPMEntryVO.class;
 	
 	public TxDailyPerMinChart() {
 		super("Daily Transaction Per Minute(s)", "Time of Day", "Transactions");

@@ -13,7 +13,7 @@ import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
 
 public class TxPerMinChart extends TimeSeriesChart {
 
-	protected static Class<?> dataClass = TPMEntryVO.class;
+	protected static final Class<?> DATA_CLASS = TPMEntryVO.class;
 	
 	public TxPerMinChart() {
 		super("Transaction Per Minute(s)", "Time", "Transactions");

@@ -163,19 +163,19 @@ public class TimeSeriesChartSetting extends ChartSetting {
 
 	}
 	
-	protected void reset() {
-		if(result_chart.getCurrentChart() != null) {
-			TimeSeriesChart chart = (TimeSeriesChart)result_chart.getCurrentChart();
-			chk_sma.setSelection(chart.getShowMovingAverage());
-			sp_sma_items.setSelection(chart.getMovingAverageCount());
-			sp_sma_items.setEnabled(chart.getShowMovingAverage());
-			chk_merge.setSelection(chart.getMergeItem());
-			sp_merge_items.setSelection(chart.getMergeItemCount());
-			sp_merge_items.setEnabled(chart.getMergeItem());
-			chk_shape.setSelection(chart.getShowShape());
-			lb_sma_unit.setText(chart.getUnitString());		
-			lb_merge_unit.setText(chart.getUnitString());
-			chk_secondary_data.setSelection(chart.getShowSecondaryAxis());
+	public void reset(Chart chart) {
+		if(chart != null) {
+			TimeSeriesChart tsChart = (TimeSeriesChart)chart;
+			chk_sma.setSelection(tsChart.getShowMovingAverage());
+			sp_sma_items.setSelection(tsChart.getMovingAverageCount());
+			sp_sma_items.setEnabled(tsChart.getShowMovingAverage());
+			chk_merge.setSelection(tsChart.getMergeItem());
+			sp_merge_items.setSelection(tsChart.getMergeItemCount());
+			sp_merge_items.setEnabled(tsChart.getMergeItem());
+			chk_shape.setSelection(tsChart.getShowShape());
+			lb_sma_unit.setText(tsChart.getUnitString());		
+			lb_merge_unit.setText(tsChart.getUnitString());
+			chk_secondary_data.setSelection(tsChart.getShowSecondaryAxis());
 		} else {
 			chk_sma.setSelection(false);
 			sp_sma_items.setSelection(1);

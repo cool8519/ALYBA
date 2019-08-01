@@ -16,7 +16,7 @@ import dal.util.db.ObjectDBUtil;
 
 public class AnalyzeOutput {
 
-	public static SimpleDateFormat SDF_OuputFile = new SimpleDateFormat("yyyyMMdd.HHmmss");
+	public static final SimpleDateFormat SDF_OutputFile = new SimpleDateFormat("yyyyMMdd.HHmmss");
 
 	private AnalyzerSetting setting = null;
 	private ObjectDBUtil db = null;
@@ -24,7 +24,7 @@ public class AnalyzeOutput {
 
 	public AnalyzeOutput(AnalyzerSetting setting) {
 		this.setting = setting;
-		SDF_OuputFile.setTimeZone(setting.getAnalyzerTimezone());
+		SDF_OutputFile.setTimeZone(setting.getAnalyzerTimezone());
 	}
 
 	public AnalyzerSetting getAnalyzerSetting() {
@@ -32,7 +32,7 @@ public class AnalyzeOutput {
 	}
 	
 	public String getFileName() {
-		return Constant.OUTPUT_FILENAME_PREFIX + "_" + setting.getTitle() + "_" + DateUtil.dateToString(setting.getAnalyzeDate(), SDF_OuputFile);
+		return Constant.OUTPUT_FILENAME_PREFIX + "_" + setting.getTitle() + "_" + DateUtil.dateToString(setting.getAnalyzeDate(), SDF_OutputFile);
 	}
 	
 	public void initDatabase() {

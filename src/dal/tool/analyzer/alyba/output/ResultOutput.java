@@ -17,15 +17,15 @@ public abstract class ResultOutput {
 
 	protected static enum Type { TPM, DAY, HOUR, URI, IP, METHOD, VERSION, EXTENSION, CODE, BAD_TIME, BAD_BYTE, BAD_CODE };
 
-	protected static DecimalFormat DF_Percent = new DecimalFormat("##0.000");
-	protected static DecimalFormat DF_FloatPoint = new DecimalFormat("0.0");
-	protected static SimpleDateFormat SDF_DateSecondTZ = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss z");
-	protected static SimpleDateFormat SDF_DateSecond = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
-	protected static SimpleDateFormat SDF_DateOnly = new SimpleDateFormat("yyyy.MM.dd");
-	protected static SimpleDateFormat SDF_HourOnly = new SimpleDateFormat("HH:mm");
-	protected static SimpleDateFormat SDF_DateMinute = new SimpleDateFormat("yyyy.MM.dd HH:mm");
-	protected static SimpleDateFormat SDF_NoDateMinute = new SimpleDateFormat("HH:mm");
-	protected static SimpleDateFormat SDF_OuputFile = new SimpleDateFormat("yyyyMMdd.HHmm");
+	protected static final DecimalFormat DF_Percent = new DecimalFormat("##0.000");
+	protected static final DecimalFormat DF_FloatPoint = new DecimalFormat("0.0");
+	protected static final SimpleDateFormat SDF_DateSecondTZ = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss z");
+	protected static final SimpleDateFormat SDF_DateSecond = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
+	protected static final SimpleDateFormat SDF_DateOnly = new SimpleDateFormat("yyyy.MM.dd");
+	protected static final SimpleDateFormat SDF_HourOnly = new SimpleDateFormat("HH:mm");
+	protected static final SimpleDateFormat SDF_DateMinute = new SimpleDateFormat("yyyy.MM.dd HH:mm");
+	protected static final SimpleDateFormat SDF_NoDateMinute = new SimpleDateFormat("HH:mm");
+	protected static final SimpleDateFormat SDF_OuputFile = new SimpleDateFormat("yyyyMMdd.HHmm");
 
 	protected AnalyzerSetting setting = null;
 	protected ObjectDBUtil db = null;

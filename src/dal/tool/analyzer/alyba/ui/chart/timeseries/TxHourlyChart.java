@@ -16,7 +16,7 @@ import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
 
 public class TxHourlyChart extends TimeSeriesChart {
 
-	protected static Class<?> dataClass = HourlyEntryVO.class;
+	protected static final Class<?> DATA_CLASS = HourlyEntryVO.class;
 	
 	public TxHourlyChart() {
 		super("Hourly Transaction", "Time of Day", "Transactions");

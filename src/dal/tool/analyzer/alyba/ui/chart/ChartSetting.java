@@ -14,14 +14,14 @@ public abstract class ChartSetting extends Composite {
 		this.result_chart = result_chart;
 	}
 
-	public void setVisible(boolean visible) {
-		if(!getVisible() && visible) {
-			reset();
-		}
-		super.setVisible(visible);
-	}
+//	public void setVisible(boolean visible) {
+//		if(!getVisible() && visible) {
+//			reset();
+//		}
+//		super.setVisible(visible);
+//	}
 
-	protected abstract void reset();
+	public abstract void reset(Chart chart);
 	public abstract void configure(Chart chart);
 	
 }

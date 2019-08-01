@@ -13,7 +13,7 @@ public abstract class Chart {
 
 	public static enum Type { TimeSeries, VerticalBar, HorizontalBar, Pie, ScatterPlot };
 
-	protected static Class<?> dataClass = null;
+	protected static final Class<?> DATA_CLASS = null;
 
 	protected Type chartType;
 	protected ChartPanel chartPanel;
@@ -34,9 +34,9 @@ public abstract class Chart {
 	}
 	
 	public static Class<?> getDataClass() {
-		return dataClass;
+		return DATA_CLASS;
 	}
-
+	
 	public ChartPanel getChartPanel() {
 		if(chartPanel == null) {
 			chartPanel = new ChartPanel(jfreeChart);
@@ -105,7 +105,20 @@ public abstract class Chart {
 	public void afterCreateChartPanel(ChartPanel chartPanel) {
 	}
 
-	public abstract boolean checkChartType(Type chartType);
+	public boolean checkChartType(Type chartType) {
+		if(getSupportChartTypes() == null) {
+			return false;
+		}
+		for(Type t : getSupportChartTypes()) {
+			if(t == chartType) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public abstract Type[] getSupportChartTypes();
+	public abstract Type getDefaultChartType();	
 	protected abstract <E extends EntryVO> void createDataset(List<E> dataList);
 	public abstract void createChart();
 	

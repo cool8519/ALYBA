@@ -34,14 +34,11 @@ import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.ui.chart.Chart;
-import dal.tool.analyzer.alyba.ui.chart.ChartSetting;
-import dal.tool.analyzer.alyba.ui.chart.KeyValueChart;
-import dal.tool.analyzer.alyba.ui.chart.KeyValueChartSetting;
-import dal.tool.analyzer.alyba.ui.chart.ScatterPlotChart;
-import dal.tool.analyzer.alyba.ui.chart.ScatterPlotChartSetting;
-import dal.tool.analyzer.alyba.ui.chart.TimeSeriesChart;
-import dal.tool.analyzer.alyba.ui.chart.TimeSeriesChartSetting;
 import dal.tool.analyzer.alyba.ui.chart.Chart.Type;
+import dal.tool.analyzer.alyba.ui.chart.ChartSetting;
+import dal.tool.analyzer.alyba.ui.chart.KeyValueChartSetting;
+import dal.tool.analyzer.alyba.ui.chart.ScatterPlotChartSetting;
+import dal.tool.analyzer.alyba.ui.chart.TimeSeriesChartSetting;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.CodeChart;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.ExtChart;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.IpChart;
@@ -81,7 +78,7 @@ public class ResultChart extends Composite {
 	private ToolItem ti_pie;
 	private ToolItem ti_scatter;
 	private Frame frame_chart;
-	private String current_data;
+	private String current_data_name;
 	private Chart current_chart;
 	private ChartSetting current_setting;
 	private ChartSetting chart_setting_ts;
@@ -117,7 +114,7 @@ public class ResultChart extends Composite {
 		addEventListener();
 	}
 
-	public void initDatabase() {
+	public void initDatabase() throws Exception {
 		if(db != null) {
 			db.close(em);
 		}
@@ -276,31 +273,31 @@ public class ResultChart extends Composite {
 
 		ti_line.addListener(SWT.Selection, new Listener() {			
 			public void handleEvent(Event e) {
-				drawChart(Type.TimeSeries, cb_data.getText(), current_setting);
+				drawChart(Type.TimeSeries, cb_data.getText());
 			}
 		});
 
 		ti_vbar.addListener(SWT.Selection, new Listener() {			
 			public void handleEvent(Event e) {
-				drawChart(Type.VerticalBar, cb_data.getText(), current_setting);
+				drawChart(Type.VerticalBar, cb_data.getText());
 			}
 		});
 		
 		ti_hbar.addListener(SWT.Selection, new Listener() {			
 			public void handleEvent(Event e) {
-				drawChart(Type.HorizontalBar, cb_data.getText(), current_setting);
+				drawChart(Type.HorizontalBar, cb_data.getText());
 			}
 		});
 
 		ti_pie.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event e) {
-				drawChart(Type.Pie, cb_data.getText(), current_setting);
+				drawChart(Type.Pie, cb_data.getText());
 			}
 		});
 
 		ti_scatter.addListener(SWT.Selection, new Listener() {			
 			public void handleEvent(Event e) {
-				drawChart(Type.ScatterPlot, cb_data.getText(), current_setting);
+				drawChart(Type.ScatterPlot, cb_data.getText());
 			}
 		});
 
@@ -342,24 +339,58 @@ public class ResultChart extends Composite {
 		}
 	}
 	
-	private <E extends EntryVO> void dataSelected(String name) {
-		if(!name.equals(current_data)) {
-			current_data = name;
+	private <E extends EntryVO> void dataSelected(String dataName) {
+		if(!dataName.equals(current_data_name)) {
+			current_data_name = dataName;			
 			if(current_setting != null) {
 				current_setting.setVisible(false);
 			}
-			current_setting = getChartSetting(getChartTypeByName(name));
-			drawChart(null, name, current_setting);
+			resetChartSettings(dataName);
+			drawChart(null, dataName);
 		}
 	}
 	
 	@SuppressWarnings("unchecked")
-	private <E extends EntryVO> void drawChart(Type chartType, String name, ChartSetting chartSetting) {
+	private void resetChartSettings(String name) {
+		try {
+			Class<Chart> chartClass = (Class<Chart>)map_data.get(name);
+			Chart chart = chartClass.newInstance();
+			boolean resetTS = false;
+			boolean resetKV = false;
+			boolean resetSP = false;
+			for(Type type : chart.getSupportChartTypes()) {
+				if(!resetTS && type == Type.TimeSeries) {
+					chart_setting_ts.reset(chart);
+					resetTS = true;
+				} else if(!resetKV && (type == Type.VerticalBar || type == Type.HorizontalBar || type == Type.Pie)) {
+					chart_setting_kv.reset(chart);
+					resetKV = true;
+				} else if(!resetSP && type == Type.ScatterPlot) {
+					chart_setting_sp.reset(chart);
+					resetSP = true;
+				}
+			}
+		} catch(Exception e) {
+			Logger.error(e);
+		}		
+	}
+
+	@SuppressWarnings("unchecked")
+	private <E extends EntryVO> void drawChart(Type chartType, String name) {
 		frame_chart.removeAll();		
 		try {
 			Class<Chart> chartClass = (Class<Chart>)map_data.get(name);
 			Class<E> dataClass = (Class<E>)getDataClassOfChart(chartClass);
-			String dataType = getDataTypeByName(name);
+			String dataType = getDataTypeByName(name);			
+			Chart chart = chartClass.newInstance();
+			chart.setType(chartType==null ? chart.getDefaultChartType() : chartType);
+			ChartSetting chartSetting = getChartSetting(chart.getType());			
+			current_chart = chart;
+			current_setting = chartSetting;
+			checkChartType(chart);
+			if(chartSetting != null) {
+				chartSetting.configure(chart);
+			}			
 			List<E> dataList;
 			String query;
 			String condition = (dataType!=null) ? ("WHERE t.type = '"+dataType+"' ") : "";
@@ -370,15 +401,6 @@ public class ResultChart extends Composite {
 				query = "SELECT t FROM " + dataClass.getSimpleName() + " AS t " + condition;
 				dataList = db.selectList(em, query, dataClass, null);
 			}
-			Chart chart = chartClass.newInstance();
-			current_chart = chart;
-			if(chartType != null) {
-				chart.setType(chartType);
-			}
-			checkChartType(chart);
-			if(chartSetting != null) {
-				chartSetting.configure(chart);
-			}
 			chart.draw(dataList);
 			ChartPanel chartPanel = chart.getChartPanel();
 			chartPanel.setPreferredSize(frame_chart.getSize());
@@ -386,7 +408,7 @@ public class ResultChart extends Composite {
 			frame_chart.setVisible(true);
 			tb_charttype.setEnabled(true);
 			comp_chart.setFocus();
-			current_data = name;
+			current_data_name = name;
 		} catch(Exception e) {
 			Logger.error(e);
 			frame_chart.removeAll();
@@ -405,16 +427,19 @@ public class ResultChart extends Composite {
 		tb_charttype.setEnabled(false);
 		frame_chart.removeAll();
 		frame_chart.setVisible(false);
+		chart_setting_ts.reset(null);
+		chart_setting_kv.reset(null);
+		chart_setting_sp.reset(null);
 		chart_setting_ts.setVisible(false);
 		chart_setting_kv.setVisible(false);
 		chart_setting_sp.setVisible(false);
-		current_data = null;
+		current_data_name = null;
 	}
 	
 	private Class<?> getDataClassOfChart(Class<?> chart_class) {
 		try { 
 			for(Field f : ReflectionUtil.getFields(chart_class)) {
-				if("dataClass".equals(f.getName())) {
+				if("DATA_CLASS".equals(f.getName())) {
 					f.setAccessible(true);
 					return (Class<?>)f.get(null);
 				}
@@ -466,24 +491,11 @@ public class ResultChart extends Composite {
 	}
 	
 	public void clickApplyButton() {
-		drawChart(current_chart.getType(), cb_data.getText(), current_setting);
+		drawChart(current_chart.getType(), cb_data.getText());
 	}
 	
 	public Chart getCurrentChart() {
 		return current_chart;
-	}
-	
-	@SuppressWarnings("unchecked")
-	public Type getChartTypeByName(String name) {
-		Class<Chart> chartClass = (Class<Chart>)map_data.get(name);
-		if(TimeSeriesChart.class.isAssignableFrom(chartClass)) {
-			return Type.TimeSeries;
-		} else if(KeyValueChart.class.isAssignableFrom(chartClass)) {
-			return Type.VerticalBar;
-		} else if(ScatterPlotChart.class.isAssignableFrom(chartClass)) {
-			return Type.ScatterPlot;
-		}
-		return null;
 	}
 	
 	private String getDataTypeByName(String name) {

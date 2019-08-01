@@ -10,12 +10,14 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 
+import dal.tool.analyzer.alyba.setting.AnalyzerSetting;
+
 @Entity
 public abstract class DateEntryVO extends EntryVO {
 
 	private static final long serialVersionUID = 1L;
 
-	private static DecimalFormat ratioFormat = new DecimalFormat("##0.000");
+	private static final DecimalFormat DF_RATIO = new DecimalFormat("##0.000");
 
 	@Id
 	private Date unit_date = null;
@@ -54,28 +56,40 @@ public abstract class DateEntryVO extends EntryVO {
 		req_count++;
 	}
 
-	public void addData(ResponseEntryVO vo) {
+	public void addData(ResponseEntryVO vo, AnalyzerSetting setting) {
 		req_count++;
-		if(vo.getRequestIP() != null) {
-			if(request_ip_list.contains(vo.getRequestIP()) == false) {
-				request_ip_list.add(vo.getRequestIP());
+		if(setting.fieldMapping.isMappedIP()) {
+			if(vo.getRequestIP() != null) {
+				if(request_ip_list.contains(vo.getRequestIP()) == false) {
+					request_ip_list.add(vo.getRequestIP());
+				}
 			}
 		}
-		avg_response_time = ((avg_response_time * (req_count - 1)) + vo.getResponseTime()) / req_count;
-		if(max_response_time == null || vo.getResponseTime() > max_response_time.getResponseTime()) {
-			max_response_time = vo;
-		}
-		avg_response_byte = ((avg_response_byte * (req_count - 1)) + vo.getResponseBytes()) / req_count;
-		if(max_response_byte == null || vo.getResponseBytes() > max_response_byte.getResponseBytes()) {
-			max_response_byte = vo;
-		}
-		if(vo.getResponseCode() != null && (vo.getResponseCode().startsWith("4") || vo.getResponseCode().startsWith("5"))) {
-			if(last_error == null || vo.getResponseDate().compareTo(last_error.getResponseDate()) > 0) {
-				last_error = vo;
+		if(setting.fieldMapping.isMappedElapsed()) {
+			avg_response_time = ((avg_response_time * (req_count - 1)) + vo.getResponseTime()) / req_count;
+			if(max_response_time == null || vo.getResponseTime() > max_response_time.getResponseTime()) {
+				max_response_time = vo;
 			}
-			err_count++;
+		} else {
+			avg_response_time = -1D;
 		}
-		setErrorRatio();
+		if(setting.fieldMapping.isMappedBytes()) {
+			avg_response_byte = ((avg_response_byte * (req_count - 1)) + vo.getResponseBytes()) / req_count;
+			if(max_response_byte == null || vo.getResponseBytes() > max_response_byte.getResponseBytes()) {
+				max_response_byte = vo;
+			}
+		} else {
+			avg_response_byte = -1D;
+		}
+		if(setting.fieldMapping.isMappedCode()) {
+			if(vo.getResponseCode() != null && (vo.getResponseCode().startsWith("4") || vo.getResponseCode().startsWith("5"))) {
+				if(last_error == null || vo.getResponseDate().compareTo(last_error.getResponseDate()) > 0) {
+					last_error = vo;
+				}
+				err_count++;
+			}
+			setErrorRatio();
+		}
 	}
 	
 	public void setErrorRatio() {
@@ -106,11 +120,11 @@ public abstract class DateEntryVO extends EntryVO {
 	}
 
 	public String getTotalRequestRatio() {
-		return ratioFormat.format(req_ratio);
+		return DF_RATIO.format(req_ratio);
 	}
 
 	public String getFilterdRequestRatio() {
-		return ratioFormat.format(filter_req_ratio);
+		return DF_RATIO.format(filter_req_ratio);
 	}
 
 	public double getAverageResponseTime() {
@@ -134,11 +148,11 @@ public abstract class DateEntryVO extends EntryVO {
 	}
 
 	public String getFilterErrorRatio() {
-		return ratioFormat.format(filter_err_ratio);
+		return DF_RATIO.format(filter_err_ratio);
 	}
 
 	public String getEntryErrorRatio() {
-		return ratioFormat.format(entry_err_ratio);
+		return DF_RATIO.format(entry_err_ratio);
 	}
 
 	public ResponseEntryVO getLastError() {

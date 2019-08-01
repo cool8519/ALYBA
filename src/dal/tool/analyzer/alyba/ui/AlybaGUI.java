@@ -22,6 +22,7 @@ import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.DND;
+import org.eclipse.swt.dnd.DropTarget;
 import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.events.HelpEvent;
@@ -82,9 +83,10 @@ import dal.util.swt.SWTResourceManager;
 
 public class AlybaGUI {
 
+	public static final TimeZone TIMEZONE = TimeZone.getDefault();
+
 	public static AlybaGUI instance = null;
 	public static boolean debugMode = false;
-	public static TimeZone timeZone = TimeZone.getDefault();
 	public DebugConsole console = null;
 	public ResultAnalyzer resultAnalyzer = null;
 
@@ -182,7 +184,6 @@ public class AlybaGUI {
 					if(instance != null) {
 						instance.debug(t);
 					}
-					t.printStackTrace();
 					isRead = false;
 				}
 				if(!isRead) {
@@ -348,7 +349,7 @@ public class AlybaGUI {
 		heapstatus.setFont(Utility.getFont());
 		heapstatus.setBounds(570, 668, 150, 18);
 		
-		optionSetting.reset();
+		resetSetting();
 	}
 
 	protected void addEventListener() {
@@ -541,6 +542,24 @@ public class AlybaGUI {
 			public void dragEnter(DropTargetEvent event) {}
 		});
 
+		DropTarget confDropTarget = new DropTarget(shell, DND.DROP_MOVE | DND.DROP_COPY);
+		confDropTarget.setTransfer(Constant.FILE_TRANSFER_TYPE);
+		confDropTarget.addDropListener(new DropTargetListener() {
+			public void drop(DropTargetEvent event) {
+				String[] sourceFileList = (String[])event.data;
+				if(sourceFileList.length > 1) {
+					MessageUtil.showErrorMessage(shell, "More than one file is not allowed.");					
+				} else {
+					loadSetting(new File(sourceFileList[0]));
+				}
+			}
+			public void dropAccept(DropTargetEvent event) {}
+			public void dragOver(DropTargetEvent event) {}
+			public void dragOperationChanged(DropTargetEvent event) {}
+			public void dragLeave(DropTargetEvent event) {}
+			public void dragEnter(DropTargetEvent event) {}
+		});
+
 	}
 
 	protected void resetAll() {
@@ -572,7 +591,7 @@ public class AlybaGUI {
 		optionSetting.setEnabled(true);
 		tbi_option.setControl(optionSetting);
 
-		optionSetting.reset();
+		resetSetting();
 		tbf_setting.setSelection(0);
 	}
 
@@ -647,7 +666,7 @@ public class AlybaGUI {
 					cnt++;
 				}
 			} catch(Exception ex) {
-				ex.printStackTrace();
+				debug(ex);
 			}
 		}
 		if(cnt > 0) {
@@ -767,7 +786,6 @@ public class AlybaGUI {
 				filterSetting.updateFromDate(from);
 				filterSetting.updateToDate(to);
 			} catch(Exception e) {
-				e.printStackTrace();
 				debug(e);
 			}
 		} else {
@@ -853,20 +871,39 @@ public class AlybaGUI {
 	}
 
 	public void loadSetting(File f) {
-		try {
-			loadSetting(new FileInputStream(f));
-			debug("Load a setting : " + f.getAbsolutePath());
-		} catch(Exception e) {
-			e.printStackTrace();
-			debug(e);
+		if(f == null) {
+			MessageUtil.showErrorMessage(shell, "Invalid Setting File.");
+		} else {
+			int idx = f.getName().lastIndexOf('.');
+			if(idx < 1 || !f.getName().substring(idx+1).equals("alb")) {
+				MessageUtil.showErrorMessage(shell, "The extension of Setting File must be '.alb'.");
+			} else {
+				String msg = "The current setting will be replaced with this setting.\nThe mapping data won't be applied.\n\nDo you really want to load this setting?";
+				if(MessageUtil.showConfirmMessage(shell, msg)) {
+					try {
+						loadSetting(new FileInputStream(f));
+						debug("Load a setting : " + f.getAbsolutePath());
+					} catch(Exception e) {
+						debug(e);
+					}
+				}
+			}
 		}
-	}
+	}	
 
 	@SuppressWarnings("unchecked")
 	public void loadSetting(InputStream is) {
 		List<Object> readData = FileUtil.readObjectFile(is);
 		try {
-			for(int i = 0; i < readData.size(); i++) {
+			boolean loadMappingData = false;
+			if(readData.size() > 31) {
+				loadMappingData = MessageUtil.showYesNoMessage(shell, "The setting file contains mapping data.\n\nDo you want to load mapping data as well?");
+			}
+			if(readData.size() < 31 || (loadMappingData && readData.size() < 39)) {
+				throw new Exception("The number of items in the setting file is insufficient : size=" + readData.size());
+			}
+			int i = 0;
+			for(; i < 31; i++) {
 				Object obj = readData.get(i);
 				switch(i) {
 					case 0:
@@ -989,14 +1026,39 @@ public class AlybaGUI {
 						break;
 				}
 			}
+			
+			if(loadMappingData) {
+				FieldMappingInfo mappingInfo = new FieldMappingInfo();
+				mappingInfo.setLogType((String)readData.get(i++));
+				mappingInfo.setFieldDelimeter((String)readData.get(i++));
+				mappingInfo.setFieldBracelet((String)readData.get(i++));
+				mappingInfo.setOffsetHour(Float.valueOf((String)readData.get(i++)));
+				mappingInfo.setTimeFormat((String)readData.get(i++));
+				mappingInfo.setTimeLocale((Locale)readData.get(i++));
+				mappingInfo.setElapsedUnit((String)readData.get(i++));
+				mappingInfo.setMappingInfo((HashMap<String, String>)readData.get(i++));				
+
+				fieldMapping.txt_delimeter.setText(mappingInfo.getFieldDelimeter());
+				fieldMapping.txt_bracelet.setText(mappingInfo.getFieldBracelet());
+				fieldMapping.spn_offset.setSelection((int)(mappingInfo.getOffsetHour()*10));
+				fieldMapping.cb_timeFormat.setText(mappingInfo.getTimeFormat());
+				fieldMapping.setTimeLocale(mappingInfo.getTimeLocale());
+				fieldMapping.cb_elapsedUnit.setText(mappingInfo.getElapsedUnit());				
+				if(tbl_files.getItemCount() > 0) {
+					fieldMapping.cb_logType.setText(mappingInfo.getLogType());
+					fieldMapping.autoMapping(mappingInfo);
+				} else {
+					MessageUtil.showWarningMessage(shell, "Fields can not be mapped without a log file.\nOpen the log file first.\n\nMapping data is ignored.");
+				}
+			}
 		} catch(Exception e) {
-			e.printStackTrace();
 			debug(e);
 			MessageUtil.showErrorMessage(shell, "Invalid Setting File.");
 		}
 	}
 
 	public void saveSetting(File f) {
+		boolean saveMappingData = MessageUtil.showYesNoMessage(shell, "Do you want to include the mapping data in the file?");
 		List<Object> writeData = new ArrayList<Object>();
 		writeData.add(Constant.SETTING_FILE_HEADER);
 		writeData.add(filterSetting.checkAllRangeEnable());
@@ -1029,9 +1091,30 @@ public class AlybaGUI {
 		writeData.add(optionSetting.checkCollectErrors());
 		writeData.add(optionSetting.checkCollectIP());
 		writeData.add(optionSetting.checkCollectTPS());
+		if(saveMappingData) {
+			writeData.add(fieldMapping.getLogType());
+			writeData.add(fieldMapping.getDelimeter());
+			writeData.add(fieldMapping.getBracelet());
+			writeData.add(fieldMapping.getOffsetHour());
+			writeData.add(fieldMapping.getTimeFormat());
+			writeData.add(fieldMapping.getTimeLocale());
+			writeData.add(fieldMapping.getElapsedUnit());
+			writeData.add(fieldMapping.getMappingData());
+		}
 		FileUtil.writeObjectFile(f, writeData, false);
 
 		debug("Save this setting : " + f.getAbsolutePath());
+	}
+
+	public void resetSetting() {
+		InputStream is = null;
+		try {
+			is = ClassLoader.getSystemResource(Constant.FILE_PATH_DEFAULTSETTING).openStream();
+			loadSetting(is);
+			outputSetting.txt_directory.setText(Constant.OUTPUT_DEFAULT_DIRECTORY);
+		} catch(IOException ioe) {
+			debug(ioe);
+		}
 	}
 
 	protected void executeAnalyze() {
@@ -1057,7 +1140,6 @@ public class AlybaGUI {
 				}
 			}
 		} catch(Exception e) {
-			e.printStackTrace();
 			debug(e);
 		}
 		if(!MessageUtil.showConfirmMessage(shell, "Do you want to analyze the files with current setting?")) {
@@ -1077,7 +1159,6 @@ public class AlybaGUI {
 		try {
 			debug("Opened the database : dbfile=" + db.getDBFilePath());
 		} catch(Exception e) {
-			e.printStackTrace();
 			debug(e);
 		}
 		
@@ -1140,7 +1221,6 @@ public class AlybaGUI {
 				db.closeAndDeleteDB();
 			}
 		} catch(Exception e) {
-			e.printStackTrace();
 			debug(e);
 		}
 		
@@ -1161,7 +1241,6 @@ public class AlybaGUI {
 						try {
 							resultAnalyzer.loadDBFile(db.getDBFilePath());
 						} catch(Exception e) {
-							e.printStackTrace();
 							debug(e);
 							MessageUtil.showErrorMessage(shell, "Failed to load the database.");
 							resultAnalyzer.setVisible(false);
@@ -1190,8 +1269,9 @@ public class AlybaGUI {
 		output_task = null;
 	}
 	
-	private AnalyzerSetting getAnalyzerSetting() {		
+	private AnalyzerSetting getAnalyzerSetting() {
 		FieldMappingInfo fieldMappingInfo = new FieldMappingInfo();
+		fieldMappingInfo.setLogType(fieldMapping.getLogType());
 		fieldMappingInfo.setFieldDelimeter(StringUtil.replaceMetaCharacter(fieldMapping.getDelimeter(), false));
 		fieldMappingInfo.setFieldBracelet(fieldMapping.getBracelet());
 		fieldMappingInfo.setMappingInfo(fieldMapping.getMappingData());
@@ -1216,7 +1296,7 @@ public class AlybaGUI {
 
 		AnalyzerSetting setting = new AnalyzerSetting();
 		setting.setTitle(txt_title.getText());
-		setting.setAnalyzerTimezone(timeZone);
+		setting.setAnalyzerTimezone(TIMEZONE);
 		setting.setLogFileList(getLogFileList());
 		setting.setLogFileEncodingList(fieldMapping.getFileEncoding());
 		setting.setOutputExcelType(outputSetting.checkExcelType());

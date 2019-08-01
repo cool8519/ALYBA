@@ -13,7 +13,7 @@ import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
 
 public class TxPerSecChart extends TimeSeriesChart {
 
-	protected static Class<?> dataClass = TPSEntryVO.class;
+	protected static final Class<?> DATA_CLASS = TPSEntryVO.class;
 	
 	public TxPerSecChart() {
 		super("Transaction Per Second(s)", "Time", "Transactions");

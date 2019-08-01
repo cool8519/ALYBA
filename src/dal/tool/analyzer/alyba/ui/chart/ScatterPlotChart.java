@@ -28,20 +28,24 @@ import org.jfree.data.Range;
 import org.jfree.data.function.LineFunction2D;
 import org.jfree.data.general.DatasetUtilities;
 import org.jfree.data.time.DateRange;
+import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.TextAnchor;
 
 import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SettingEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.ui.Logger;
+import dal.tool.analyzer.alyba.ui.chart.extension.MultiLineXYPointerAnnotation;
 import dal.util.DateUtil;
 import dal.util.NumberUtil;
 import dal.util.db.ObjectDBUtil;
 
 public abstract class ScatterPlotChart extends Chart {
 
-	protected static Class<?> dataClass = ResponseEntryVO.class;
+	protected static final Class<?> DATA_CLASS = ResponseEntryVO.class;
 
 	protected String label_x = "X";
 	protected String label_y = "Y";
@@ -136,9 +140,13 @@ public abstract class ScatterPlotChart extends Chart {
 		this.show_regression_equation = show_regression_equation;
 	}
 
-	public boolean checkChartType(Type chartType) {
-		return chartType == Type.ScatterPlot;
-	}	
+	public Type[] getSupportChartTypes() {
+		return new Type[] { Type.ScatterPlot };
+	}
+	
+	public Type getDefaultChartType() {
+		return Type.ScatterPlot;
+	}
 
 	public void createChart() {
 		jfreeChart = ChartFactory.createScatterPlot(title, label_x, label_y, dataset, PlotOrientation.VERTICAL, true, true, false);
@@ -210,26 +218,13 @@ public abstract class ScatterPlotChart extends Chart {
 			public void chartMouseMoved(ChartMouseEvent event) {}
 			public void chartMouseClicked(ChartMouseEvent event) {
 				if(event.getEntity() instanceof XYItemEntity) {
-					XYItemEntity entity = (XYItemEntity)event.getEntity();
-					Date dt = new Date((long)dataset.getXValue(entity.getSeriesIndex(), entity.getItem()));
-					long val = (long)dataset.getYValue(entity.getSeriesIndex(), entity.getItem());
-					String str_dt = DateUtil.dateToString(dt, DateUtil.SDF_DATETIME);
-					String str_val = NumberUtil.numberToString(val, NumberUtil.DF_NO_DOT_THOUSAND);
-					String annotation_text = "\"" + str_dt + "\": " + str_val;
-					XYPlot xyPlot = (XYPlot)jfreeChart.getPlot();
-					XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, true);
-					renderer.setSeriesPaint(0, Color.BLACK);
-					int angle = getAngleForAnnotation(xyPlot, dt.getTime(), val); 
-				    XYPointerAnnotation annotation = new XYPointerAnnotation(annotation_text, dt.getTime(), val, Math.toRadians(angle));
-				    annotation.setTextAnchor(getTextAnchorByAngle(angle));
-				    renderer.addAnnotation(annotation);
-				    xyPlot.setRenderer(1, renderer);
+					showAnnotation((XYItemEntity)event.getEntity());
 				}
 			}
 		});
 	}
 	
-	private void setTimeRangeFromSetting(DateAxis dateAxis) {
+	protected void setTimeRangeFromSetting(DateAxis dateAxis) {
 		Date from, to;		
 		ObjectDBUtil db = null;
 		EntityManager em = null;
@@ -279,6 +274,30 @@ public abstract class ScatterPlotChart extends Chart {
 		String str_dt = DateUtil.dateToString(dt, DateUtil.SDF_DATETIME);
 		String str_val = NumberUtil.numberToString(val, NumberUtil.DF_NO_DOT_THOUSAND);
 		return "\"" + str_dt + "\": " + str_val;
+	}
+	
+	protected void showAnnotation(XYItemEntity entity) {		
+		XYSeries series = ((XYSeriesCollection)dataset).getSeries(entity.getSeriesIndex());
+		XYDataItem item = series.getDataItem(entity.getItem());
+		Date dt = new Date((long)item.getXValue());
+		long val = (long)item.getYValue();
+		String annotation_text = getAnnotationText(item);
+		XYPlot xyPlot = (XYPlot)jfreeChart.getPlot();
+		XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, true);
+		renderer.setSeriesPaint(0, Color.BLACK);
+		int angle = getAngleForAnnotation(xyPlot, dt.getTime(), val);
+		MultiLineXYPointerAnnotation annotation = new MultiLineXYPointerAnnotation(annotation_text, dt.getTime(), val, Math.toRadians(angle));
+	    annotation.setFont(new Font("Arial", 0, 11));
+	    annotation.setTextAnchor(getTextAnchorByAngle(angle));
+	    annotation.setBackgroundPaint(Color.WHITE);
+	    renderer.addAnnotation(annotation);
+	    xyPlot.setRenderer(1, renderer);
+	}
+
+	protected String getAnnotationText(XYDataItem item) {
+		Date dt = new Date((long)item.getXValue());
+		long val = (long)item.getYValue();
+		return "\"" + DateUtil.dateToString(dt, DateUtil.SDF_DATETIME) + "\": " + NumberUtil.numberToString(val, NumberUtil.DF_NO_DOT_THOUSAND);
 	}
 
 }

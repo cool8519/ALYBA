@@ -63,14 +63,14 @@ public class FieldMapping extends Composite {
 	private Locale timeLocale;
 
 	private Group grp_customizeMapping;
-	private CCombo cb_logType;
-	private CCombo cb_elapsedUnit;
-	private CCombo cb_timeFormat;
-	private Spinner spn_offset;
+	public CCombo cb_logType;
+	public CCombo cb_elapsedUnit;
+	public CCombo cb_timeFormat;
+	public Spinner spn_offset;
 	private Table tbl_line;
 	private TableViewer tblv_line;
-	private Text txt_delimeter;
-	private Text txt_bracelet;
+	public Text txt_delimeter;
+	public Text txt_bracelet;
 	private Text txt_uri;
 	private Text txt_time;
 	private Text txt_ip;
@@ -103,7 +103,19 @@ public class FieldMapping extends Composite {
 	public void setFilterSetting(FilterSetting filterSetting) {
 		this.filterSetting = filterSetting;
 	}
+	
+	public void setMappingData(HashMap<String, String> mappingData) {
+		this.mappingData = mappingData;
+	}
+	
+	public void setTimeLocale(Locale timeLocale) {
+		this.timeLocale = timeLocale;
+	}
 
+	public String getLogType() {
+		return cb_logType.getText();
+	}
+	
 	public String getBracelet() {
 		return txt_bracelet.getText();
 	}
@@ -823,7 +835,7 @@ public class FieldMapping extends Composite {
 		String elapsedStr = txt_elapsed.getText();
 		boolean ms = false;
 		try {
-			if(!NumberUtil.isNumber(elapsedStr)) {
+			if(!StringUtil.isNumeric(elapsedStr, false)) {
 				if(elapsedStr.endsWith("ms")) {
 					elapsedStr = elapsedStr.substring(0, elapsedStr.length() - 2);
 					ms = true;

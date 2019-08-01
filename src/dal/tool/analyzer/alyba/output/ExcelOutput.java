@@ -19,7 +19,6 @@ import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
 import dal.tool.analyzer.alyba.setting.AnalyzerSetting;
-import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.DateUtil;
 import dal.util.db.ObjectDBUtil;
 import dal.util.excel.ExcelColumn;
@@ -462,10 +461,8 @@ public class ExcelOutput extends ResultOutput {
 			} else {
 				KeyEntryVO entryVO = (KeyEntryVO)data.get(i);
 				row.add(entryVO.getKey());
-				if(type == Type.IP) {
-					row.add(Utility.getCountryFromIPv4(entryVO.getKey()));
-				} else if(type == Type.CODE) {
-					row.add(Utility.getCodeDescription(entryVO.getKey()));
+				if(type == Type.IP || type == Type.CODE) {
+					row.add(entryVO.getDescription());
 				}
 				row.add(entryVO.getRequestCount());
 				row.add(entryVO.getFilterdRequestRatio());

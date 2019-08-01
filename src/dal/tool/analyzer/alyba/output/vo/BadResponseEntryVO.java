@@ -5,8 +5,9 @@ import javax.persistence.Entity;
 @Entity
 public class BadResponseEntryVO extends ResponseEntryVO {
 
-	public static enum Type { TIME, SIZE, CODE };
 	private static final long serialVersionUID = 1L;
+
+	public static enum Type { TIME, SIZE, CODE };
 
 	protected String type; 
 	

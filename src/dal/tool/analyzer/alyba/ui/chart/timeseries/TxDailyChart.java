@@ -16,7 +16,7 @@ import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
 
 public class TxDailyChart extends TimeSeriesChart {
 
-	protected static Class<?> dataClass = DailyEntryVO.class;
+	protected static final Class<?> DATA_CLASS = DailyEntryVO.class;
 	
 	public TxDailyChart() {
 		super("Daily Transaction", "Time", "Transactions");

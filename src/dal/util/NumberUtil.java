@@ -43,14 +43,51 @@ public class NumberUtil {
 		}
 	}
 
-	public static boolean isNumber(String str) {
-		try {
-			Integer.parseInt(str);
-			return true;
-		} catch(NumberFormatException e) {
+	public static boolean isNumeric(String str, boolean allowFloat) {
+		if(str == null || "".equals(str.trim())) {
+			return false;
 		}
-		return false;
+		if(allowFloat) {
+	        if(str.charAt(str.length()-1) == '.') {
+	            return false;
+	        }
+	        if(str.charAt(0) == '-') {
+	            if(str.length() == 1) {
+	                return false;
+	            }
+	            return withDecimalsParsing(str, 1);
+	        }
+	        return withDecimalsParsing(str, 0);			
+		} else {
+			for(char c : str.toCharArray()) {
+				if(!Character.isDigit(c)) {
+					return false;
+				}
+			}
+			return true;
+		}
 	}
+
+	public static boolean isNumeric(String str) {
+		return isNumeric(str, false);
+	}
+
+    private static boolean withDecimalsParsing(String str, int beginIdx) {
+        int decimalPoints = 0;
+        for(int i = beginIdx; i < str.length(); i++) {
+            boolean isDecimalPoint = str.charAt(i) == '.';
+            if(isDecimalPoint) {
+                decimalPoints++;
+            }
+            if(decimalPoints > 1) {
+                return false;
+            }
+            if(!isDecimalPoint && !Character.isDigit(str.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
 
 	public static int getRandomNumber(int bound) {
 		if(bound < 0)

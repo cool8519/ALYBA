@@ -13,7 +13,7 @@ import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
 
 public class TxResPerMinChart extends TimeSeriesChart {
 
-	protected static Class<?> dataClass = TPMEntryVO.class;
+	protected static final Class<?> DATA_CLASS = TPMEntryVO.class;
 
 	public TxResPerMinChart() {
 		super("Transaction & ResponseTime Per Minute(s)", "Time", "Transactions");

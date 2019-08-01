@@ -101,13 +101,21 @@ public class ScatterPlotChartSetting extends ChartSetting {
 
 	}
 	
-	protected void reset() {
-		if(result_chart.getCurrentChart() != null) {
-			ScatterPlotChart chart = (ScatterPlotChart)result_chart.getCurrentChart();
-			scale_shape_size.setSelection(chart.getShapeSize());
-			chk_reg_linear.setSelection(chart.getShowLinearRegression());
-			chk_reg_equation.setSelection(chart.getShowRegressionEquation());
-			chk_reg_equation.setEnabled(chk_reg_linear.getSelection());
+	public void reset(Chart chart) {
+		if(chart != null) {
+			if(chart instanceof ScatterPlotChart) {
+				ScatterPlotChart spChart = (ScatterPlotChart)chart;
+				scale_shape_size.setSelection(spChart.getShapeSize());
+				chk_reg_linear.setSelection(spChart.getShowLinearRegression());
+				chk_reg_equation.setSelection(spChart.getShowRegressionEquation());
+				chk_reg_equation.setEnabled(chk_reg_linear.getSelection());
+			} else if(chart instanceof DistributionChart) {
+				DistributionChart distChart = (DistributionChart)chart;
+				scale_shape_size.setSelection(distChart.getShapeSize());
+				chk_reg_linear.setSelection(distChart.getShowLinearRegression());
+				chk_reg_equation.setSelection(distChart.getShowRegressionEquation());
+				chk_reg_equation.setEnabled(chk_reg_linear.getSelection());
+			}
 		} else {
 			scale_shape_size.setSelection(3);
 			chk_reg_linear.setSelection(false);
@@ -117,9 +125,16 @@ public class ScatterPlotChartSetting extends ChartSetting {
 	}
 	
 	public void configure(Chart chart) {
-		ScatterPlotChart sp_chart = (ScatterPlotChart)chart;
-		sp_chart.setShapeSize(scale_shape_size.getSelection());
-		sp_chart.setShowLinearRegression(chk_reg_linear.getSelection());
-		sp_chart.setShowRegressionEquation(chk_reg_equation.getSelection());
+		if(chart instanceof DistributionChart) {
+			DistributionChart dist_chart = (DistributionChart)chart;
+			dist_chart.setShapeSize(scale_shape_size.getSelection());
+			dist_chart.setShowLinearRegression(chk_reg_linear.getSelection());
+			dist_chart.setShowRegressionEquation(chk_reg_equation.getSelection());
+		} else {
+			ScatterPlotChart sp_chart = (ScatterPlotChart)chart;
+			sp_chart.setShapeSize(scale_shape_size.getSelection());
+			sp_chart.setShowLinearRegression(chk_reg_linear.getSelection());
+			sp_chart.setShowRegressionEquation(chk_reg_equation.getSelection());
+		}
 	}
 }

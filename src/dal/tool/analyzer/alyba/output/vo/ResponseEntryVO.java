@@ -8,6 +8,7 @@ import java.util.Date;
 import javax.persistence.Entity;
 
 import dal.util.DateUtil;
+import dal.util.NumberUtil;
 
 @Entity
 public class ResponseEntryVO extends EntryVO {
@@ -187,24 +188,82 @@ public class ResponseEntryVO extends EntryVO {
 		buffer.append("]");
 		return buffer.toString();
 	}
-	
-	public String toPrettyString() {
+
+	public String toJSONString() {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("{").append("\n");
 		buffer.append("  request : {").append("\n");
-		buffer.append("    date : ").append(request_date).append("\n");
-		buffer.append("    ip : ").append(request_ip).append("\n");
-		buffer.append("    uri : ").append(request_uri).append("\n");
-		buffer.append("    ext : ").append(request_ext).append("\n");
-		buffer.append("    method : ").append(request_method).append("\n");
-		buffer.append("    version : ").append(request_version).append("\n");
+		if(request_date != null) {
+			buffer.append("    date : ").append(DateUtil.dateToString(request_date, DateUtil.SDF_DATETIME)).append("\n");
+		}
+		if(request_ip != null) {
+			buffer.append("    ip : ").append(request_ip).append("\n");
+		}
+		if(request_uri != null) {
+			buffer.append("    uri : ").append(request_uri).append("\n");
+		}
+		if(request_ext != null) {
+			buffer.append("    ext : ").append(request_ext).append("\n");
+		}
+		if(request_method != null) {
+			buffer.append("    method : ").append(request_method).append("\n");
+		}
+		if(request_version != null) {
+			buffer.append("    version : ").append(request_version).append("\n");
+		}
 		buffer.append("  },").append("\n");
 		buffer.append("  response : {").append("\n");
-		buffer.append("    code : ").append(response_code).append("\n");
-		buffer.append("    byte : ").append(response_byte).append("\n");
-		buffer.append("    time : ").append(response_time).append("\n");
+		if(response_date != null) {
+			buffer.append("    date : ").append(DateUtil.dateToString(response_date, DateUtil.SDF_DATETIME)).append("\n");
+		}
+		if(response_code != null) {
+			buffer.append("    code : ").append(response_code).append("\n");
+		}
+		if(response_byte != -1L) {
+			buffer.append("    byte : ").append(NumberUtil.numberToString(response_byte, NumberUtil.DF_NO_DOT_THOUSAND)).append("\n");
+		}
+		if(response_time != -1L) {
+			buffer.append("    time : ").append(NumberUtil.numberToString(response_time, NumberUtil.DF_NO_DOT_THOUSAND)).append(" ms\n");
+		}
 		buffer.append("  }").append("\n");
 		buffer.append("}");
+		return buffer.toString();
+	}
+
+	public String toPrettyString() {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append("# Request").append("\n");
+		if(request_date != null) {
+			buffer.append("    date : ").append(DateUtil.dateToString(request_date, DateUtil.SDF_DATETIME)).append("\n");
+		}
+		if(request_ip != null) {
+			buffer.append("    ip : ").append(request_ip).append("\n");
+		}
+		if(request_uri != null) {
+			buffer.append("    uri : ").append(request_uri).append("\n");
+		}
+		if(request_ext != null) {
+			buffer.append("    ext : ").append(request_ext).append("\n");
+		}
+		if(request_method != null) {
+			buffer.append("    method : ").append(request_method).append("\n");
+		}
+		if(request_version != null) {
+			buffer.append("    version : ").append(request_version).append("\n");
+		}
+		buffer.append("# Response").append("\n");
+		if(response_date != null) {
+			buffer.append("    date : ").append(DateUtil.dateToString(response_date, DateUtil.SDF_DATETIME)).append("\n");
+		}
+		if(response_code != null) {
+			buffer.append("    code : ").append(response_code).append("\n");
+		}
+		if(response_byte != -1L) {
+			buffer.append("    byte : ").append(NumberUtil.numberToString(response_byte, NumberUtil.DF_NO_DOT_THOUSAND)).append("\n");
+		}
+		if(response_time != -1L) {
+			buffer.append("    time : ").append(NumberUtil.numberToString(response_time, NumberUtil.DF_NO_DOT_THOUSAND)).append(" ms\n");
+		}
 		return buffer.toString();
 	}
 

@@ -23,7 +23,6 @@ import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
 import dal.tool.analyzer.alyba.setting.AnalyzerSetting;
 import dal.tool.analyzer.alyba.util.Logger;
-import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.DateUtil;
 import dal.util.StringUtil;
 import dal.util.db.ObjectDBUtil;
@@ -276,10 +275,8 @@ public class HtmlOutput extends ResultOutput {
 					KeyEntryVO vo = (KeyEntryVO)data.get(i);
 					sb.append(td_front_right + (i + 1) + td_rear);
 					sb.append(td_front_center + vo.getKey() + td_rear);
-					if(type == Type.IP) {
-						sb.append(td_front_left + StringUtil.NVL(Utility.getCountryFromIPv4(vo.getKey()),"UNKNOWN") + td_rear);
-					} else if(type == Type.CODE) {
-						sb.append(td_front_left + StringUtil.NVL(Utility.getCodeDescription(vo.getKey()),"UNKNOWN") + td_rear);
+					if(type == Type.IP || type == Type.CODE) {
+						sb.append(td_front_left + StringUtil.NVL(vo.getDescription(),"UNKNOWN") + td_rear);
 					}
 					sb.append(td_front_right + vo.getRequestCount() + td_rear);
 					sb.append(td_front_right + vo.getFilterdRequestRatio() + td_rear);

@@ -20,7 +20,6 @@ import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
 import dal.tool.analyzer.alyba.setting.AnalyzerSetting;
 import dal.tool.analyzer.alyba.util.Logger;
-import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.DateUtil;
 import dal.util.console.Column;
 import dal.util.console.Fields;
@@ -386,10 +385,8 @@ public class TextOutput extends ResultOutput {
 				KeyEntryVO vo = (KeyEntryVO)data.get(i);
 				fields.addField(i + 1);
 				fields.addField(vo.getKey());
-				if(type == Type.IP) {
-					fields.addField(Utility.getCountryFromIPv4(vo.getKey()));
-				} else if(type == Type.CODE) {
-					fields.addField(Utility.getCodeDescription(vo.getKey()));
+				if(type == Type.IP || type == Type.CODE) {
+					fields.addField(vo.getDescription());
 				}
 				fields.addField(vo.getRequestCount());
 				fields.addField(vo.getFilterdRequestRatio());

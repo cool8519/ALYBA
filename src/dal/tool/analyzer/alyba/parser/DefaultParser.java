@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.output.vo.BadResponseEntryVO;
 import dal.tool.analyzer.alyba.output.vo.DailyEntryVO;
@@ -19,6 +20,7 @@ import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
 import dal.tool.analyzer.alyba.setting.AnalyzerSetting;
 import dal.tool.analyzer.alyba.ui.Logger;
+import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.DateUtil;
 
 public class DefaultParser extends LogLineParser {
@@ -117,7 +119,7 @@ public class DefaultParser extends LogLineParser {
 			result_vo = new TPMEntryVO(unit_dt);
 			aggr_tpm.add(result_vo);
 		}
-		result_vo.addData(vo);
+		result_vo.addData(vo, setting);
 	}
 
 	private void addAggregationDay(ResponseEntryVO vo) throws Exception {
@@ -125,10 +127,10 @@ public class DefaultParser extends LogLineParser {
 			return;
 		}
 		if(sdf_date == null) {
-			sdf_date = new SimpleDateFormat(sdf_str_date, setting.fieldMapping.timeLocale);
+			sdf_date = new SimpleDateFormat(STR_DATE, setting.fieldMapping.timeLocale);
 		}
 		if(sdf_datetime == null) {
-			sdf_datetime = new SimpleDateFormat(sdf_str_datetime, setting.fieldMapping.timeLocale);
+			sdf_datetime = new SimpleDateFormat(STR_DATETIME, setting.fieldMapping.timeLocale);
 		}
 		String date_str = sdf_date.format(vo.getResponseDate());
 		Date unit_dt = sdf_datetime.parse(date_str + " 00:00:00");
@@ -142,7 +144,7 @@ public class DefaultParser extends LogLineParser {
 			result_vo = new DailyEntryVO(unit_dt);
 			aggr_time.add(result_vo);
 		}
-		result_vo.addData(vo);
+		result_vo.addData(vo, setting);
 	}
 
 	private void addAggregationHour(ResponseEntryVO vo) throws Exception {
@@ -163,7 +165,7 @@ public class DefaultParser extends LogLineParser {
 			result_vo = new HourlyEntryVO(unit_dt);
 			aggr_time.add(result_vo);
 		}
-		result_vo.addData(vo);
+		result_vo.addData(vo, setting);
 	}
 
 	private void addAggregationCount(String dataKey, ResponseEntryVO vo) throws Exception {
@@ -199,29 +201,29 @@ public class DefaultParser extends LogLineParser {
 		if(result_vo == null) {
 			Logger.debug("Inserting new KeyEntry to memory : Type=" + dataKey + ", Key=" + data);
 			if(dataKey.equals("URI")) result_vo = new KeyEntryVO(KeyEntryVO.Type.URI, data);
-			else if(dataKey.equals("IP")) result_vo = new KeyEntryVO(KeyEntryVO.Type.IP, data);
+			else if(dataKey.equals("IP")) {result_vo = new KeyEntryVO(KeyEntryVO.Type.IP, data); result_vo.setDescription(Utility.getCountryFromIPv4(data));}
 			else if(dataKey.equals("EXT")) result_vo = new KeyEntryVO(KeyEntryVO.Type.EXT, data);
-			else if(dataKey.equals("CODE")) result_vo = new KeyEntryVO(KeyEntryVO.Type.CODE, data);
+			else if(dataKey.equals("CODE")) {result_vo = new KeyEntryVO(KeyEntryVO.Type.CODE, data); result_vo.setDescription(Utility.getCodeDescription(data));}
 			else if(dataKey.equals("METHOD"))result_vo = new KeyEntryVO(KeyEntryVO.Type.METHOD, data);
 			else if(dataKey.equals("VERSION")) result_vo = new KeyEntryVO(KeyEntryVO.Type.VERSION, data);			
 			aggr_data2.add(result_vo);
 		}
-		result_vo.addData(vo);
+		result_vo.addData(vo, setting);
 	}
 
 	private void addAggregationResponse(ResponseEntryVO vo) throws Exception {
 		long rtime = vo.getResponseTime();
 		long rbyte = vo.getResponseBytes();
 		String code = vo.getResponseCode();
-		if(setting.collectElapsedTime && rtime > 0 && rtime >= setting.collectElapsedTimeMS) {
+		if(setting.fieldMapping.isMappedElapsed() && setting.collectElapsedTime && rtime > 0 && rtime >= setting.collectElapsedTimeMS) {
 			Logger.debug("Inserting Response of time to DB : " + rtime);
 			db.insertWithTransaction(em, new BadResponseEntryVO(BadResponseEntryVO.Type.TIME, vo.copy()), false);
 		}
-		if(setting.collectResponseBytes && rbyte > 0 && (int)(rbyte / 1024) >= setting.collectResponseBytesKB) {
+		if(setting.fieldMapping.isMappedBytes() && setting.collectResponseBytes && rbyte > 0 && (int)(rbyte / 1024) >= setting.collectResponseBytesKB) {
 			Logger.debug("Inserting Response of size to DB : " + rbyte);
 			db.insertWithTransaction(em, new BadResponseEntryVO(BadResponseEntryVO.Type.SIZE, vo.copy()), false);
 		}
-		if(setting.collectErrors && code != null && (code.startsWith("4") || code.startsWith("5"))) {
+		if(setting.fieldMapping.isMappedCode() && setting.collectErrors && code != null && (code.startsWith("4") || code.startsWith("5"))) {
 			Logger.debug("Inserting Response of error to DB : " + code);
 			db.insertWithTransaction(em, new BadResponseEntryVO(BadResponseEntryVO.Type.CODE, vo.copy()), false);
 		}

@@ -14,9 +14,9 @@ import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
 
 public class IpResPerMinChart extends TimeSeriesChart {
 
-	protected static DecimalFormat DF_NUMBER = new DecimalFormat("0");
+	protected static final DecimalFormat DF_NUMBER = new DecimalFormat("0");
 
-	protected static Class<?> dataClass = TPMEntryVO.class;
+	protected static final Class<?> DATA_CLASS = TPMEntryVO.class;
 
 	public IpResPerMinChart() {
 		super("IP-Address & ResponseTime Per Minute(s)", "Time", "Number of IP-Address");

@@ -82,13 +82,12 @@ public class StringUtil {
 		}
 	}
 	
+	public static boolean isNumeric(String str, boolean allowFloat) {
+		return NumberUtil.isNumeric(str, allowFloat);
+	}
+
 	public static boolean isNumeric(String str) {
-		for(char c : str.toCharArray()) {
-			if(!Character.isDigit(c)) {
-				return false;
-			}
-		}
-		return true;
+		return NumberUtil.isNumeric(str, false);
 	}
 
 }

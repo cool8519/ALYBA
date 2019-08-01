@@ -41,8 +41,8 @@ import dal.util.swt.ProgressBarTask;
 
 public abstract class LogLineParser {
 
-	protected static String sdf_str_date = "yyyy.MM.dd";
-	protected static String sdf_str_datetime = "yyyy.MM.dd HH:mm:ss";
+	protected static final String STR_DATE = "yyyy.MM.dd";
+	protected static final String STR_DATETIME = "yyyy.MM.dd HH:mm:ss";
 
 	protected LogReaderThread thread = null;
 	protected AnalyzerSetting setting = null;
@@ -525,6 +525,12 @@ public abstract class LogLineParser {
 		}
 		if(!flag) {
 			vo = new TPMEntryVO(dt);
+			if(!setting.fieldMapping.isMappedElapsed()) {
+				vo.setAverageResponseTime(-1D);
+			}
+			if(!setting.fieldMapping.isMappedBytes()) {
+				vo.setAverageResponseBytes(-1D);
+			}
 			aggr_time.add(vo);
 		}
 	}
@@ -547,6 +553,12 @@ public abstract class LogLineParser {
 		}
 		if(!flag) {
 			vo = new TPSEntryVO(dt);
+			if(!setting.fieldMapping.isMappedElapsed()) {
+				vo.setAverageResponseTime(-1D);
+			}
+			if(!setting.fieldMapping.isMappedBytes()) {
+				vo.setAverageResponseBytes(-1D);
+			}
 			aggr_time.add(vo);
 		}
 	}
@@ -569,6 +581,12 @@ public abstract class LogLineParser {
 		}
 		if(!flag) {
 			vo = new DailyEntryVO(dt);
+			if(!setting.fieldMapping.isMappedElapsed()) {
+				vo.setAverageResponseTime(-1D);
+			}
+			if(!setting.fieldMapping.isMappedBytes()) {
+				vo.setAverageResponseBytes(-1D);
+			}
 			aggr_time.add(vo);
 		}
 	}
@@ -591,6 +609,12 @@ public abstract class LogLineParser {
 		}
 		if(!flag) {
 			vo = new HourlyEntryVO(dt);
+			if(!setting.fieldMapping.isMappedElapsed()) {
+				vo.setAverageResponseTime(-1D);
+			}
+			if(!setting.fieldMapping.isMappedBytes()) {
+				vo.setAverageResponseBytes(-1D);
+			}
 			aggr_time.add(vo);
 		}
 	}

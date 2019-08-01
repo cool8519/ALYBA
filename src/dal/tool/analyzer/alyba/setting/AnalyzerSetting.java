@@ -10,7 +10,7 @@ import dal.util.DateUtil;
 
 public class AnalyzerSetting {
 
-	private static SimpleDateFormat sdf_datetime_tz = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss z");
+	private static final SimpleDateFormat SDF_DATETIME_TZ = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss z");
 
 	public String title;
 	public TimeZone analyzerTimezone;
@@ -267,17 +267,19 @@ public class AnalyzerSetting {
 		sb.append("    FILELIST : " + getLogFileList() + "\n");
 		sb.append("    ENCODINGLIST : " + getLogFileEncodingList() + "\n");
 		sb.append("Mapping\n");
+		sb.append("    LOG TYPE : " + fieldMapping.getLogType() + "\n");
 		sb.append("    DELIMETER : " + fieldMapping.getFieldDelimeter() + "\n");
 		sb.append("    BRACELET : " + Arrays.asList(fieldMapping.getFieldBracelets()) + "\n");
 		sb.append("    MAPPING DATA : " + fieldMapping.getMappingInfo().toString() + "\n");
 		sb.append("    OFFSET HOUR : " + fieldMapping.getOffsetHour() + "\n");
 		sb.append("    TIME FORMAT : " + fieldMapping.getTimeFormat() + "\n");
+		sb.append("    TIME LOCALE : " + fieldMapping.getTimeLocale() + "\n");
 		sb.append("    ELAPSED UNIT : " + fieldMapping.getElapsedUnit() + "\n");
 		sb.append("    FIELD COUNT : " + fieldMapping.getLogFieldCount() + "\n");
 		sb.append("Filter\n");
 		sb.append("    CHECK ALL RANGE : " + filterSetting.isAllRangeEnable() + "\n");
-		sb.append("        FROM DATE RANGE : " + DateUtil.dateToString(filterSetting.getFromDateRange(), sdf_datetime_tz) + "\n");
-		sb.append("        TO DATE RANGE : " + DateUtil.dateToString(filterSetting.getToDateRange(), sdf_datetime_tz) + "\n");
+		sb.append("        FROM DATE RANGE : " + DateUtil.dateToString(filterSetting.getFromDateRange(), SDF_DATETIME_TZ) + "\n");
+		sb.append("        TO DATE RANGE : " + DateUtil.dateToString(filterSetting.getToDateRange(), SDF_DATETIME_TZ) + "\n");
 		sb.append("    INCLUDE FILETER ENABLE : " + filterSetting.isIncludeFilterEnable() + "\n");
 		sb.append("        CHECK OPERATOR : " + (filterSetting.isIncludeFilterAndCheck() ? "AND" : "OR") + "\n");
 		sb.append("        IGNORE CASE : " + filterSetting.isIncludeFilterIgnoreCase() + "\n");

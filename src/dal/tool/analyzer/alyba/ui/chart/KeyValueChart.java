@@ -25,10 +25,10 @@ import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
 
 public abstract class KeyValueChart extends Chart {
 
-	protected static DecimalFormat DF_NUMBER = new DecimalFormat("0");
-	protected static DecimalFormat DF_PERCENT = new DecimalFormat("0.00%");
+	protected static final DecimalFormat DF_NUMBER = new DecimalFormat("0");
+	protected static final DecimalFormat DF_PERCENT = new DecimalFormat("0.00%");
 
-	protected static Class<?> dataClass = KeyEntryVO.class;
+	protected static final Class<?> DATA_CLASS = KeyEntryVO.class;
 
 	protected String category_name = "";
 	protected String label_name = "Name";
@@ -40,16 +40,16 @@ public abstract class KeyValueChart extends Chart {
 	protected int max_item_count = 20;	
 	protected float min_item_percent = 1.0F;
 	
-	public KeyValueChart() {
-		super(Type.VerticalBar);
+	public KeyValueChart(Type chartType) {
+		super(chartType);
 	}
 
-	public KeyValueChart(String title) {
-		super(Type.VerticalBar, title);
+	public KeyValueChart(Type chartType, String title) {
+		super(chartType, title);
 	}
 
-	public KeyValueChart(String title, String label_name, String label_value) {
-		super(Type.VerticalBar, title);
+	public KeyValueChart(Type chartType, String title, String label_name, String label_value) {
+		super(chartType, title);
 		setLabel(label_name, label_value);
 	}
 
@@ -114,15 +114,20 @@ public abstract class KeyValueChart extends Chart {
 		this.min_item_percent = min_item_percent;
 	}
 
-	public boolean checkChartType(Type chartType) {
-		return (chartType == Type.VerticalBar || chartType == Type.HorizontalBar || chartType == Type.Pie);
+	public Type[] getSupportChartTypes() {
+		return new Type[] { Type.VerticalBar, Type.HorizontalBar, Type.Pie };
 	}
-		
+	
+	public Type getDefaultChartType() {
+		return Type.VerticalBar;
+	}
+
 	protected <E extends EntryVO> void createDataset(List<E> dataList) {
 		int total_item_count = dataList.size();
 		long sum_value = 0L;
 		int sum_count = 0;
 		int item_count = 0;
+		String last_other_name = null;
 
 		if(chartType == Type.Pie) {
 			pieDataset = new DefaultPieDataset();
@@ -132,6 +137,7 @@ public abstract class KeyValueChart extends Chart {
 		for(int i = 0; i < total_item_count; i++) {
 			KeyEntryVO vo = (KeyEntryVO)dataList.get(i);
 			if(merge_to_others && (Float.valueOf(vo.getFilterdRequestRatio()) < min_item_percent || item_count >= max_item_count)) {
+				last_other_name = vo.getKey();
 				sum_value += vo.getRequestCount();
 				sum_count++;
 			} else {
@@ -144,10 +150,11 @@ public abstract class KeyValueChart extends Chart {
 			}
 		}
 		if(sum_count > 0) {
+			String other_key = (sum_count==1) ? last_other_name : ("Others["+sum_count+"]");   
 			if(chartType == Type.Pie) {
-				pieDataset.setValue("Others["+sum_count+"]", sum_value);
+				pieDataset.setValue(other_key, sum_value);
 			} else {
-				categoryDataset.addValue(sum_value, category_name, "Others["+sum_count+"]");
+				categoryDataset.addValue(sum_value, category_name, other_key);
 			}
 		}
 	}	

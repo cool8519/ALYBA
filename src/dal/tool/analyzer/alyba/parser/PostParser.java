@@ -74,7 +74,7 @@ public class PostParser extends LogLineParser {
 			result_vo = new TPSEntryVO(unit_dt);
 			aggr_tps.add(result_vo);
 		}
-		result_vo.addData(vo);
+		result_vo.addData(vo, setting);
 	}
 
 	private Date checkAggregationTPSUnit(Date dt) throws Exception {

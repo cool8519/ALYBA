@@ -1,6 +1,11 @@
 package dal.tool.analyzer.alyba.ui.chart;
 
+import java.text.DecimalFormat;
+import java.util.Set;
+import java.util.TreeSet;
+
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.TableEditor;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FillLayout;
@@ -10,17 +15,30 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Spinner;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.widgets.Text;
 
+import dal.tool.analyzer.alyba.ui.Logger;
+import dal.tool.analyzer.alyba.ui.chart.keyvalue.IpChart;
 import dal.tool.analyzer.alyba.ui.comp.ResultChart;
+import dal.util.StringUtil;
 
 public class KeyValueChartSetting extends ChartSetting {
+
+	private static final DecimalFormat DF = new DecimalFormat("###,###");
 
 	private Group grp_setting;
 	private Button chk_merge;
 	private Button chk_item_label;
+	private Button chk_location;
+	private Button btn_boudary_def;
 	private Button btn_apply;
 	private Spinner sp_merge_max;
 	private Spinner sp_merge_pct;
@@ -28,6 +46,8 @@ public class KeyValueChartSetting extends ChartSetting {
 	private Label lb_merge_item;
 	private Label lb_merge_less;
 	private Label lb_merge_pct;
+	private Table tbl_boundary_values;
+	private TableEditor tbl_editor;
 
 	public KeyValueChartSetting(Composite parent, ResultChart result_chart) {
 		super(parent, result_chart);
@@ -41,7 +61,6 @@ public class KeyValueChartSetting extends ChartSetting {
 	    FormLayout forml_grp_left = new FormLayout();
 	    forml_grp_left.marginHeight = 15;
 	    forml_grp_left.marginWidth = 15;
-
 		grp_setting = new Group(this, SWT.NONE);
 		grp_setting.setLayout(forml_grp_left);
 
@@ -112,13 +131,52 @@ public class KeyValueChartSetting extends ChartSetting {
 		chk_item_label.setLayoutData(fd_chk_item_label);
 		chk_item_label.setText(" Item label");
 
+		FormData fd_chk_location = new FormData();
+		fd_chk_location.top = new FormAttachment(chk_item_label, 26);
+		fd_chk_location.left = new FormAttachment(chk_merge, 0, SWT.LEFT);
+		chk_location = new Button(grp_setting, SWT.CHECK);
+		chk_location.setLayoutData(fd_chk_location);
+		chk_location.setText(" by IP Location");
+		chk_location.setVisible(false);
+
+		FormData fd_boundary = new FormData();
+		fd_boundary.width = 123;
+		fd_boundary.height = 160;
+		fd_boundary.top = new FormAttachment(chk_item_label, 26);
+		fd_boundary.left = new FormAttachment(chk_merge, 0, SWT.LEFT);		
+		tbl_boundary_values = new Table(grp_setting, SWT.BORDER | SWT.FULL_SELECTION | SWT.HIDE_SELECTION);
+		tbl_boundary_values.setLayoutData(fd_boundary);
+		tbl_boundary_values.setHeaderVisible(true);
+		tbl_boundary_values.setLinesVisible(true);
+		tbl_boundary_values.getHorizontalBar().setVisible(false);
+		tbl_boundary_values.setVisible(false);
+		TableColumn tblc_hidden = new TableColumn(tbl_boundary_values, SWT.NONE);
+		tblc_hidden.setWidth(0);
+		TableColumn tblc_value = new TableColumn(tbl_boundary_values, SWT.RIGHT);
+		tblc_value.setText("Boundary Values");
+		tblc_value.setResizable(false);
+		tblc_value.setWidth(120);
+		tbl_editor = new TableEditor(tbl_boundary_values);
+		tbl_editor.horizontalAlignment = SWT.RIGHT;
+		tbl_editor.grabHorizontal = true;
+		tbl_editor.minimumWidth = 100;
+		
+		FormData fd_btn_boudary_def = new FormData();
+		fd_btn_boudary_def.top = new FormAttachment(tbl_boundary_values, 8);
+		fd_btn_boudary_def.right = new FormAttachment(tbl_boundary_values, 0, SWT.RIGHT);		
+		fd_btn_boudary_def.width = 80;
+		btn_boudary_def = new Button(grp_setting, SWT.NONE);
+		btn_boudary_def.setLayoutData(fd_btn_boudary_def);
+		btn_boudary_def.setText("Default");
+		btn_boudary_def.setVisible(false);
+
 		FormData fd_btn_apply = new FormData();
 		fd_btn_apply.right = new FormAttachment(100);
 		fd_btn_apply.bottom = new FormAttachment(100);
 		fd_btn_apply.width = 80;
 		btn_apply = new Button(grp_setting, SWT.NONE);
-		btn_apply.setText("Apply");
 		btn_apply.setLayoutData(fd_btn_apply);
+		btn_apply.setText("Apply");
 		
 		grp_setting.setTabList(new Control[]{ chk_merge, sp_merge_max, sp_merge_pct, chk_item_label, btn_apply });
 
@@ -138,34 +196,194 @@ public class KeyValueChartSetting extends ChartSetting {
 	    		sp_merge_pct.setEnabled(chk_merge.getSelection());
 	    	}
 	    });
+		
+		tbl_boundary_values.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				Control oldEditor = tbl_editor.getEditor();
+				if(oldEditor != null) {
+					oldEditor.dispose();
+				}
+				TableItem item = (TableItem)e.item;
+				if(item == null) {
+					return;
+				}
+
+				final Text newEditor = new Text(tbl_boundary_values, SWT.NONE);
+				newEditor.setText(item.getData()==null ? "" : toStringForBoundaryValue((Double)item.getData(), true));
+				newEditor.selectAll();
+				newEditor.setFocus();
+
+				Listener textListener = new Listener() {
+					public void handleEvent(Event e) {
+						if(e.type == SWT.FocusOut) {
+							checkBoundaryValueAndSet(newEditor.getText(), tbl_editor.getItem());
+							newEditor.dispose();
+							setBoundaryValueTable(getBoundaryValues());
+						} else if(e.type == SWT.Traverse) {
+							if(e.detail == SWT.TRAVERSE_RETURN) {
+								checkBoundaryValueAndSet(newEditor.getText(), tbl_editor.getItem());
+								newEditor.dispose();
+								setBoundaryValueTable(getBoundaryValues());
+							} else if(e.detail == SWT.TRAVERSE_ESCAPE) {
+								TableItem item = tbl_editor.getItem();
+								item.setText(1, String.valueOf((Double)item.getData()));
+								newEditor.dispose();
+								e.doit = false;
+							}
+						}
+					}
+				};		
+				newEditor.addListener(SWT.FocusOut, textListener);
+				newEditor.addListener(SWT.Traverse, textListener);
+				tbl_editor.setEditor(newEditor, item, 1);
+			}
+		});
+
+		btn_boudary_def.addSelectionListener(new SelectionAdapter() {
+	    	public void widgetSelected(SelectionEvent e) {
+	    		setBoundaryValueTable(((DistributionChart)result_chart.getCurrentChart()).getDefaultBoundaryValues());
+	    	}
+	    });
 
 	}
 	
-	protected void reset() {
-		if(result_chart.getCurrentChart() != null) {
-			KeyValueChart chart = (KeyValueChart)result_chart.getCurrentChart();
-			chk_merge.setSelection(chart.getMergeToOthers());
-			sp_merge_max.setSelection(chart.getMaxItemCount());
-			sp_merge_max.setEnabled(chart.getMergeToOthers());
-			sp_merge_pct.setSelection((int)(chart.getMinItemPercent()*Math.pow(10, sp_merge_pct.getDigits())));
-			sp_merge_pct.setEnabled(chart.getMergeToOthers());
-			chk_item_label.setSelection(chart.getShowItemLabel());
+	protected void checkBoundaryValueAndSet(String value, TableItem item) {
+		value = value.trim();
+		if(tbl_boundary_values.getItemCount() == 2 && "".equals(value.trim())) {
+			item.setText(1, String.valueOf((Double)item.getData()));
+			Logger.debug("The last item can not be deleted.");
+		} else if(!"".equals(value.trim()) && !StringUtil.isNumeric(value, true)) {
+			item.setText(1, String.valueOf((Double)item.getData()));
+			Logger.debug("Not a number : " + value);
+		} else {
+			if("".equals(value)) {
+				item.setData(null);
+				item.setText("");
+			} else {
+				Double data = Double.valueOf(value);
+				if(String.valueOf(data).indexOf('E') > -1) {
+					item.setText(1, String.valueOf((Double)item.getData()));
+					Logger.debug("Greater than maximum(9,999,999) number : " + value);
+				} else {
+					item.setData(data);
+					item.setText(1, toStringForBoundaryValue(data, false));
+				}
+			}
+		}
+	}
+	
+	public void reset(Chart chart) {
+		if(chart != null) {
+			if(chart instanceof DistributionChart) {
+				DistributionChart distChart = (DistributionChart)chart;
+				chk_merge.setSelection(false);
+				chk_merge.setEnabled(false);
+				sp_merge_max.setEnabled(false);
+				sp_merge_pct.setEnabled(false);
+				chk_item_label.setSelection(distChart.getShowItemLabel());
+				chk_location.setVisible(false);
+				tbl_boundary_values.setVisible(true);
+				btn_boudary_def.setVisible(true);
+				setBoundaryValueTable(distChart.getBoundaryValues());
+			} else {
+				KeyValueChart kvChart = (KeyValueChart)chart;
+				chk_merge.setSelection(kvChart.getMergeToOthers());
+				chk_merge.setEnabled(true);
+				sp_merge_max.setSelection(kvChart.getMaxItemCount());
+				sp_merge_max.setEnabled(kvChart.getMergeToOthers());
+				sp_merge_pct.setSelection((int)(kvChart.getMinItemPercent()*Math.pow(10, sp_merge_pct.getDigits())));
+				sp_merge_pct.setEnabled(kvChart.getMergeToOthers());
+				chk_item_label.setSelection(kvChart.getShowItemLabel());
+				tbl_boundary_values.setVisible(false);
+				btn_boudary_def.setVisible(false);
+				chk_location.setVisible(false);
+				if(chart instanceof IpChart) {
+					IpChart ipChart = (IpChart)chart;
+					chk_location.setSelection(ipChart.getShowByLocation());
+					chk_location.setVisible(true);
+				}
+			}
 		} else {
 			chk_merge.setSelection(true);
+			chk_merge.setEnabled(true);
 			sp_merge_max.setSelection(20);
 			sp_merge_max.setEnabled(true);
 			sp_merge_pct.setSelection(10);
 			sp_merge_pct.setEnabled(true);
 			chk_item_label.setSelection(true);
+			chk_location.setSelection(true);
+			chk_location.setVisible(false);
+			tbl_boundary_values.removeAll();
+			tbl_boundary_values.setVisible(false);
+			btn_boudary_def.setVisible(false);
 		}		
+	}
+	
+	protected Double[] getBoundaryValues() {
+		if(tbl_boundary_values.getItemCount() == 0) {
+			return null;
+		}
+	    Set<Double> sortedSet = new TreeSet<Double>();
+		for(TableItem item : tbl_boundary_values.getItems()) {
+			if(item.getData() != null) {
+				sortedSet.add((Double)item.getData());
+			}
+		}
+		Double[] sortedBoundaryValues = new Double[sortedSet.size()];
+		return sortedSet.toArray(sortedBoundaryValues);
+	}
+	
+	protected void setBoundaryValueTable(Double[] boundary_values) {
+		tbl_boundary_values.removeAll();
+		for(Double value : boundary_values) {
+			TableItem item = new TableItem(tbl_boundary_values, SWT.NONE);
+			item.setData(value);
+			item.setText(1, toStringForBoundaryValue(value, false));
+		}
+		TableItem item = new TableItem(tbl_boundary_values, SWT.NONE);
+		item.setText(1, "");
+	}
+
+	private String toStringForBoundaryValue(Double doubleValue, boolean forEditor) {
+		String strValue = String.valueOf(doubleValue);
+		boolean hasFloat = !strValue.endsWith(".0"); 
+		if(forEditor) {
+			return !hasFloat ? strValue.substring(0, strValue.length()-2) : strValue;
+		} else {
+			if(hasFloat) {
+				int idx = strValue.indexOf('.');
+				String left = strValue.substring(0, idx);
+				String right = strValue.substring(idx+1);
+				Long longValue = Long.valueOf(left);
+				return DF.format(longValue) + "." + right;
+			} else {
+				Long longValue = (long)(double)doubleValue;
+				return DF.format(longValue);
+			}
+		}
 	}
 
 	public void configure(Chart chart) {
-		KeyValueChart kv_chart = (KeyValueChart)chart;
-		kv_chart.setMergeToOthers(chk_merge.getSelection());
-		kv_chart.setMaxItemCount(sp_merge_max.getSelection());
-		kv_chart.setMinItemPercent((float)(sp_merge_pct.getSelection()/Math.pow(10, sp_merge_pct.getDigits())));
-		kv_chart.setShowItemLabel(chk_item_label.getSelection());
+		if(chart instanceof DistributionChart) {
+			DistributionChart dist_chart = (DistributionChart)chart;
+			dist_chart.setMergeToOthers(false);
+			dist_chart.setMaxItemCount(sp_merge_max.getSelection());
+			dist_chart.setMinItemPercent((float)(sp_merge_pct.getSelection()/Math.pow(10, sp_merge_pct.getDigits())));
+			dist_chart.setShowItemLabel(chk_item_label.getSelection());
+			Double[] boundary_values = getBoundaryValues();
+			if(boundary_values != null) {
+				dist_chart.setBoundaryValues(boundary_values);
+			}
+		} else {
+			KeyValueChart kv_chart = (KeyValueChart)chart;
+			kv_chart.setMergeToOthers(chk_merge.getSelection());
+			kv_chart.setMaxItemCount(sp_merge_max.getSelection());
+			kv_chart.setMinItemPercent((float)(sp_merge_pct.getSelection()/Math.pow(10, sp_merge_pct.getDigits())));
+			kv_chart.setShowItemLabel(chk_item_label.getSelection());
+			if(chart instanceof IpChart) {
+				IpChart ip_chart = (IpChart)chart;
+				ip_chart.setShowByLocation(chk_location.getSelection());
+			}
+		}
 	}
-	
 }

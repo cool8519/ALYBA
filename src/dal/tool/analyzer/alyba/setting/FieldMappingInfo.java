@@ -7,6 +7,7 @@ import dal.util.StringUtil;
 
 public class FieldMappingInfo {
 
+	public String logType;
 	public String fieldDelimeter;
 	public String fieldBracelet;
 	public String timeFormat;
@@ -19,7 +20,8 @@ public class FieldMappingInfo {
 	public FieldMappingInfo() {
 	}
 
-	public FieldMappingInfo(String delimeter, String bracelet, String tm_format, Locale tm_locale, int offset, String elapsed_unit, String[] field_idx_arr) {
+	public FieldMappingInfo(String logType, String delimeter, String bracelet, String tm_format, Locale tm_locale, int offset, String elapsed_unit, String[] field_idx_arr) {
+		this.logType = logType;
 		this.fieldDelimeter = delimeter;
 		this.fieldBracelet = bracelet;
 		this.timeFormat = tm_format;
@@ -39,6 +41,14 @@ public class FieldMappingInfo {
 		}
 	}
 
+	public String getLogType() {
+		return logType;
+	}
+	
+	public void setLogType(String logType) {
+		this.logType = logType;
+	}
+	
 	public String getFieldDelimeter() {
 		return fieldDelimeter;
 	}
@@ -128,6 +138,30 @@ public class FieldMappingInfo {
 	}
 
 	public boolean isMappedIP() {
+		return mappingInfo.containsKey("IP");
+	}
+	
+	public static boolean isMappedElapsed(HashMap<String, String> mappingInfo) {
+		return mappingInfo.containsKey("ELAPSED");
+	}
+
+	public static boolean isMappedBytes(HashMap<String, String> mappingInfo) {
+		return mappingInfo.containsKey("BYTES");
+	}
+	
+	public static boolean isMappedCode(HashMap<String, String> mappingInfo) {
+		return mappingInfo.containsKey("CODE");
+	}
+
+	public static boolean isMappedMethod(HashMap<String, String> mappingInfo) {
+		return mappingInfo.containsKey("METHOD");
+	}
+
+	public static boolean isMappedVersion(HashMap<String, String> mappingInfo) {
+		return mappingInfo.containsKey("VERSION");
+	}
+
+	public static boolean isMappedIP(HashMap<String, String> mappingInfo) {
 		return mappingInfo.containsKey("IP");
 	}
 
