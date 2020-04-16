@@ -13,6 +13,7 @@ import org.eclipse.swt.widgets.Text;
 
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
+import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.swt.FileDialogUtil;
 
 public class OutputSetting extends Composite {
@@ -64,14 +65,17 @@ public class OutputSetting extends Composite {
 
 		Label lb_directory = new Label(this, SWT.NONE);
 		lb_directory.setAlignment(SWT.RIGHT);
+		lb_directory.setFont(Utility.getFont());
 		lb_directory.setText("Directory");
 		lb_directory.setBounds(24, 42, 82, 15);
 
 		txt_directory = new Text(this, SWT.BORDER);
-		txt_directory.setBounds(125, 40, 390, 19);
+		txt_directory.setFont(Utility.getFont());
 		txt_directory.setText(Constant.OUTPUT_DEFAULT_DIRECTORY);
+		txt_directory.setBounds(125, 40, 390, 19);
 
 		btn_openDir = new Button(this, SWT.NONE);
+		btn_openDir.setFont(Utility.getFont());
 		btn_openDir.setText("Open");
 		btn_openDir.setBounds(521, 38, 100, 23);
 
@@ -80,33 +84,41 @@ public class OutputSetting extends Composite {
 
 		Label lb_fileType = new Label(this, SWT.NONE);
 		lb_fileType.setAlignment(SWT.RIGHT);
+		lb_fileType.setFont(Utility.getFont());
 		lb_fileType.setText("File Type");
 		lb_fileType.setBounds(24, 116, 82, 15);
 
 		chk_excel = new Button(this, SWT.CHECK);
-		chk_excel.setSelection(true);
-		chk_excel.setBounds(125, 115, 65, 16);
+		chk_excel.setFont(Utility.getFont());
 		chk_excel.setText("EXCEL");
+		chk_excel.setBounds(125, 115, 65, 16);
 
 		chk_html = new Button(this, SWT.CHECK);
+		chk_html.setFont(Utility.getFont());
 		chk_html.setText("HTML");
 		chk_html.setBounds(215, 115, 65, 16);
 
 		chk_text = new Button(this, SWT.CHECK);
+		chk_text.setFont(Utility.getFont());
 		chk_text.setText("TEXT");
 		chk_text.setBounds(305, 115, 65, 16);
 
 		Label lb_sortBy = new Label(this, SWT.NONE);
 		lb_sortBy.setAlignment(SWT.RIGHT);
+		lb_sortBy.setFont(Utility.getFont());
 		lb_sortBy.setText("Sort by");
 		lb_sortBy.setBounds(24, 151, 82, 15);
 
 		btn_count = new Button(this, SWT.RADIO);
 		btn_count.setSelection(true);
+		btn_count.setEnabled(false);
+		btn_count.setFont(Utility.getFont());
 		btn_count.setText("Count");
 		btn_count.setBounds(125, 150, 65, 16);
 
 		btn_name = new Button(this, SWT.RADIO);
+		btn_name.setEnabled(false);
+		btn_name.setFont(Utility.getFont());
 		btn_name.setText("Name");
 		btn_name.setBounds(215, 150, 65, 16);
 
@@ -118,19 +130,19 @@ public class OutputSetting extends Composite {
 
 		chk_excel.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				checkCheckBox((Button)e.getSource());
+				checkCheckBox();
 			}
 		});
 
 		chk_html.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				checkCheckBox((Button)e.getSource());
+				checkCheckBox();
 			}
 		});
 
 		chk_text.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				checkCheckBox((Button)e.getSource());
+				checkCheckBox();
 			}
 		});
 
@@ -149,7 +161,7 @@ public class OutputSetting extends Composite {
 
 	}
 
-	protected void checkCheckBox(Button srcButton) {
+	public void checkCheckBox() {
 		boolean checked = chk_excel.getSelection() || chk_html.getSelection() || chk_text.getSelection();
 		btn_count.setEnabled(checked);
 		btn_name.setEnabled(checked);

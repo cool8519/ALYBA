@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -35,6 +36,7 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.internal.win32.OS;
@@ -51,15 +53,16 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
 import dal.tool.analyzer.alyba.Constant;
-import dal.tool.analyzer.alyba.output.AnalyzeOutput;
-import dal.tool.analyzer.alyba.parser.DefaultParser;
-import dal.tool.analyzer.alyba.parser.ParserUtil;
-import dal.tool.analyzer.alyba.parser.PostParser;
-import dal.tool.analyzer.alyba.setting.AnalyzerSetting;
-import dal.tool.analyzer.alyba.setting.FieldMappingInfo;
+import dal.tool.analyzer.alyba.output.LogAnalyzeOutput;
+import dal.tool.analyzer.alyba.parse.ParserUtil;
+import dal.tool.analyzer.alyba.parse.parser.DefaultParser;
+import dal.tool.analyzer.alyba.parse.parser.PostParser;
+import dal.tool.analyzer.alyba.parse.task.FileEncodingCheckTask;
+import dal.tool.analyzer.alyba.parse.task.LogAnalyzeTask;
+import dal.tool.analyzer.alyba.parse.task.OutputTask;
 import dal.tool.analyzer.alyba.setting.FilterSettingInfo;
-import dal.tool.analyzer.alyba.task.AnalyzeTask;
-import dal.tool.analyzer.alyba.task.OutputTask;
+import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
+import dal.tool.analyzer.alyba.setting.LogFieldMappingInfo;
 import dal.tool.analyzer.alyba.ui.comp.ContentView;
 import dal.tool.analyzer.alyba.ui.comp.DebugConsole;
 import dal.tool.analyzer.alyba.ui.comp.FieldMapping;
@@ -83,29 +86,23 @@ import dal.util.swt.SWTResourceManager;
 
 public class AlybaGUI {
 
-	public static final TimeZone TIMEZONE = TimeZone.getDefault();
-
 	public static AlybaGUI instance = null;
 	public static boolean debugMode = false;
+	
 	public DebugConsole console = null;
 	public ResultAnalyzer resultAnalyzer = null;
+
+	public FieldMapping fieldMapping;
+	public FilterSetting filterSetting;
+	public OptionSetting optionSetting;
+	public OutputSetting outputSetting;
+	public Map<String,String> fileEncodings;
 
 	public Display display;
 	public Shell shell;
 	public Text txt_title;
 	public Table tbl_files;
-	public Button btn_analyzing;
-	public Button btn_resultAnalyzer;
-	public FieldMapping fieldMapping;
-	public FilterSetting filterSetting;
-	public OptionSetting optionSetting;
-	public OutputSetting outputSetting;
-
-	private TableViewer tblv_files;
-	private Button btn_resetAll;
-	private Button btn_openFiles;
-	private Button btn_removeFiles;
-	private Button btn_removeAll;
+	public TableViewer tblv_files;
 	private TabFolder tbf_setting;
 	private TableColumn tblc_index;
 	private TableColumn tblc_dirName;
@@ -116,6 +113,12 @@ public class AlybaGUI {
 	private TabItem tbi_option;
 	private TabItem tbi_output;
 	private Button btn_console;
+	private Button btn_resetAll;
+	private Button btn_openFiles;
+	private Button btn_removeFiles;
+	private Button btn_removeAll;
+	private Button btn_analyzing;
+	private Button btn_resultAnalyzer;
 	private HeapStatus heapstatus;
 	private int last_help;
 
@@ -166,6 +169,8 @@ public class AlybaGUI {
 			Shell shell = null;
 			if(isResultAnalyzer) {
 		        display = new Display();
+				FontData fd = display.getSystemFont().getFontData()[0];
+				Constant.DEFAULT_FONT_SIZE = fd.getHeight() - (int)Math.ceil((-fd.data.lfHeight-12)/2.0F);
 		        shell = new ResultAnalyzer(display, SWT.SHELL_TRIM, dbFileName);
 			} else {
 				debugMode = isDebug;
@@ -210,6 +215,8 @@ public class AlybaGUI {
 	
 	public AlybaGUI(boolean debugMode) {
 		this.display = new Display();
+		FontData fd = display.getSystemFont().getFontData()[0];
+		Constant.DEFAULT_FONT_SIZE = fd.getHeight() - (int)Math.ceil((-fd.data.lfHeight-12)/2.0F);
 	}
 
 	/**
@@ -233,12 +240,12 @@ public class AlybaGUI {
 		shell.setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
 		shell.forceActive();
 
-
 		Label lb_title = new Label(shell, SWT.NONE);
 		lb_title.setAlignment(SWT.CENTER);
 		lb_title.setFont(Utility.getFont());
 		lb_title.setText("Title");
 		lb_title.setBounds(10, 12, 40, 15);
+		lb_title.setFont(Utility.getFont(SWT.NONE));
 
 		txt_title = new Text(shell, SWT.BORDER);
 		txt_title.setBounds(56, 10, 300, 19);
@@ -343,6 +350,8 @@ public class AlybaGUI {
 		optionSetting.setEnabled(true);
 		tbi_option.setControl(optionSetting);
 		
+		fileEncodings = new HashMap<String,String>();
+		
 		/* TODO: History*/
 		
 		heapstatus = new HeapStatus(shell, 500, false, ImageUtil.getImageDescriptorFromURL(Constant.IMAGE_PATH_TRASH));
@@ -399,7 +408,9 @@ public class AlybaGUI {
 		btn_openFiles.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				List<File> files = FileDialogUtil.openReadDialogFiles(shell, Constant.LOG_FILTER_NAMES, Constant.LOG_FILTER_EXTS, Constant.DIALOG_INIT_PATH);
-				addTableItems(tbl_files, files);
+				if(files != null && files.size() > 0) {
+					addTableItems(tbl_files, files);
+				}
 			}
 		});
 
@@ -414,6 +425,7 @@ public class AlybaGUI {
 				int cnt = tbl_files.getItemCount();
 				if(cnt > 0) {
 					tbl_files.removeAll();
+					updatedFileList();
 					debug("Removed " + cnt + " item(s).\n");
 					fieldMapping.reset();
 					fieldMapping.setEnabled(false);
@@ -580,6 +592,7 @@ public class AlybaGUI {
 		filterSetting = new FilterSetting(tbf_setting, SWT.NONE);
 		filterSetting.setEnabled(true);
 		tbi_filter.setControl(filterSetting);
+		fieldMapping.setFilterSetting(filterSetting);
 
 		outputSetting.dispose();
 		outputSetting = new OutputSetting(tbf_setting, SWT.NONE);
@@ -590,6 +603,8 @@ public class AlybaGUI {
 		optionSetting = new OptionSetting(tbf_setting, SWT.NONE);
 		optionSetting.setEnabled(true);
 		tbi_option.setControl(optionSetting);
+		
+		fileEncodings = new HashMap<String,String>();
 
 		resetSetting();
 		tbf_setting.setSelection(0);
@@ -674,6 +689,7 @@ public class AlybaGUI {
 			tblv_files.getTable().deselectAll();
 			tblv_files.getTable().select(from_idx, tbl_files.getItemCount() - 1);
 			tbl_files.showItem(tbl_files.getItem(tbl_files.getItemCount() - 1));
+			updatedFileList();
 		}
 		
 		if(tbl_files.getItemCount() > 0) {
@@ -714,12 +730,27 @@ public class AlybaGUI {
 		return -1;
 	}
 
+	protected void updatedFileList() {
+		Map<String,String> newFileEncodings = new HashMap<String,String>();
+		TableItem[] items = tbl_files.getItems();
+		for(int i = 0; i < items.length; i++) {
+			File logfile = (File)items[i].getData("file");
+			newFileEncodings.put(logfile.getPath(), fileEncodings.get(logfile.getPath()));
+		}
+		fileEncodings = newFileEncodings;
+	}
+	
+	public List<String> getFileEncodings() {
+		return new ArrayList<String>(fileEncodings.values());
+	}
+	
 	protected void removeFiles() {
 		int[] indices = tbl_files.getSelectionIndices();
 		if(indices.length < 1) {
 			return;
 		} else {
 			tbl_files.remove(indices);
+			updatedFileList();
 			TableItem[] items = tbl_files.getItems();
 			for(TableItem item : items) {
 				item.setText(0, String.valueOf(tbl_files.indexOf(item) + 1));
@@ -764,9 +795,8 @@ public class AlybaGUI {
 				DefaultParser parser = new DefaultParser(getAnalyzerSetting());
 				for(int i = 0; i < items.length; i++) {
 					item = items[i];
-					File logfile = (File)item.getData("file");
-					String logfile_encoding = FileUtil.getFileEncoding(logfile.getPath());
-					debug("File encoding : path='" + logfile.getPath() + "', encoding=" + logfile_encoding);
+					File logfile = (File)item.getData("file");					
+					String logfile_encoding = getFileEncoding(logfile);
 					lines = FileUtil.head(logfile, 10, logfile_encoding);
 					Date dt;
 					for(String line : lines) {
@@ -878,7 +908,7 @@ public class AlybaGUI {
 			if(idx < 1 || !f.getName().substring(idx+1).equals("alb")) {
 				MessageUtil.showErrorMessage(shell, "The extension of Setting File must be '.alb'.");
 			} else {
-				String msg = "The current setting will be replaced with this setting.\nThe mapping data won't be applied.\n\nDo you really want to load this setting?";
+				String msg = "The current setting will be replaced with this setting.\n\nDo you really want to load this setting?";
 				if(MessageUtil.showConfirmMessage(shell, msg)) {
 					try {
 						loadSetting(new FileInputStream(f));
@@ -897,7 +927,9 @@ public class AlybaGUI {
 		try {
 			boolean loadMappingData = false;
 			if(readData.size() > 31) {
-				loadMappingData = MessageUtil.showYesNoMessage(shell, "The setting file contains mapping data.\n\nDo you want to load mapping data as well?");
+				if(tblv_files.getTable().getItemCount() > 0) {
+					loadMappingData = MessageUtil.showYesNoMessage(shell, "The setting file contains mapping data.\n\nDo you want to load mapping data as well?");
+				}
 			}
 			if(readData.size() < 31 || (loadMappingData && readData.size() < 39)) {
 				throw new Exception("The number of items in the setting file is insufficient : size=" + readData.size());
@@ -970,6 +1002,7 @@ public class AlybaGUI {
 						break;
 					case 14:
 						outputSetting.chk_text.setSelection((Boolean)obj);
+						outputSetting.checkCheckBox();
 						break;
 					case 15:
 						outputSetting.txt_directory.setText(StringUtil.NVL((String)obj, ""));
@@ -1028,7 +1061,7 @@ public class AlybaGUI {
 			}
 			
 			if(loadMappingData) {
-				FieldMappingInfo mappingInfo = new FieldMappingInfo();
+				LogFieldMappingInfo mappingInfo = new LogFieldMappingInfo();
 				mappingInfo.setLogType((String)readData.get(i++));
 				mappingInfo.setFieldDelimeter((String)readData.get(i++));
 				mappingInfo.setFieldBracelet((String)readData.get(i++));
@@ -1058,7 +1091,10 @@ public class AlybaGUI {
 	}
 
 	public void saveSetting(File f) {
-		boolean saveMappingData = MessageUtil.showYesNoMessage(shell, "Do you want to include the mapping data in the file?");
+		boolean saveMappingData = false;
+		if(btn_analyzing.isEnabled()) {
+			saveMappingData = MessageUtil.showYesNoMessage(shell, "Do you want to include the mapping data in the file?");
+		}
 		List<Object> writeData = new ArrayList<Object>();
 		writeData.add(Constant.SETTING_FILE_HEADER);
 		writeData.add(filterSetting.checkAllRangeEnable());
@@ -1117,7 +1153,48 @@ public class AlybaGUI {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	protected boolean checkFileEncodings() {
+		List<File> files = new ArrayList<File>();
+		TableItem[] items = tbl_files.getItems();
+		for(int i = 0; i < items.length; i++) {
+			files.add((File)items[i].getData("file"));
+		}
+		FileEncodingCheckTask task = new FileEncodingCheckTask(files, fileEncodings);
+		ProgressBarDialog progressBar = new ProgressBarDialog(shell, Utility.getFont());
+		progressBar.setTitle("File Verification Progress");
+		progressBar.setDetailViewCount(task.getFileCount());
+		progressBar.setTask(task);
+		progressBar.open();
+		if(task.isSuccessed()) {
+			fileEncodings = (Map<String,String>)task.getResultData();
+			return true;
+		}
+		return false;
+	}
+	
+	public String getFileEncoding(File f) {
+		String encoding = fileEncodings.get(f.getPath());
+		if(encoding == null) {
+			encoding = FileUtil.getFileEncoding(f.getPath());
+			if(encoding == null) {
+				encoding = "NULL";
+			} else if("WINDOWS-1252".equals(encoding)) {
+				String default_encoding = System.getProperty("file.encoding");
+				debug("Unknown file encoding : " + encoding + ". It will be set to default(" + default_encoding + ")");
+				encoding = default_encoding;
+			}			
+			fileEncodings.put(f.getPath(), encoding);
+		}
+		encoding = "NULL".equals(encoding) ? null : encoding;
+		debug("File encoding : path='" + f.getPath() + "', encoding=" + encoding);
+		return encoding;		
+	}
+	
 	protected void executeAnalyze() {
+		if(!checkFileEncodings()) {
+			return;
+		}
 		int idx = fieldMapping.checkMappingValidation();
 		if(idx > -1) {
 			MessageUtil.showInfoMessage(shell, "Invalid format of file has been detected.\nCheck the file No." + (idx + 1));
@@ -1142,16 +1219,17 @@ public class AlybaGUI {
 		} catch(Exception e) {
 			debug(e);
 		}
+		
+		filterSetting.resetDateUpdateCheck();
+		
+		LogAnalyzerSetting setting = getAnalyzerSetting();
+		setting.setAnalyzeDate(new Date());
+		LogAnalyzeOutput output = new LogAnalyzeOutput(setting);
+		debug(setting.toString());
+		
 		if(!MessageUtil.showConfirmMessage(shell, "Do you want to analyze the files with current setting?")) {
 			return;
 		}
-
-		filterSetting.resetDateUpdateCheck();
-
-		AnalyzerSetting setting = getAnalyzerSetting();
-		setting.setAnalyzeDate(new Date());
-		AnalyzeOutput output = new AnalyzeOutput(setting);
-		debug(setting.toString());
 
 		String dbfile_path = outputSetting.getOutputDirectory() + File.separatorChar + output.getFileName() + ".adb";
 		ObjectDBUtil db = new ObjectDBUtil(dbfile_path, true);
@@ -1162,10 +1240,10 @@ public class AlybaGUI {
 			debug(e);
 		}
 		
-		ProgressBarDialog progressBar = new ProgressBarDialog(shell);
+		ProgressBarDialog progressBar = new ProgressBarDialog(shell, Utility.getFont());
 		progressBar.setTitle("Analyzer Progress");
 		progressBar.setDetailViewCount(tbl_files.getItemCount());
-		AnalyzeTask task = new AnalyzeTask(setting, DefaultParser.class);
+		LogAnalyzeTask task = new LogAnalyzeTask(setting, DefaultParser.class);
 		progressBar.setTask(task);
 		progressBar.open();
 		if(!task.isSuccessed()) {
@@ -1177,12 +1255,12 @@ public class AlybaGUI {
 			}
 		}
 		
-		AnalyzeTask post_task = null;		
+		LogAnalyzeTask post_task = null;		
 		if(task.isSuccessed() && setting.collectTPS) {
 			progressBar = new ProgressBarDialog(shell);
 			progressBar.setTitle("Analyzer Post-Progress");
 			progressBar.setDetailViewCount(tbl_files.getItemCount());
-			post_task = new AnalyzeTask(setting, PostParser.class);
+			post_task = new LogAnalyzeTask(setting, PostParser.class);
 			progressBar.setTask(post_task);
 			progressBar.open();
 			if(!post_task.isSuccessed()) {
@@ -1269,8 +1347,8 @@ public class AlybaGUI {
 		output_task = null;
 	}
 	
-	private AnalyzerSetting getAnalyzerSetting() {
-		FieldMappingInfo fieldMappingInfo = new FieldMappingInfo();
+	private LogAnalyzerSetting getAnalyzerSetting() {
+		LogFieldMappingInfo fieldMappingInfo = new LogFieldMappingInfo();
 		fieldMappingInfo.setLogType(fieldMapping.getLogType());
 		fieldMappingInfo.setFieldDelimeter(StringUtil.replaceMetaCharacter(fieldMapping.getDelimeter(), false));
 		fieldMappingInfo.setFieldBracelet(fieldMapping.getBracelet());
@@ -1279,7 +1357,7 @@ public class AlybaGUI {
 		fieldMappingInfo.setTimeFormat(fieldMapping.getTimeFormat());
 		fieldMappingInfo.setTimeLocale(fieldMapping.getTimeLocale());
 		fieldMappingInfo.setElapsedUnit(fieldMapping.getElapsedUnit());
-		fieldMappingInfo.setLogFieldCount(fieldMapping.getFieldCount());
+		fieldMappingInfo.setFieldCount(fieldMapping.getFieldCount());
 
 		FilterSettingInfo filterSettingInfo = new FilterSettingInfo();
 		filterSettingInfo.setAllRangeEnable(filterSetting.checkAllRangeEnable());
@@ -1294,11 +1372,11 @@ public class AlybaGUI {
 		filterSettingInfo.setExcludeFilterIgnoreCase(filterSetting.getExcludeFilterIgnoreCase());
 		filterSettingInfo.setExcludeFilterInfo(filterSetting.getExcludeFilterData());
 
-		AnalyzerSetting setting = new AnalyzerSetting();
+		LogAnalyzerSetting setting = new LogAnalyzerSetting();
 		setting.setTitle(txt_title.getText());
-		setting.setAnalyzerTimezone(TIMEZONE);
+		setting.setAnalyzerTimezone(Constant.TIMEZONE_DEFAULT);
 		setting.setLogFileList(getLogFileList());
-		setting.setLogFileEncodingList(fieldMapping.getFileEncoding());
+		setting.setLogFileEncodingList(getFileEncodings());
 		setting.setOutputExcelType(outputSetting.checkExcelType());
 		setting.setOutputHtmlType(outputSetting.checkHtmlType());
 		setting.setOutputTextType(outputSetting.checkTextType());

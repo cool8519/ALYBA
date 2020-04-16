@@ -13,6 +13,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
+import dal.tool.analyzer.alyba.util.Utility;
 
 public class DebugConsole extends Shell {
 
@@ -44,10 +45,12 @@ public class DebugConsole extends Shell {
 		gd_btn_clearConsole.grabExcessHorizontalSpace = true;
 		gd_btn_clearConsole.verticalAlignment = SWT.CENTER;
 		btn_clearConsole.setLayoutData(gd_btn_clearConsole);
+		btn_clearConsole.setFont(Utility.getFont());
 		btn_clearConsole.setText("Clear Text");
 
 		txt_debugConsole = new Text(this, SWT.BORDER | SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
 		txt_debugConsole.setLayoutData(new GridData(GridData.FILL, SWT.FILL, true, true));
+		txt_debugConsole.setFont(Utility.getFont());
 
 		addShellListener(new ShellAdapter() {
 			public void shellClosed(ShellEvent e) {

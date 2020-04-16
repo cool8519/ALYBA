@@ -10,6 +10,7 @@ import java.util.Date;
 import javax.persistence.EntityManager;
 
 import org.apache.commons.math3.stat.regression.SimpleRegression;
+import org.eclipse.swt.SWT;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartMouseListener;
@@ -24,6 +25,7 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.data.Range;
 import org.jfree.data.function.LineFunction2D;
 import org.jfree.data.general.DatasetUtilities;
@@ -32,6 +34,7 @@ import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.RectangleInsets;
 import org.jfree.ui.TextAnchor;
 
 import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
@@ -46,6 +49,7 @@ import dal.util.db.ObjectDBUtil;
 public abstract class ScatterPlotChart extends Chart {
 
 	protected static final Class<?> DATA_CLASS = ResponseEntryVO.class;
+	protected static final ShapeSize DEFAULT_SHAPE_SIZE = ShapeSize.Large;
 
 	protected String label_x = "X";
 	protected String label_y = "Y";
@@ -53,7 +57,7 @@ public abstract class ScatterPlotChart extends Chart {
 	protected boolean use_date_axis = false;
 	protected String date_format = "yyyy.MM.dd HH:mm";
 	protected DateTickUnit tick_unit = null;
-	protected int shape_size = 3;
+	protected ShapeSize shape_size = DEFAULT_SHAPE_SIZE;
 	protected boolean show_regression_linear = false;
 	protected boolean show_regression_equation = true;
 	protected SimpleRegression regression = null;
@@ -91,8 +95,12 @@ public abstract class ScatterPlotChart extends Chart {
 		return tick_unit;
 	}
 	
-	public int getShapeSize() {
+	public ShapeSize getShapeSize() {
 		return shape_size;
+	}
+	
+	public int getShapeSizeNumber() {
+		return shape_size.ordinal()+1;
 	}
 	
 	public boolean getShowLinearRegression() {
@@ -128,8 +136,12 @@ public abstract class ScatterPlotChart extends Chart {
 		this.tick_unit = tick_unit;
 	}
 
-	public void setShapeSize(int shape_size) {
+	public void setShapeSize(ShapeSize shape_size) {
 		this.shape_size = shape_size;
+	}
+	
+	public void setShapeSizeNumber(int shape_size) {
+		this.shape_size = ShapeSize.values()[shape_size-1];
 	}
 	
 	public void setShowLinearRegression(boolean show_regression_linear) {
@@ -174,7 +186,8 @@ public abstract class ScatterPlotChart extends Chart {
 			xyPlot.setDomainAxis(numberAxis);
 		}
 		XYItemRenderer renderer = xyPlot.getRenderer();
-		Shape shape = new Ellipse2D.Double(1-shape_size, 1-shape_size, shape_size*2-1, shape_size*2-1);
+		int size = shape_size.ordinal() + 1;
+		Shape shape = new Ellipse2D.Double(-size, -size, size, size);
 		renderer.setSeriesShape(0, shape);
 		StandardXYToolTipGenerator tooltipGenerator = new StandardXYToolTipGenerator() {
 			private static final long serialVersionUID = 1L;
@@ -207,10 +220,14 @@ public abstract class ScatterPlotChart extends Chart {
 			    annotation.setTextAnchor(TextAnchor.BOTTOM_CENTER);
 			    annotation.setBackgroundPaint(new Color(0, 0, 255, 63));
 			    annotation.setOutlineVisible(false);
-			    annotation.setFont(new Font("Arial", Font.ITALIC, 12));
+			    annotation.setFont(new Font("Arial", Font.ITALIC, annotation.getFont().getSize()+3));
 			    xyPlot.addAnnotation(annotation);
 			}
 		}
+		TextTitle title = jfreeChart.getTitle();
+		RectangleInsets padding = title.getPadding();
+		double bottomPadding = Math.max(padding.getBottom(), 4.0D);
+		title.setPadding(padding.getTop(), padding.getLeft(), bottomPadding, padding.getRight());
 	}
 
 	public void afterCreateChartPanel(final ChartPanel chartPanel) {
@@ -287,7 +304,7 @@ public abstract class ScatterPlotChart extends Chart {
 		renderer.setSeriesPaint(0, Color.BLACK);
 		int angle = getAngleForAnnotation(xyPlot, dt.getTime(), val);
 		MultiLineXYPointerAnnotation annotation = new MultiLineXYPointerAnnotation(annotation_text, dt.getTime(), val, Math.toRadians(angle));
-	    annotation.setFont(new Font("Arial", 0, 11));
+	    annotation.setFont(new Font("Arial", SWT.NONE, annotation.getFont().getSize()+1));
 	    annotation.setTextAnchor(getTextAnchorByAngle(angle));
 	    annotation.setBackgroundPaint(Color.WHITE);
 	    renderer.addAnnotation(annotation);

@@ -32,6 +32,7 @@ public class SettingEntryVO implements Serializable {
 	public boolean collectResponseBytes;
 	public int collectResponseBytesKB;
 	public boolean collectErrors;
+	public boolean collectIP;
 	public boolean collectTPS;
 
 	public String mappingFieldDelimeter;
@@ -41,7 +42,7 @@ public class SettingEntryVO implements Serializable {
 	public String mappingElapsedUnit;
 	public float mappingOffsetHour;
 	public int mappingFieldCount;
-	public HashMap<String, String> mappingInfo = new HashMap<String, String>();
+	public HashMap<String, String> logMappingInfo = new HashMap<String, String>();
 	
 	public boolean dateFilterEnable;
 	public Date dateFilterFromRange;
@@ -217,7 +218,15 @@ public class SettingEntryVO implements Serializable {
 	public void setCollectErrors(boolean collectErrors) {
 		this.collectErrors = collectErrors;
 	}
-	
+
+	public boolean isCollectIP() {
+		return collectIP;
+	}
+
+	public void setCollectIP(boolean collectIP) {
+		this.collectIP = collectIP;
+	}
+
 	public boolean isCollectTPS() {
 		return collectTPS;
 	}
@@ -283,14 +292,13 @@ public class SettingEntryVO implements Serializable {
 		this.mappingFieldCount = field_count;
 	}
 
-	public HashMap<String, String> getMappingInfo() {
-		return mappingInfo;
+	public HashMap<String, String> getLogMappingInfo() {
+		return logMappingInfo;
 	}
 
-	public void setMappingInfo(HashMap<String, String> mapping_info) {
-		this.mappingInfo = mapping_info;
+	public void setLogMappingInfo(HashMap<String, String> mapping_info) {
+		this.logMappingInfo = mapping_info;
 	}
-	
 	
 	
 	public boolean isDateFilterEnable() {

@@ -9,17 +9,17 @@ import org.jfree.data.time.Day;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 
-import dal.tool.analyzer.alyba.output.vo.DailyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
+import dal.tool.analyzer.alyba.output.vo.TimeAggregationEntryVO;
 import dal.tool.analyzer.alyba.ui.chart.TimeSeriesChart;
 import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
 
 public class TxDailyChart extends TimeSeriesChart {
 
-	protected static final Class<?> DATA_CLASS = DailyEntryVO.class;
+	protected static final Class<?> DATA_CLASS = TimeAggregationEntryVO.class;
 	
 	public TxDailyChart() {
-		super("Daily Transaction", "Time", "Transactions");
+		super("Daily Transaction", "Date", "Transactions");
 	    setUnitString("day(s)");
 	    setTickUnit(new DateTickUnit(DateTickUnitType.DAY, 1, new SimpleDateFormat("yyyy.MM.dd")));
 	    setMovingAverageCount(3);
@@ -35,9 +35,9 @@ public class TxDailyChart extends TimeSeriesChart {
 	    TimeSeries ts2 = new TimeSeries("Number of IP-Address");
 	    if(merge_item) {
 	    	int count = 0;
-	    	DailyEntryVO mergedVO = null;
+	    	TimeAggregationEntryVO mergedVO = null;
 	    	for(Object data : dataList) {
-		    	DailyEntryVO vo = (DailyEntryVO) data;
+	    		TimeAggregationEntryVO vo = (TimeAggregationEntryVO) data;
 	    		if(merge_item_count > count++) {
 	    			if(mergedVO == null) {
 	    				mergedVO = vo;
@@ -54,7 +54,7 @@ public class TxDailyChart extends TimeSeriesChart {
 	    	}
 	    } else {
 		    for(Object data : dataList) {
-		    	DailyEntryVO vo = (DailyEntryVO) data;
+		    	TimeAggregationEntryVO vo = (TimeAggregationEntryVO) data;
 		    	ts.add(new Day(vo.getUnitDate()), vo.getRequestCount());	    	
 	    		ts2.add(new Day(vo.getUnitDate()), vo.getRequestIPCount());
 		    }

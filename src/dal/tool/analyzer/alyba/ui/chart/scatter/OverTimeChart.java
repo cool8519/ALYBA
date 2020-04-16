@@ -29,10 +29,10 @@ public class OverTimeChart extends DistributionChart {
 		return ResultAnalyzer.hasMappingInfo("ELAPSED");
 	}
 
-	protected <E extends EntryVO> void createDataset(List<E> dataList) {
+	public <E extends EntryVO> void createDataset(List<E> dataList) {
 		if(chartType == Type.ScatterPlot) {
 	    	XYSeries xy = new XYSeries("Transaction");
-	    	if(show_regression_linear) {
+	    	if(show_regression_line) {
 	    		regression = new SimpleRegression();
 	    	}
 	    	for(EntryVO data : dataList) {
@@ -40,7 +40,7 @@ public class OverTimeChart extends DistributionChart {
 	    		long x = new Second(vo.getResponseDate()).getMiddleMillisecond();
 	    		long y = vo.getResponseTime();
 				xy.add(new ResponseXYDataItem(x, y, vo));
-		    	if(show_regression_linear) {
+		    	if(show_regression_line) {
 		    		regression.addData(x, y);
 		    	}
 	    	}
@@ -52,15 +52,15 @@ public class OverTimeChart extends DistributionChart {
 		}
 	}
 	
-	protected String getAnnotationText(XYDataItem item) {
+	public String getAnnotationText(XYDataItem item) {
 		return ((ResponseXYDataItem)item).getResponse().toPrettyString();
 	}
 
-	protected Double[] getDefaultBoundaryValues() {
+	public Double[] getDefaultBoundaryValues() {
 		return new Double[] { 1000D, 3000D, 10000D, 30000D };
 	}
 	
-	protected double getDistributionValue(EntryVO vo) {
+	public double getDistributionValue(EntryVO vo) {
 		return ((BadResponseEntryVO)vo).getResponseTime();
 	}
 

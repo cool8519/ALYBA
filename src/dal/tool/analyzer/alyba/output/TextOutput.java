@@ -10,15 +10,14 @@ import javax.persistence.EntityManager;
 
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.output.vo.BadResponseEntryVO;
-import dal.tool.analyzer.alyba.output.vo.DailyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.DateEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
-import dal.tool.analyzer.alyba.output.vo.HourlyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
-import dal.tool.analyzer.alyba.setting.AnalyzerSetting;
+import dal.tool.analyzer.alyba.output.vo.TimeAggregationEntryVO;
+import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
 import dal.tool.analyzer.alyba.util.Logger;
 import dal.util.DateUtil;
 import dal.util.console.Column;
@@ -28,7 +27,7 @@ import dal.util.db.ObjectDBUtil;
 
 public class TextOutput extends ResultOutput {
 
-	public TextOutput(AnalyzerSetting setting, ObjectDBUtil db, EntityManager em, String filename) {
+	public TextOutput(LogAnalyzerSetting setting, ObjectDBUtil db, EntityManager em, String filename) {
 		super(setting, db, em, filename);
 	}
 
@@ -63,8 +62,8 @@ public class TextOutput extends ResultOutput {
 			summaryVo.setCreatedTime(new Date());
 			printSummary(summaryVo);
 			printTPM(getEntryList(TPMEntryVO.class, null));
-			printDay(getEntryList(DailyEntryVO.class, null));
-			printHour(getEntryList(HourlyEntryVO.class, null));
+			printDay(getEntryList(TimeAggregationEntryVO.class, "DAY"));
+			printHour(getEntryList(TimeAggregationEntryVO.class, "HOUR"));
 			printCount(getEntryList(KeyEntryVO.class, "URI"), Type.URI);
 			printCount(getEntryList(KeyEntryVO.class, "IP"), Type.IP);
 			printCount(getEntryList(KeyEntryVO.class, "METHOD"), Type.METHOD);
@@ -183,7 +182,7 @@ public class TextOutput extends ResultOutput {
 		Logger.logln();
 	}
 
-	private void printDay(List<DailyEntryVO> timeData) throws Exception {
+	private void printDay(List<TimeAggregationEntryVO> timeData) throws Exception {
 		if(timeData == null || timeData.size() < 1) {
 			return;
 		}
@@ -196,7 +195,7 @@ public class TextOutput extends ResultOutput {
 		Logger.logln();
 	}
 
-	private void printHour(List<HourlyEntryVO> timeData) throws Exception {
+	private void printHour(List<TimeAggregationEntryVO> timeData) throws Exception {
 		if(timeData == null || timeData.size() < 1) {
 			return;
 		}

@@ -95,7 +95,7 @@ public class FileDialogUtil {
 	}
 
 	private static boolean confirmOverwrite(Shell shell) {
-		String msg = "The filename alreay exists.\nDo you want to overwrite?";
+		String msg = "The filename alreay exists.\n\nDo you want to overwrite?";
 		return MessageUtil.showConfirmMessage(shell, msg);
 	}
 

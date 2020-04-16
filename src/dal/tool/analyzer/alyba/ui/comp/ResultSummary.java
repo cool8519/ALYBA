@@ -66,10 +66,10 @@ public class ResultSummary extends Composite {
 		setSize(1244, 690);
 	
 		lb_title = new Label(this, SWT.NONE);
-		lb_title.setFont(Utility.getFont(18, SWT.NONE));
-		lb_title.setBounds(478, 20, 300, 32);
 		lb_title.setAlignment(SWT.CENTER);
 		lb_title.setText("Summary of results");
+		lb_title.setFont(Utility.getFont(Constant.DEFAULT_FONT_SIZE*2, SWT.NONE));
+		lb_title.setBounds(478, 20, 300, 32);
 				
 		lb_time = new Label(this, SWT.NONE);
 		lb_time.setText("¡ß Time");
@@ -78,6 +78,7 @@ public class ResultSummary extends Composite {
 		tbl_time = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.NO_SCROLL);
 		tbl_time.setLinesVisible(true);
 		tbl_time.setHeaderVisible(false);
+		tbl_time.setFont(Utility.getFont());
 		tbl_time.setBounds(278, 85, 700, 40);
 		TableColumn tblc_time_null = new TableColumn(tbl_time, SWT.NONE);
 		tblc_time_null.setWidth(0);
@@ -93,6 +94,7 @@ public class ResultSummary extends Composite {
 		tbl_filter = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.NO_SCROLL);
 		tbl_filter.setLinesVisible(true);
 		tbl_filter.setHeaderVisible(false);
+		tbl_filter.setFont(Utility.getFont());
 		tbl_filter.setBounds(278, 165, 700, 60);
 		TableColumn tbl_filter_null = new TableColumn(tbl_filter, SWT.NONE);
 		tbl_filter_null.setWidth(0);
@@ -108,6 +110,7 @@ public class ResultSummary extends Composite {
 		tbl_aggr = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.NO_SCROLL);
 		tbl_aggr.setLinesVisible(true);
 		tbl_aggr.setHeaderVisible(false);
+		tbl_aggr.setFont(Utility.getFont());
 		tbl_aggr.setBounds(278, 265, 700, 136);
 		TableColumn tbl_aggr_null = new TableColumn(tbl_aggr, SWT.NONE);
 		tbl_aggr_null.setWidth(0);
@@ -123,8 +126,8 @@ public class ResultSummary extends Composite {
 		tbl_peak = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.NO_SCROLL);
 		tbl_peak.setLinesVisible(true);
 		tbl_peak.setHeaderVisible(true);
-		tbl_peak.setBounds(278, 435, 700, 103);
 		tbl_peak.setFont(Utility.getFont(SWT.BOLD));
+		tbl_peak.setBounds(278, 435, 700, 103);
 		TableColumn tbl_peak_null = new TableColumn(tbl_peak, SWT.NONE);
 		tbl_peak_null.setWidth(0);
 		TableColumn tbl_peak_index = new TableColumn(tbl_peak, SWT.CENTER);

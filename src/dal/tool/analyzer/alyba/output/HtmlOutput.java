@@ -13,15 +13,14 @@ import javax.persistence.EntityManager;
 
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.output.vo.BadResponseEntryVO;
-import dal.tool.analyzer.alyba.output.vo.DailyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.DateEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
-import dal.tool.analyzer.alyba.output.vo.HourlyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
-import dal.tool.analyzer.alyba.setting.AnalyzerSetting;
+import dal.tool.analyzer.alyba.output.vo.TimeAggregationEntryVO;
+import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
 import dal.tool.analyzer.alyba.util.Logger;
 import dal.util.DateUtil;
 import dal.util.StringUtil;
@@ -29,7 +28,7 @@ import dal.util.db.ObjectDBUtil;
 
 public class HtmlOutput extends ResultOutput {
 
-	public HtmlOutput(AnalyzerSetting setting, ObjectDBUtil db, EntityManager em, String filename) {
+	public HtmlOutput(LogAnalyzerSetting setting, ObjectDBUtil db, EntityManager em, String filename) {
 		super(setting, db, em, filename);
 	}
 
@@ -172,9 +171,9 @@ public class HtmlOutput extends ResultOutput {
 			} else if(variable.equals("TPM_AGGR_DATA")) {
 				value = createHtmlString("tpm_div", getEntryList(TPMEntryVO.class, null), Type.TPM);
 			} else if(variable.equals("DAY_AGGR_DATA")) {
-				value = createHtmlString("day_div", getEntryList(DailyEntryVO.class, null), Type.DAY);
+				value = createHtmlString("day_div", getEntryList(TimeAggregationEntryVO.class, "DAY"), Type.DAY);
 			} else if(variable.equals("HOUR_AGGR_DATA")) {
-				value = createHtmlString("hour_div", getEntryList(HourlyEntryVO.class, null), Type.HOUR);
+				value = createHtmlString("hour_div", getEntryList(TimeAggregationEntryVO.class, "HOUR"), Type.HOUR);
 			} else if(variable.equals("URI_AGGR_DATA")) {
 				value = createHtmlString("uri_div", getEntryList(KeyEntryVO.class, "URI"), Type.URI);
 			} else if(variable.equals("IP_AGGR_DATA")) {

@@ -42,6 +42,7 @@ public class SummaryEntryVO extends EntryVO {
 	private Date filter_to_time = null;
 	private String filter_include_info = null;
 	private String filter_exclude_info = null;
+	private Date last_resource_insert_time = null;
 
 	public SummaryEntryVO() {}
 
@@ -285,8 +286,16 @@ public class SummaryEntryVO extends EntryVO {
 		this.filter_exclude_info = filter_exclude_info;
 	}
 
+	public Date getLastResourceInsertTime() {
+		return last_resource_insert_time;
+	}
+
+	public void setLastResourceInsertTime(Date insert_time) {
+		this.last_resource_insert_time = insert_time;
+	}
+
 	public String toString() {
-		return "SummaryEntryVO [title=" + title + ", parsed_time=" + parsed_time + ", created_time=" + created_time + ", first_request_time=" + first_request_time + ", last_request_time=" + last_request_time + ", total_request_count=" + total_request_count + ", total_error_count=" + total_error_count + ", filtered_request_count=" + filtered_request_count + ", filtered_error_count=" + filtered_error_count + ", filtered_uri_count=" + filtered_uri_count + ", filtered_ip_count=" + filtered_ip_count + ", filtered_method_count=" + filtered_method_count + ", filtered_ext_count=" + filtered_ext_count + ", filtered_code_count=" + filtered_code_count + ", bad_elapsed_count=" + bad_elapsed_count + ", bad_byte_count=" + bad_byte_count + ", bad_code_count=" + bad_code_count + ", filter_from_time=" + filter_from_time + ", filter_to_time=" + filter_to_time + ", filter_include_info=" + filter_include_info + ", filter_exclude_info=" + filter_exclude_info + "]";
+		return "SummaryEntryVO [title=" + title + ", parsed_time=" + parsed_time + ", created_time=" + created_time + ", first_request_time=" + first_request_time + ", last_request_time=" + last_request_time + ", total_request_count=" + total_request_count + ", total_error_count=" + total_error_count + ", filtered_request_count=" + filtered_request_count + ", filtered_error_count=" + filtered_error_count + ", filtered_uri_count=" + filtered_uri_count + ", filtered_ip_count=" + filtered_ip_count + ", filtered_method_count=" + filtered_method_count + ", filtered_ext_count=" + filtered_ext_count + ", filtered_code_count=" + filtered_code_count + ", bad_elapsed_count=" + bad_elapsed_count + ", bad_byte_count=" + bad_byte_count + ", bad_code_count=" + bad_code_count + ", filter_from_time=" + filter_from_time + ", filter_to_time=" + filter_to_time + ", filter_include_info=" + filter_include_info + ", filter_exclude_info=" + filter_exclude_info + ", last_resource_insert_time=" + last_resource_insert_time + "]";
 	}
 
 }

@@ -96,7 +96,7 @@ public class TxDailyPerMinChart extends TimeSeriesChart {
 	public void afterCreateChart(JFreeChart jfreeChart) {
 		super.afterCreateChart(jfreeChart);
 	    XYPlot xyPlot = (XYPlot)jfreeChart.getPlot();
-	    xyPlot.getRenderer().setBaseToolTipGenerator(new StandardXYToolTipGenerator("\"{0} {1}\": {2}", new SimpleDateFormat("HH:mm:ss"), NumberFormat.getInstance()));
+	    xyPlot.getRenderer().setBaseToolTipGenerator(new StandardXYToolTipGenerator("\"{0} {1}\": {2}", new SimpleDateFormat("HH:mm"), NumberFormat.getInstance()));
 	}
 
 }

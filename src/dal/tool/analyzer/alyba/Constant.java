@@ -9,10 +9,11 @@ import org.eclipse.swt.dnd.Transfer;
 
 public class Constant {
 
-	public static final String PROGRAM_VERSION = "1.6.0";
+	public static final String PROGRAM_VERSION = "1.7.0";
 
-	public static final String DEFAULT_FONT_NAME = "Segoe UI";
-	public static final int DEFAULT_FONT_SIZE = 9;
+	public static String DEFAULT_FONT_NAME = "Arial";
+	public static int DEFAULT_FONT_SIZE = 9;
+	
 	public static final TimeZone TIMEZONE_DEFAULT = TimeZone.getDefault();
 	public static final TimeZone TIMEZONE_UTC = TimeZone.getTimeZone("UTC");
 
@@ -39,6 +40,11 @@ public class Constant {
 	public static final String IMAGE_PATH_CHART_VBAR = "dal/tool/analyzer/alyba/resource/image/chart_vbar.png";
 	public static final String IMAGE_PATH_CHART_PIE = "dal/tool/analyzer/alyba/resource/image/chart_pie.png";
 	public static final String IMAGE_PATH_CHART_SCATTER = "dal/tool/analyzer/alyba/resource/image/chart_scatter.png";
+	public static final String IMAGE_PATH_CHART_ALL = "dal/tool/analyzer/alyba/resource/image/chart_all.png";
+	public static final String IMAGE_PATH_CHART_CPU = "dal/tool/analyzer/alyba/resource/image/chart_cpu.png";
+	public static final String IMAGE_PATH_CHART_MEMORY = "dal/tool/analyzer/alyba/resource/image/chart_memory.png";
+	public static final String IMAGE_PATH_CHART_DISK = "dal/tool/analyzer/alyba/resource/image/chart_disk.png";
+	public static final String IMAGE_PATH_CHART_NETWORK = "dal/tool/analyzer/alyba/resource/image/chart_network.png";
 	
 	public static final String FILE_PATH_HTMLTEMPLATE = "dal/tool/analyzer/alyba/resource/template/HtmlTemplate.html";
 	public static final String FILE_PATH_DEFAULTSETTING = "dal/tool/analyzer/alyba/resource/setting/default.alb";
@@ -47,8 +53,10 @@ public class Constant {
 	public static final String DIALOG_INIT_PATH = ".";
 
 	public static final String LOG_DEFAULT_DELIMETER = " \t";
+	public static final String FILE_DEFAULT_DELIMETER = " \t,";
 
 	public static final String[] LOG_DEFAULT_BRACELETS = { "[]", "\"\"" };
+	public static final String[] FILE_DEFAULT_BRACELETS = { "[]", "\"\"" };
 
 	public static final Transfer[] FILE_TRANSFER_TYPE = new Transfer[] { FileTransfer.getInstance() };
 	public static final Transfer[] TEXT_TRANSFER_TYPE = new Transfer[] { TextTransfer.getInstance() };
@@ -62,8 +70,11 @@ public class Constant {
 	public static final String[] CSV_FILTER_EXTS = { "*.csv" };
 	public static final String[] DB_FILTER_NAMES = { "ALYBA DB Files (*.adb)" };
 	public static final String[] DB_FILTER_EXTS = { "*.adb" };
+	public static final String[] FILE_FILTER_NAMES = { "All Files (*.*)" };
+	public static final String[] FILE_FILTER_EXTS = { "*.*" };
 
 	public static final String[] LOG_TYPES = { "Customize", "Apache", "Tomcat", "WebtoB", "Nginx", "JEUS", "IIS" };
+	public static final String[] FILE_TYPES = { "Customize", "vmstat", "sar" };
 
 	public static final String[] ELAPSED_TIME_UNITS = { "milliseconds", "seconds", "microseconds" };
 

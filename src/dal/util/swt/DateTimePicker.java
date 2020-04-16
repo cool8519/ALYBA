@@ -15,7 +15,8 @@ import org.eclipse.swt.widgets.DateTime;
 
 public class DateTimePicker extends Composite {
 
-	public static Font TEXT_FONT = SWTResourceManager.getFont("Arial", 7, SWT.BOLD);
+	public static Font TEXT_FONT = SWTResourceManager.getFont("Arial", 9, SWT.NONE);
+	public static Font BUTTON_FONT = SWTResourceManager.getFont("Arial", 7, SWT.BOLD);
 	public static int DATE_AND_TIME = 0;
 	public static int DATE_ONLY = 1;
 	public static int TIME_ONLY = 2;
@@ -37,6 +38,24 @@ public class DateTimePicker extends Composite {
 		setType(pickerType);
 		createContents();
 	}
+	
+	public DateTimePicker(Composite parent, int style, Font font) {
+		super(parent, SWT.NONE);
+		setFont(font);
+		createContents();
+	}
+
+	public DateTimePicker(Composite parent, int style, int pickerType, Font font) {
+		super(parent, style);
+		setType(pickerType);
+		setFont(font);
+		createContents();
+	}
+	
+	public void setFont(Font font) {
+		TEXT_FONT = font;
+		BUTTON_FONT = SWTResourceManager.getFont(font.getFontData()[0].getName(), font.getFontData()[0].getHeight()-2, SWT.BOLD); 
+	}
 
 	protected void createContents() {
 
@@ -46,26 +65,28 @@ public class DateTimePicker extends Composite {
 		gl.horizontalSpacing = 2;
 		setLayout(gl);
 
-		GridData gd_btn_today = new GridData(SWT.LEFT, SWT.CENTER, false, true, 1, 1);
+		GridData gd_btn_today = new GridData(SWT.CENTER, SWT.CENTER, false, true, 1, 1);
 		gd_btn_today.widthHint = 16;
 		gd_btn_today.heightHint = 16;
 
 		if(pickerType == DATE_AND_TIME || pickerType == DATE_ONLY) {
 			btn_today = new Button(this, SWT.NONE);
 			btn_today.setToolTipText("Today");
-			btn_today.setFont(TEXT_FONT);
 			btn_today.setLayoutData(gd_btn_today);
+			btn_today.setFont(BUTTON_FONT);
 			btn_today.setText("T");
 
 			dt_Date = new DateTime(this, SWT.BORDER | SWT.DATE);
-			dt_Date.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, true, 1, 1));
+			dt_Date.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1));
 			dt_Date.setSize(100, 24);
+			dt_Date.setFont(TEXT_FONT);
 		}
 
 		if(pickerType == DATE_AND_TIME || pickerType == TIME_ONLY) {
 			dt_Time = new DateTime(this, SWT.BORDER | SWT.TIME);
-			dt_Time.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, true, 1, 1));
+			dt_Time.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, true, 1, 1));
 			dt_Time.setSize(100, 24);
+			dt_Time.setFont(TEXT_FONT);
 
 			GridLayout gl_firstlast = new GridLayout(1, true);
 			gl_firstlast.marginWidth = 0;
@@ -78,25 +99,25 @@ public class DateTimePicker extends Composite {
 			comp_firstlast.setLayoutData(gd_firstlast);
 			comp_firstlast.setLayout(gl_firstlast);
 
-			GridData gd_btn_first = new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1);
+			GridData gd_btn_first = new GridData(SWT.CENTER, SWT.FILL, false, true, 1, 1);
 			gd_btn_first.widthHint = 16;
 			gd_btn_first.heightHint = 13;
 
 			btn_first = new Button(comp_firstlast, SWT.CENTER);
 			btn_first.setToolTipText("First of day");
 			btn_first.setLayoutData(gd_btn_first);
+			btn_first.setFont(BUTTON_FONT);
 			btn_first.setText("F");
-			btn_first.setFont(TEXT_FONT);
 
-			GridData gd_btn_last = new GridData(SWT.LEFT, SWT.FILL, false, true, 1, 1);
+			GridData gd_btn_last = new GridData(SWT.CENTER, SWT.FILL, false, true, 1, 1);
 			gd_btn_last.widthHint = 16;
 			gd_btn_last.heightHint = 13;
 
 			btn_last = new Button(comp_firstlast, SWT.CENTER);
 			btn_last.setToolTipText("Last of day");
 			btn_last.setLayoutData(gd_btn_last);
+			btn_last.setFont(BUTTON_FONT);
 			btn_last.setText("L");
-			btn_last.setFont(TEXT_FONT);
 		}
 
 		pack();

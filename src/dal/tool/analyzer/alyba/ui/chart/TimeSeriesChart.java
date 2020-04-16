@@ -1,7 +1,6 @@
 package dal.tool.analyzer.alyba.ui.chart;
 
 import java.awt.BasicStroke;
-import java.awt.Color;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 
@@ -19,10 +18,12 @@ import org.jfree.chart.entity.LegendItemEntity;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.data.time.MovingAverage;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.xy.XYDataset;
+import org.jfree.ui.RectangleInsets;
 
 import dal.tool.analyzer.alyba.output.vo.DateEntryVO;
 
@@ -185,13 +186,7 @@ public abstract class TimeSeriesChart extends Chart {
 	    }
 	    dateAxis.setVerticalTickLabels(true);
 		XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)xyPlot.getRenderer();
-		if(show_shape) {
-			renderer.setBaseShapesVisible(true);
-			renderer.setSeriesFillPaint(0, Color.red);
-			renderer.setUseFillPaint(true);	
-		} else {
-			renderer.setBaseShapesVisible(false);
-		}
+		renderer.setBaseShapesVisible(show_shape);
 		
 		TimeSeriesCollection ts_collection = (TimeSeriesCollection)dataset;
 		if(show_moving_average) {
@@ -202,7 +197,11 @@ public abstract class TimeSeriesChart extends Chart {
 			    ts_collection.addSeries(ts_mov);
 				renderer.setSeriesShapesVisible(series_count+i, false);
 			}
-		}
+		}		
+		TextTitle title = jfreeChart.getTitle();
+		RectangleInsets padding = title.getPadding();
+		double bottomPadding = Math.max(padding.getBottom(), 4.0D);
+		title.setPadding(padding.getTop(), padding.getLeft(), bottomPadding, padding.getRight());
 	}
 
 	public void afterCreateChartPanel(ChartPanel chartPanel) {
@@ -212,7 +211,7 @@ public abstract class TimeSeriesChart extends Chart {
 				if(entity instanceof LegendItemEntity) {
 					LegendItemEntity itemEntity = (LegendItemEntity)entity;
 					XYDataset xyDataset = (XYDataset)itemEntity.getDataset();
-					if(dataset2 == null && dataset.getSeriesCount() == 1) {
+					if(dataset2 == null && xyDataset.getSeriesCount() < 2) {
 						return;
 					}
 					int index = xyDataset.indexOf(itemEntity.getSeriesKey());
@@ -220,7 +219,17 @@ public abstract class TimeSeriesChart extends Chart {
 					int index_renderer = (xyDataset == dataset) ? 0 : 1;
 					XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)plot.getRenderer(index_renderer);
 					float width = ((BasicStroke)renderer.getSeriesStroke(index)).getLineWidth();
-					renderer.setSeriesStroke(index, new BasicStroke((width==1.0F?4.0F:1.0F), 2, 2));
+					Boolean visible = renderer.getSeriesLinesVisible(index);
+					if(visible == null || visible == Boolean.TRUE) {
+						if(width == 1.0F) {
+							renderer.setSeriesStroke(index, new BasicStroke(4.0F, 2, 2));
+						} else {
+							renderer.setSeriesLinesVisible(index, false);
+						}
+					} else {
+						renderer.setSeriesLinesVisible(index, true);
+						renderer.setSeriesStroke(index, new BasicStroke(1.0F, 2, 2));
+					}
 					renderer.setDrawSeriesLineAsPath(true);
 				}
 			}

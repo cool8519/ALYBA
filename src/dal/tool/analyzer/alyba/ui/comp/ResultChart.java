@@ -3,6 +3,8 @@ package dal.tool.analyzer.alyba.ui.comp;
 import java.awt.Frame;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -32,22 +34,32 @@ import org.jfree.chart.ChartPanel;
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
+import dal.tool.analyzer.alyba.output.vo.RegressionEntryVO;
+import dal.tool.analyzer.alyba.output.vo.ResourceUsageEntryVO;
+import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.ui.chart.Chart;
 import dal.tool.analyzer.alyba.ui.chart.Chart.Type;
-import dal.tool.analyzer.alyba.ui.chart.ChartSetting;
-import dal.tool.analyzer.alyba.ui.chart.KeyValueChartSetting;
-import dal.tool.analyzer.alyba.ui.chart.ScatterPlotChartSetting;
-import dal.tool.analyzer.alyba.ui.chart.TimeSeriesChartSetting;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.CodeChart;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.ExtChart;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.IpChart;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.MethodChart;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.UriChart;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.VersionChart;
+import dal.tool.analyzer.alyba.ui.chart.regression.RegressionAnalysisChart;
+import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart;
+import dal.tool.analyzer.alyba.ui.chart.regression.RegressionSummary;
 import dal.tool.analyzer.alyba.ui.chart.scatter.OverSizeChart;
 import dal.tool.analyzer.alyba.ui.chart.scatter.OverTimeChart;
+import dal.tool.analyzer.alyba.ui.chart.setting.ChartSetting;
+import dal.tool.analyzer.alyba.ui.chart.setting.KeyValueChartSetting;
+import dal.tool.analyzer.alyba.ui.chart.setting.RegressionAnalysisChartSetting;
+import dal.tool.analyzer.alyba.ui.chart.setting.ResourceChartSetting;
+import dal.tool.analyzer.alyba.ui.chart.setting.ScatterPlotChartSetting;
+import dal.tool.analyzer.alyba.ui.chart.setting.TimeSeriesChartSetting;
 import dal.tool.analyzer.alyba.ui.chart.timeseries.IpResPerMinChart;
+import dal.tool.analyzer.alyba.ui.chart.timeseries.ResourceChart;
+import dal.tool.analyzer.alyba.ui.chart.timeseries.ResourceChart.ResourceType;
 import dal.tool.analyzer.alyba.ui.chart.timeseries.TxDailyChart;
 import dal.tool.analyzer.alyba.ui.chart.timeseries.TxDailyPerMinChart;
 import dal.tool.analyzer.alyba.ui.chart.timeseries.TxHourlyChart;
@@ -58,32 +70,51 @@ import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.ReflectionUtil;
 import dal.util.db.ObjectDBUtil;
 import dal.util.swt.ImageUtil;
+import dal.util.swt.MessageUtil;
 
 public class ResultChart extends Composite {
 
 	private static LinkedHashMap<String,Class<?>> map_data = new LinkedHashMap<String,Class<?>>(15); 
 	private SashForm sf_main;
+	private SashForm sf_regression;
+	private SashForm sf_regression2;
 	private Composite comp_left;
 	private Composite comp_right;
 	private Composite comp_chart;
+	private Composite comp_regression;
+	private Composite comp_regression_top;
+	private Composite comp_regression_left;
 	private Group grp_left;
 	private Group grp_right;
 	private Combo cb_data;
 	private Label lb_data;
 	private Label lb_type;
 	private ToolBar tb_charttype;
+	private ToolBar tb_restype;
 	private ToolItem ti_line;
 	private ToolItem ti_hbar;
 	private ToolItem ti_vbar;
 	private ToolItem ti_pie;
 	private ToolItem ti_scatter;
+	private ToolItem ti_all;
+	private ToolItem ti_cpu;
+	private ToolItem ti_memory;
+	private ToolItem ti_disk;
+	private ToolItem ti_network;
+	
 	private Frame frame_chart;
+	private Frame frame_regression_top;
+	private Frame frame_regression_bottom;
 	private String current_data_name;
 	private Chart current_chart;
 	private ChartSetting current_setting;
 	private ChartSetting chart_setting_ts;
 	private ChartSetting chart_setting_kv;
 	private ChartSetting chart_setting_sp;
+	private ChartSetting chart_setting_rs;
+	private ChartSetting chart_setting_ra;
+	private RegressionSummary regression_summary;
+	private boolean existsResourceData;
 	
 	private ObjectDBUtil db = null;
 	private EntityManager em = null;
@@ -104,8 +135,8 @@ public class ResultChart extends Composite {
 		map_data.put("CODE", CodeChart.class);
 		map_data.put("Over-Time", OverTimeChart.class);
 		map_data.put("Over-Size", OverSizeChart.class);
-		/* TODO: customizable chart */
-		//map_data.put("User-Defined", UserDefinedChart.class);
+		map_data.put("System Resource", ResourceChart.class);
+		map_data.put("Regression Analysis", RegressionChart.class);
 	}
 	
 	public ResultChart(Composite parent, int style) {
@@ -168,6 +199,7 @@ public class ResultChart extends Composite {
 		fd_lb_data.left = new FormAttachment(0, 5);
 		lb_data = new Label(grp_left, SWT.LEFT);
 		lb_data.setLayoutData(fd_lb_data);
+		lb_data.setFont(Utility.getFont());
 		lb_data.setText("Data");
 		
 		FormData fd_cb_data = new FormData();
@@ -176,22 +208,24 @@ public class ResultChart extends Composite {
 		fd_cb_data.right = new FormAttachment(100, -5);
 	    cb_data = new Combo(grp_left, SWT.DROP_DOWN | SWT.READ_ONLY);
 	    cb_data.setLayoutData(fd_cb_data);
+	    cb_data.setFont(Utility.getFont());
 
 		FormData fd_lb_type = new FormData();
 		fd_lb_type.top = new FormAttachment(lb_data, 30);
 		fd_lb_type.left = new FormAttachment(0, 5);
 		lb_type = new Label(grp_left, SWT.LEFT);
 		lb_type.setLayoutData(fd_lb_type);
+		lb_type.setFont(Utility.getFont());
 		lb_type.setText("Type");
 		
-		FormData fd_toolBar = new FormData();
-		fd_toolBar.top = new FormAttachment(lb_type, -4, SWT.TOP);
-		fd_toolBar.left = new FormAttachment(lb_type, 10);
-		fd_toolBar.right = new FormAttachment(100, -5);
+		FormData fd_toolBar_type = new FormData();
+		fd_toolBar_type.top = new FormAttachment(lb_type, -4, SWT.TOP);
+		fd_toolBar_type.left = new FormAttachment(lb_type, 10);
+		fd_toolBar_type.right = new FormAttachment(100, -5);
 		tb_charttype = new ToolBar(grp_left, SWT.RIGHT);
-		tb_charttype.setLayoutData(fd_toolBar);
+		tb_charttype.setLayoutData(fd_toolBar_type);
 		tb_charttype.setEnabled(false);
-		
+		tb_charttype.setVisible(false);
 		ti_line = new ToolItem(tb_charttype, SWT.CHECK);
 		ti_line.setImage(ImageUtil.resize(ImageUtil.getImage(Constant.IMAGE_PATH_CHART_LINE), 16, 16));
 		ti_line.setToolTipText("Line Chart");
@@ -211,7 +245,35 @@ public class ResultChart extends Composite {
 		ti_scatter = new ToolItem(tb_charttype, SWT.CHECK);
 		ti_scatter.setImage(ImageUtil.resize(ImageUtil.getImage(Constant.IMAGE_PATH_CHART_SCATTER), 16, 16));
 		ti_scatter.setToolTipText("Scatter Plot Chart");
-		
+
+		FormData fd_toolBar_res = new FormData();
+		fd_toolBar_res.top = new FormAttachment(lb_type, -4, SWT.TOP);
+		fd_toolBar_res.left = new FormAttachment(lb_type, 10);
+		fd_toolBar_res.right = new FormAttachment(100, -5);
+		tb_restype = new ToolBar(grp_left, SWT.RIGHT);
+		tb_restype.setLayoutData(fd_toolBar_res);
+		tb_restype.setEnabled(false);
+		tb_restype.setVisible(false);
+		ti_all = new ToolItem(tb_restype, SWT.CHECK);
+		ti_all.setImage(ImageUtil.resize(ImageUtil.getImage(Constant.IMAGE_PATH_CHART_ALL), 16, 16));
+		ti_all.setToolTipText("All Charts");
+		new ToolItem(tb_restype, SWT.SEPARATOR);
+		ti_cpu = new ToolItem(tb_restype, SWT.CHECK);
+		ti_cpu.setImage(ImageUtil.resize(ImageUtil.getImage(Constant.IMAGE_PATH_CHART_CPU), 16, 16));		
+		ti_cpu.setToolTipText("CPU Chart");
+		new ToolItem(tb_restype, SWT.SEPARATOR);
+		ti_memory = new ToolItem(tb_restype, SWT.CHECK);
+		ti_memory.setImage(ImageUtil.resize(ImageUtil.getImage(Constant.IMAGE_PATH_CHART_MEMORY), 16, 16));		
+		ti_memory.setToolTipText("Memory Chart");
+		new ToolItem(tb_restype, SWT.SEPARATOR);
+		ti_disk = new ToolItem(tb_restype, SWT.CHECK);
+		ti_disk.setImage(ImageUtil.resize(ImageUtil.getImage(Constant.IMAGE_PATH_CHART_DISK), 16, 16));
+		ti_disk.setToolTipText("Disk Chart");
+		new ToolItem(tb_restype, SWT.SEPARATOR);
+		ti_network = new ToolItem(tb_restype, SWT.CHECK);
+		ti_network.setImage(ImageUtil.resize(ImageUtil.getImage(Constant.IMAGE_PATH_CHART_NETWORK), 16, 16));
+		ti_network.setToolTipText("Network Chart");
+
 		FormData fd_comp_chart_setting_ts = new FormData();
 		fd_comp_chart_setting_ts.left = new FormAttachment(0, -5);
 		fd_comp_chart_setting_ts.right = new FormAttachment(100, 5);
@@ -239,7 +301,23 @@ public class ResultChart extends Composite {
 		chart_setting_sp.setLayoutData(fd_comp_chart_setting_sp);
 		chart_setting_sp.setVisible(false);
 
-		/* TODO: CustomizeChartSetting */
+		FormData fd_comp_chart_setting_rs = new FormData();
+		fd_comp_chart_setting_rs.left = new FormAttachment(0, -5);
+		fd_comp_chart_setting_rs.right = new FormAttachment(100, 5);
+		fd_comp_chart_setting_rs.top = new FormAttachment(tb_charttype, 30);
+		fd_comp_chart_setting_rs.bottom = new FormAttachment(100, -5);
+		chart_setting_rs = new ResourceChartSetting(grp_left, this);
+		chart_setting_rs.setLayoutData(fd_comp_chart_setting_rs);
+		chart_setting_rs.setVisible(false);
+
+		FormData fd_comp_chart_setting_ra = new FormData();
+		fd_comp_chart_setting_ra.left = new FormAttachment(0, -5);
+		fd_comp_chart_setting_ra.right = new FormAttachment(100, 5);
+		fd_comp_chart_setting_ra.top = new FormAttachment(cb_data, 30);
+		fd_comp_chart_setting_ra.bottom = new FormAttachment(100, -5);
+		chart_setting_ra = new RegressionAnalysisChartSetting(grp_left, this);
+		chart_setting_ra.setLayoutData(fd_comp_chart_setting_ra);
+		chart_setting_ra.setVisible(false);
 
 		FormLayout forml_grp_right = new FormLayout();
 		forml_grp_right.marginHeight = 10;
@@ -255,11 +333,34 @@ public class ResultChart extends Composite {
 		fd_comp_chart.top = new FormAttachment(0);
 		fd_comp_chart.bottom = new FormAttachment(100, -5);
 		comp_chart = new Composite(grp_right, SWT.EMBEDDED);
+		comp_chart.setLayout(new FillLayout(SWT.HORIZONTAL));
 		comp_chart.setLayoutData(fd_comp_chart);
+		comp_chart.setVisible(false);
 	    frame_chart = SWT_AWT.new_Frame(comp_chart);
-	    frame_chart.setVisible(false);
+
+		FormData fd_sf_regression = new FormData();
+		fd_sf_regression.left = new FormAttachment(0);
+		fd_sf_regression.right = new FormAttachment(100);
+		fd_sf_regression.top = new FormAttachment(0);
+		fd_sf_regression.bottom = new FormAttachment(100, -5);
+		comp_regression = new Composite(grp_right, SWT.EMBEDDED);		
+		comp_regression.setLayout(new FillLayout(SWT.HORIZONTAL));
+		comp_regression.setLayoutData(fd_sf_regression);
+		comp_regression.setVisible(false);
 		
-	    sf_main.setWeights(new int[] {280, 961});
+	    sf_regression = new SashForm(comp_regression, SWT.VERTICAL);
+	    sf_regression.setLayout(new FillLayout());
+	    sf_regression.setSashWidth(20);
+		comp_regression_top = new Composite(sf_regression, SWT.EMBEDDED);
+	    frame_regression_top = SWT_AWT.new_Frame(comp_regression_top);
+
+	    sf_regression2 = new SashForm(sf_regression, SWT.HORIZONTAL);
+	    sf_regression2.setSashWidth(10);
+	    comp_regression_left = new Composite(sf_regression2, SWT.EMBEDDED);	
+	    frame_regression_bottom = SWT_AWT.new_Frame(comp_regression_left);	    
+	    regression_summary = new RegressionSummary(sf_regression2);
+
+		resize(new Rectangle(-1, -1, getSize().x+21, getSize().y));
 	    
 	}
 
@@ -301,6 +402,36 @@ public class ResultChart extends Composite {
 			}
 		});
 
+		ti_all.addListener(SWT.Selection, new Listener() {			
+			public void handleEvent(Event e) {
+				drawResourceChart(ResourceType.ALL, cb_data.getText());
+			}
+		});
+
+		ti_cpu.addListener(SWT.Selection, new Listener() {			
+			public void handleEvent(Event e) {
+				drawResourceChart(ResourceType.CPU, cb_data.getText());
+			}
+		});
+		
+		ti_memory.addListener(SWT.Selection, new Listener() {			
+			public void handleEvent(Event e) {
+				drawResourceChart(ResourceType.Memory, cb_data.getText());
+			}
+		});
+
+		ti_disk.addListener(SWT.Selection, new Listener() {
+			public void handleEvent(Event e) {
+				drawResourceChart(ResourceType.Disk, cb_data.getText());
+			}
+		});
+
+		ti_network.addListener(SWT.Selection, new Listener() {			
+			public void handleEvent(Event e) {
+				drawResourceChart(ResourceType.Network, cb_data.getText());
+			}
+		});
+		
 	}
 
 	private void checkChartTypeButtons(Widget item) {
@@ -308,11 +439,19 @@ public class ResultChart extends Composite {
 		ti_vbar.setSelection(ti_vbar.equals(item));
 		ti_hbar.setSelection(ti_hbar.equals(item));
 		ti_pie.setSelection(ti_pie.equals(item));
-		ti_scatter.setSelection(ti_scatter.equals(item));
-		
+		ti_scatter.setSelection(ti_scatter.equals(item));		
 		chart_setting_ts.setVisible(ti_line.equals(item));
 		chart_setting_kv.setVisible((ti_vbar.equals(item) || ti_hbar.equals(item) || ti_pie.equals(item)));
 		chart_setting_sp.setVisible(ti_scatter.equals(item));
+	}
+	
+	private void checkResourceChartTypeButtons(Widget item) {
+		ti_all.setSelection(ti_all.equals(item));
+		ti_cpu.setSelection(ti_cpu.equals(item));
+		ti_memory.setSelection(ti_memory.equals(item));
+		ti_disk.setSelection(ti_disk.equals(item));
+		ti_network.setSelection(ti_network.equals(item));
+		chart_setting_rs.setVisible(true);
 	}
 	
 	public void load() throws Exception {
@@ -331,12 +470,21 @@ public class ResultChart extends Composite {
 			if(type != null) {
 				condition = "WHERE o.type = '" + type + "'";
 			}
-			String count_query = "SELECT COUNT(o) FROM " + getDataClassOfChart(map_data.get(name)).getName() + " AS o " + condition;			
+			String table_name = "Regression Analysis".equals(name) ? "TPMEntryVO" : getDataClassOfChart(map_data.get(name)).getName();  
+			String count_query = "SELECT COUNT(o) FROM " + table_name + " AS o " + condition;			
 			long count = db.select(em, count_query, Long.class, null);
-			if(show && ("User-Defined".equals(name) || count > 0)) {
+			if("System Resource".equals(name)) {
+				existsResourceData = count > 0;
+			}
+			if(show && count > 0) {
 				cb_data.add(name);
 			}
 		}
+		chart_setting_ts.init();
+		chart_setting_kv.init();
+		chart_setting_sp.init();
+		chart_setting_rs.init();
+		chart_setting_ra.init();
 	}
 	
 	private <E extends EntryVO> void dataSelected(String dataName) {
@@ -346,28 +494,59 @@ public class ResultChart extends Composite {
 				current_setting.setVisible(false);
 			}
 			resetChartSettings(dataName);
-			drawChart(null, dataName);
+			if(dataName.equals("System Resource")) {
+				drawResourceChart(null, dataName);
+			} else if(dataName.equals("Regression Analysis")) {
+				drawRegressionChart(dataName);
+			} else {
+				drawChart(null, dataName);
+			}
 		}
 	}
 	
 	@SuppressWarnings("unchecked")
 	private void resetChartSettings(String name) {
 		try {
-			Class<Chart> chartClass = (Class<Chart>)map_data.get(name);
-			Chart chart = chartClass.newInstance();
-			boolean resetTS = false;
-			boolean resetKV = false;
-			boolean resetSP = false;
-			for(Type type : chart.getSupportChartTypes()) {
-				if(!resetTS && type == Type.TimeSeries) {
-					chart_setting_ts.reset(chart);
-					resetTS = true;
-				} else if(!resetKV && (type == Type.VerticalBar || type == Type.HorizontalBar || type == Type.Pie)) {
-					chart_setting_kv.reset(chart);
-					resetKV = true;
-				} else if(!resetSP && type == Type.ScatterPlot) {
-					chart_setting_sp.reset(chart);
-					resetSP = true;
+			if(name.equals("System Resource")) {
+				lb_type.setVisible(true);
+				tb_charttype.setVisible(false);
+				tb_restype.setVisible(true);
+				comp_chart.setVisible(true);
+				comp_regression.setVisible(false);				
+				Class<Chart> chartClass = (Class<Chart>)map_data.get(name);
+				Chart chart = chartClass.newInstance();
+				chart_setting_rs.reset(chart);
+			} else if(name.equals("Regression Analysis")) {
+				lb_type.setVisible(false);
+				tb_charttype.setVisible(false);
+				tb_restype.setVisible(false);
+				comp_chart.setVisible(false);
+				comp_regression.setVisible(true);
+				Class<Chart> chartClass = (Class<Chart>)map_data.get(name);
+				Chart chart = chartClass.newInstance();
+				chart_setting_ra.reset(chart);
+			} else {
+				lb_type.setVisible(true);
+				tb_restype.setVisible(false);
+				tb_charttype.setVisible(true);
+				comp_chart.setVisible(true);
+				comp_regression.setVisible(false);				
+				Class<Chart> chartClass = (Class<Chart>)map_data.get(name);
+				Chart chart = chartClass.newInstance();
+				boolean resetTS = false;
+				boolean resetKV = false;
+				boolean resetSP = false;
+				for(Type type : chart.getSupportChartTypes()) {
+					if(!resetTS && type == Type.TimeSeries) {
+						chart_setting_ts.reset(chart);
+						resetTS = true;
+					} else if(!resetKV && (type == Type.VerticalBar || type == Type.HorizontalBar || type == Type.Pie)) {
+						chart_setting_kv.reset(chart);
+						resetKV = true;
+					} else if(!resetSP && type == Type.ScatterPlot) {
+						chart_setting_sp.reset(chart);
+						resetSP = true;
+					}
 				}
 			}
 		} catch(Exception e) {
@@ -377,7 +556,7 @@ public class ResultChart extends Composite {
 
 	@SuppressWarnings("unchecked")
 	private <E extends EntryVO> void drawChart(Type chartType, String name) {
-		frame_chart.removeAll();		
+		frame_chart.removeAll();
 		try {
 			Class<Chart> chartClass = (Class<Chart>)map_data.get(name);
 			Class<E> dataClass = (Class<E>)getDataClassOfChart(chartClass);
@@ -412,8 +591,125 @@ public class ResultChart extends Composite {
 		} catch(Exception e) {
 			Logger.error(e);
 			frame_chart.removeAll();
-			frame_chart.setVisible(false);
+			comp_chart.setVisible(false);
 			tb_charttype.setEnabled(false);
+			MessageUtil.showErrorMessage(getShell(), e.getMessage());
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private <E extends EntryVO> void drawResourceChart(ResourceType chartType, String name) {
+		frame_chart.removeAll();		
+		try {
+			Class<ResourceChart> chartClass = (Class<ResourceChart>)map_data.get(name);
+			Class<E> dataClass = (Class<E>)getDataClassOfChart(chartClass);
+			ResourceChart chart = chartClass.newInstance();
+			chart.setResourceType(chartType==null ? ResourceType.ALL : chartType);
+			chart.setType(Type.TimeSeries);
+			ChartSetting chartSetting = chart_setting_rs;			
+			current_chart = chart;
+			current_setting = chartSetting;
+			checkResourceChartType(chart);
+			if(chartSetting != null) {
+				chartSetting.setVisible(true);
+				chartSetting.configure(chart);
+			}			
+			String query = "SELECT t FROM " + dataClass.getSimpleName() + " AS t ";
+			List<E> dataList = db.selectList(em, query, dataClass, null);
+			chart.draw(dataList);
+			ChartPanel chartPanel = chart.getChartPanel();
+			chartPanel.setPreferredSize(frame_chart.getSize());
+			frame_chart.add(chartPanel);
+			frame_chart.setVisible(true);
+			tb_restype.setEnabled(true);
+			comp_chart.setFocus();
+			current_data_name = name;
+		} catch(Exception e) {
+			Logger.error(e);
+			frame_chart.removeAll();
+			comp_chart.setVisible(false);
+			tb_restype.setEnabled(false);
+			MessageUtil.showErrorMessage(getShell(), e.getMessage());
+		}
+	}
+
+	private <E extends EntryVO> void drawRegressionChart(String name) {
+	    sf_regression.setWeights(new int[] {40, 60});
+	    sf_regression2.setWeights(new int[] {65, 35});
+		frame_regression_top.removeAll();		
+		frame_regression_bottom.removeAll();
+		try {			
+			RegressionChart chart = new RegressionChart();
+			ChartSetting chartSetting = chart_setting_ra;		
+			current_chart = chart;
+			current_setting = chartSetting;
+			if(chartSetting != null) {
+				chartSetting.setVisible(true);
+				chartSetting.configure(chart);
+			}			
+			List<RegressionEntryVO> dataList = null;
+			StringBuffer query = new StringBuffer();
+			boolean ignoreResourceData = false;
+			if(existsResourceData) {
+				query.append("SELECT t.unit_date, r.name, r.group, t.req_count, t.request_ip_count, t.avg_response_time, t.err_count, r.cpu, r.memory, r.disk, r.network ");
+				query.append("FROM TPMEntryVO as t, ResourceUsageEntryVO as r "); 
+				query.append("WHERE t.unit_date = r.unit_date"); 
+				List<Object[]> tempList = db.selectList(em, query.toString(), Object[].class, null);
+				dataList = new ArrayList<RegressionEntryVO>(tempList.size());
+				for(Object[] row : tempList) {
+					RegressionEntryVO vo = new RegressionEntryVO((Date)row[0], (String)row[1], (String)row[2]);
+					vo.setRequestTxCount((Integer)row[3]);
+					vo.setRequestIpCount((Integer)row[4]);
+					vo.setAverageResponseTimeMS((Double)row[5]);
+					vo.setErrorCount((Integer)row[6]);
+					vo.setCpuUsage((Double)row[7]);
+					vo.setMemoryUsage((Double)row[8]);
+					vo.setDiskUsage((Double)row[9]);
+					vo.setNetworkUsage((Double)row[10]);
+					dataList.add(vo);
+				}
+				if(dataList.size() < 1) {
+					ignoreResourceData = MessageUtil.showConfirmMessage(getShell(), "The time of the transaction and resource data do not match. Do you want analyze for regression without resource?");
+					if(!ignoreResourceData) {
+						return;
+					}
+				}
+			}
+			if(!existsResourceData || ignoreResourceData) {
+				query.append("SELECT t FROM TPMEntryVO as t"); 
+				List<TPMEntryVO> tempList = db.selectList(em, query.toString(), TPMEntryVO.class, null);
+				dataList = new ArrayList<RegressionEntryVO>(tempList.size());
+				for(TPMEntryVO row : tempList) {
+					RegressionEntryVO vo = new RegressionEntryVO(row.getUnitDate());
+					vo.setRequestTxCount(row.getRequestCount());
+					vo.setRequestIpCount(row.getRequestIPCount());
+					vo.setAverageResponseTimeMS(row.getAverageResponseTime());
+					vo.setErrorCount(row.getErrorCount());
+					dataList.add(vo);
+				}
+			}
+			if(dataList.size() < 1) {
+				throw new Exception("No data to analyze for regression.");
+			}
+			chart.initCharts();
+			chart.draw(dataList);			
+			ChartPanel chartPanel_top = chart.getChartPanel(0);
+			chartPanel_top.setPreferredSize(frame_regression_top.getSize());
+			frame_regression_top.add(chartPanel_top);
+			frame_regression_top.setVisible(true);
+			ChartPanel chartPanel_bottom = chart.getChartPanel(1);
+			chartPanel_bottom.setPreferredSize(frame_regression_bottom.getSize());
+			frame_regression_bottom.add(chartPanel_bottom);
+			frame_regression_bottom.setVisible(true);
+			regression_summary.apply((RegressionAnalysisChart)chart.getChart(1));
+			comp_regression.setFocus();
+			current_data_name = name;			
+		} catch(Exception e) {
+			Logger.error(e);
+			frame_regression_top.removeAll();		
+			frame_regression_bottom.removeAll();
+			comp_regression.setVisible(false);
+			MessageUtil.showErrorMessage(getShell(), e.getMessage());
 		}
 	}
 
@@ -424,20 +720,34 @@ public class ResultChart extends Composite {
 	
 	public void resetData() {
 		cb_data.removeAll();
+		lb_type.setVisible(false);
+		tb_charttype.setVisible(false);
 		tb_charttype.setEnabled(false);
+		tb_restype.setVisible(false);
+		tb_restype.setEnabled(false);
 		frame_chart.removeAll();
-		frame_chart.setVisible(false);
+		comp_chart.setVisible(false);
+		comp_regression.setVisible(false);
 		chart_setting_ts.reset(null);
-		chart_setting_kv.reset(null);
-		chart_setting_sp.reset(null);
 		chart_setting_ts.setVisible(false);
+		chart_setting_kv.reset(null);
 		chart_setting_kv.setVisible(false);
+		chart_setting_sp.reset(null);
 		chart_setting_sp.setVisible(false);
+		chart_setting_rs.reset(null);
+		chart_setting_rs.setVisible(false);
+		chart_setting_ra.reset(null);
+		chart_setting_ra.setVisible(false);
+		regression_summary.reset();
 		current_data_name = null;
+		existsResourceData = false;
 	}
 	
 	private Class<?> getDataClassOfChart(Class<?> chart_class) {
-		try { 
+		try {
+			if(chart_class == RegressionChart.class) {
+				return ResourceUsageEntryVO.class;
+			}
 			for(Field f : ReflectionUtil.getFields(chart_class)) {
 				if("DATA_CLASS".equals(f.getName())) {
 					f.setAccessible(true);
@@ -451,7 +761,7 @@ public class ResultChart extends Composite {
 	}
 	
 	private void checkChartType(Chart chart) {
-		for(Type t : Chart.Type.values()) {
+		for(Type t : Type.values()) {
 			boolean flag = chart.checkChartType(t);
 			if(t == Type.TimeSeries) {
 				ti_line.setEnabled(flag);
@@ -478,7 +788,45 @@ public class ResultChart extends Composite {
 			checkChartTypeButtons(ti_scatter);
 		}
 	}
+
+	private long getResourceCount(ResourceType type) {
+		try {
+			String count_query = "SELECT COUNT(o) FROM ResourceUsageEntryVO AS o WHERE " + type.name().toLowerCase() + " > -1";			
+			return db.select(em, count_query, Long.class, null);
+		} catch(Exception e) {
+			Logger.error(e);
+			return -1L;
+		}
+	}
 	
+	private void checkResourceChartType(ResourceChart chart) {		
+		boolean exist_cpu = getResourceCount(ResourceType.CPU) > 0;
+		boolean exist_memory = getResourceCount(ResourceType.Memory) > 0;
+		boolean exist_disk = getResourceCount(ResourceType.Disk) > 0;
+		boolean exist_network = getResourceCount(ResourceType.Network) > 0;		
+		ti_all.setEnabled(true);
+		ti_cpu.setEnabled(exist_cpu);
+		ti_memory.setEnabled(exist_memory);
+		ti_disk.setEnabled(exist_disk);
+		ti_network.setEnabled(exist_network);
+		chart.setCpuAvailable(exist_cpu);
+		chart.setMemoryAvailable(exist_memory);
+		chart.setDiskAvailable(exist_disk);
+		chart.setNetworkAvailable(exist_network);		
+		ResourceType currentType = chart.getResourceType();
+		if(currentType == ResourceType.ALL) {
+			checkResourceChartTypeButtons(ti_all);
+		} else if(currentType == ResourceType.CPU) {
+			checkResourceChartTypeButtons(ti_cpu);
+		} else if(currentType == ResourceType.Memory) {
+			checkResourceChartTypeButtons(ti_memory);
+		} else if(currentType == ResourceType.Disk) {
+			checkResourceChartTypeButtons(ti_disk);
+		} else if(currentType == ResourceType.Network) {
+			checkResourceChartTypeButtons(ti_network);
+		}
+	}
+
 	private ChartSetting getChartSetting(Type charType) {
 		if(charType == Type.TimeSeries) {
 			return chart_setting_ts;
@@ -491,7 +839,14 @@ public class ResultChart extends Composite {
 	}
 	
 	public void clickApplyButton() {
-		drawChart(current_chart.getType(), cb_data.getText());
+		String dataName = cb_data.getText();
+		if(dataName.equals("System Resource")) {
+			drawResourceChart(((ResourceChart)current_chart).getResourceType(), dataName);
+		} else if(dataName.equals("Regression Analysis")) {
+			drawRegressionChart(dataName);
+		} else {
+			drawChart(current_chart.getType(), dataName);
+		}
 	}
 	
 	public Chart getCurrentChart() {
@@ -501,6 +856,10 @@ public class ResultChart extends Composite {
 	private String getDataTypeByName(String name) {
 		if(name == null) {
 			return null;
+		} else if(name.equals("Tx: Daily")) {
+			return "DAY";
+		} else if(name.equals("Tx: Hourly")) {
+			return "HOUR";
 		} else if(name.equals("URI")) {
 			return "URI";
 		} else if(name.equals("EXT")) {

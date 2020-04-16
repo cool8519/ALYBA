@@ -28,6 +28,7 @@ public abstract class ProgressBarTask implements Runnable {
 	protected boolean isSuccessed = true;
 	protected String failedMessage = null;
 	protected long startTime;
+	protected Object resultData = null;
 
 	public abstract void doTask() throws Exception;
 
@@ -58,6 +59,14 @@ public abstract class ProgressBarTask implements Runnable {
 		failedMessage = "Task has been canceled by user.";
 	}
 
+	public Object getResultData() {
+		return resultData;
+	}
+	
+	public void setResultData(Object data) {
+		resultData = data;
+	}
+	
 	public int[] getDetailStatus() {
 		return status;
 	}

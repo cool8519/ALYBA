@@ -16,6 +16,7 @@ import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PiePlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.renderer.category.BarRenderer;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.general.DefaultPieDataset;
 import org.jfree.ui.RectangleInsets;
@@ -162,7 +163,7 @@ public abstract class KeyValueChart extends Chart {
 	public void createChart() {
 		if(chartType == Type.Pie) {
 		    jfreeChart = ChartFactory.createPieChart(title, pieDataset, true, true, false);
-		    jfreeChart.setPadding(new RectangleInsets(0, 20, 20, 20));
+		    jfreeChart.setPadding(new RectangleInsets(0, 20, 0, 20));
 		    PiePlot piePlot = (PiePlot)jfreeChart.getPlot();
 		    piePlot.setToolTipGenerator(new StandardPieToolTipGenerator("{0}: ({1}, {2})", DF_NUMBER, DF_PERCENT));
 		    if(show_item_label) {
@@ -170,6 +171,10 @@ public abstract class KeyValueChart extends Chart {
 		    } else {
 		    	piePlot.setLabelGenerator(null);
 		    }
+		    TextTitle title = jfreeChart.getTitle();
+		    RectangleInsets padding = title.getPadding();
+		    double bottomPadding = Math.max(padding.getBottom(), 10.0D);
+		    title.setPadding(padding.getTop(), padding.getLeft(), bottomPadding, padding.getRight());			
 		} else {
 			PlotOrientation plotOrientation = (chartType == Type.VerticalBar) ? PlotOrientation.VERTICAL : PlotOrientation.HORIZONTAL; 
 			jfreeChart = ChartFactory.createBarChart(title, label_name, label_value, categoryDataset, plotOrientation, true, true, false);
@@ -198,6 +203,10 @@ public abstract class KeyValueChart extends Chart {
 		    } else {
 			    renderer.setBaseItemLabelsVisible(false);
 		    }
+		    TextTitle title = jfreeChart.getTitle();
+		    RectangleInsets padding = title.getPadding();
+		    double bottomPadding = Math.max(padding.getBottom(), 4.0D);
+		    title.setPadding(padding.getTop(), padding.getLeft(), bottomPadding, padding.getRight());
 		}
 	}
 

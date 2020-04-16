@@ -162,7 +162,11 @@ public class ObjectDBUtil {
 	public <E> long count(EntityManager em, Class<E> clazz) throws Exception {
 		return select(em, "SELECT COUNT(o) FROM " + clazz.getName() + " AS o", Long.class, null);
 	}
-	
+
+	public <E> long count(EntityManager em, String sql) throws Exception {
+		return select(em, sql, Long.class, null);
+	}
+
 	public <E> E select(EntityManager em, Class<E> clazz) throws Exception {
 		return select(em, "SELECT o FROM " + clazz.getName() + " AS o", clazz, null);
 	}
@@ -216,6 +220,7 @@ public class ObjectDBUtil {
 			insert(em, obj);
 			commitTransaction(em, flush, false);
 		} catch(Exception e) {
+			rollbackTransaction(em, flush);
 			throw e;
 		} 
 	}
@@ -237,6 +242,7 @@ public class ObjectDBUtil {
 			delete(em, key, clazz);
 			commitTransaction(em, flush, false);
 		} catch(Exception e) {
+			rollbackTransaction(em, flush);
 			throw e;
 		} 		
 	}
@@ -264,6 +270,7 @@ public class ObjectDBUtil {
 			commitTransaction(em, flush, false);
 			return result;
 		} catch(Exception e) {
+			rollbackTransaction(em, flush);
 			throw e;
 		} 		
 	}

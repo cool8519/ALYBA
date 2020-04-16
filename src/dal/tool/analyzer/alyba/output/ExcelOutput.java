@@ -10,15 +10,14 @@ import javax.persistence.EntityManager;
 
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.output.vo.BadResponseEntryVO;
-import dal.tool.analyzer.alyba.output.vo.DailyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.DateEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
-import dal.tool.analyzer.alyba.output.vo.HourlyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
-import dal.tool.analyzer.alyba.setting.AnalyzerSetting;
+import dal.tool.analyzer.alyba.output.vo.TimeAggregationEntryVO;
+import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
 import dal.util.DateUtil;
 import dal.util.db.ObjectDBUtil;
 import dal.util.excel.ExcelColumn;
@@ -29,7 +28,7 @@ public class ExcelOutput extends ResultOutput {
 
 	private ExcelWriter writer = null;
 
-	public ExcelOutput(AnalyzerSetting setting, ObjectDBUtil db, EntityManager em, String filename) {
+	public ExcelOutput(LogAnalyzerSetting setting, ObjectDBUtil db, EntityManager em, String filename) {
 		super(setting, db, em, filename);
 	}
 
@@ -59,8 +58,8 @@ public class ExcelOutput extends ResultOutput {
 			summaryVo.setCreatedTime(new Date());
 			createSummarySheet(summaryVo);
 			createTPMSheet(getEntryList(TPMEntryVO.class, null));
-			createDaySheet(getEntryList(DailyEntryVO.class, null));
-			createHourSheet(getEntryList(HourlyEntryVO.class, null));
+			createDaySheet(getEntryList(TimeAggregationEntryVO.class, "DAY"));
+			createHourSheet(getEntryList(TimeAggregationEntryVO.class, "HOUR"));
 			createCountSheet(getEntryList(KeyEntryVO.class, "URI"), Type.URI);
 			createCountSheet(getEntryList(KeyEntryVO.class, "IP"), Type.IP);
 			createCountSheet(getEntryList(KeyEntryVO.class, "METHOD"), Type.METHOD);
@@ -267,7 +266,7 @@ public class ExcelOutput extends ResultOutput {
 		writer.addSheet(sheet);
 	}
 
-	private void createDaySheet(List<DailyEntryVO> timeData) throws Exception {
+	private void createDaySheet(List<TimeAggregationEntryVO> timeData) throws Exception {
 		if(timeData == null || timeData.size() < 1) {
 			return;
 		}
@@ -276,7 +275,7 @@ public class ExcelOutput extends ResultOutput {
 		writer.addSheet(sheet);
 	}
 
-	private void createHourSheet(List<HourlyEntryVO> timeData) throws Exception {
+	private void createHourSheet(List<TimeAggregationEntryVO> timeData) throws Exception {
 		if(timeData == null || timeData.size() < 1) {
 			return;
 		}

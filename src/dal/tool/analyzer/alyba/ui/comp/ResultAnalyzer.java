@@ -14,7 +14,11 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.layout.FormAttachment;
+import org.eclipse.swt.layout.FormData;
+import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -31,6 +35,7 @@ import dal.tool.analyzer.alyba.output.vo.SettingEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
+import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.db.ObjectDBUtil;
 import dal.util.swt.FileDialogUtil;
 import dal.util.swt.MessageUtil;
@@ -50,11 +55,14 @@ public class ResultAnalyzer extends Shell {
 	private TabItem tbi_summary;
 	private TabItem tbi_data;
 	private TabItem tbi_chart;
+	private TabItem tbi_resource;
 	private ResultSummary summaryView;
 	private ResultData dataView;
 	private ResultChart chartView;
+	private ResultResource resourceView;
 	private DropTarget droptarget_dbfile;
 
+	private String fileName = null;
 	private ObjectDBUtil db = null;
 	private EntityManager em = null;
 
@@ -74,6 +82,8 @@ public class ResultAnalyzer extends Shell {
 
 		TimeZone.setDefault(Constant.TIMEZONE_UTC);
         Display display = new Display();
+		FontData fd = display.getSystemFont().getFontData()[0];
+		Constant.DEFAULT_FONT_SIZE = fd.getHeight() - (int)Math.ceil((-fd.data.lfHeight-12)/2.0F);
         ResultAnalyzer analyzer = new ResultAnalyzer(display, SWT.SHELL_TRIM, dbFileName);
 
         while(!analyzer.isDisposed()) {
@@ -91,7 +101,7 @@ public class ResultAnalyzer extends Shell {
 			db = ObjectDBUtil.getInstance();
 			em = db.createEntityManager();
 			SettingEntryVO setting = db.select(em, SettingEntryVO.class);
-			return setting.getMappingInfo().containsKey(key);
+			return setting.getLogMappingInfo().containsKey(key);
 		} catch(Exception e) {
 			return false;
 		} finally {
@@ -116,6 +126,7 @@ public class ResultAnalyzer extends Shell {
 		open();
 		layout(true, true);
 		if(fileName != null) {
+			this.fileName = fileName;
 			loadDBFile(fileName);
 		}
 	}
@@ -146,43 +157,89 @@ public class ResultAnalyzer extends Shell {
 		instance = this;
 		
 		setSize(1280, 815);
-		setMinimumSize(840, 815);
+		setMinimumSize(1100, 815);
 		setText("ALYBA " + Constant.PROGRAM_VERSION + " - Result Analyzer");
 		Rectangle dispRect = getDisplay().getMonitors()[0].getBounds();
 		Rectangle shellRect = getBounds();
 		setLocation((dispRect.width - shellRect.width) / 2, (dispRect.height - shellRect.height) / 2);		
 
+		FormLayout forml_main = new FormLayout();
+		forml_main.marginHeight = 10;
+		forml_main.marginWidth = 10;
+		setLayout(forml_main);
+
+		FormData fd_lb_title = new FormData();
+		fd_lb_title.left = new FormAttachment(0);
+		fd_lb_title.top = new FormAttachment(0, 7);
+		fd_lb_title.width = 40;
+		fd_lb_title.height = 15;
 		Label lb_title = new Label(this, SWT.NONE);
-		lb_title.setBounds(10, 17, 40, 15);
+		lb_title.setLayoutData(fd_lb_title);
 		lb_title.setAlignment(SWT.CENTER);
 		lb_title.setText("Title");
+		lb_title.setFont(Utility.getFont());
 
+		FormData fd_txt_title = new FormData();
+		fd_txt_title.left = new FormAttachment(lb_title, 5, SWT.RIGHT);
+		fd_txt_title.top = new FormAttachment(0, 6);
+		fd_txt_title.width = 300;
+		fd_txt_title.height = 15;
 		txt_title = new Text(this, SWT.BORDER | SWT.RESIZE);
-		txt_title.setBounds(56, 15, 300, 19);
+		txt_title.setLayoutData(fd_txt_title);
 		txt_title.setText("");
-		txt_title.setEnabled(false);	
+		txt_title.setFont(Utility.getFont());
+		txt_title.setEnabled(false);		
 		
+		FormData fd_btn_openDB = new FormData();
+		fd_btn_openDB.right = new FormAttachment(100);
+		fd_btn_openDB.top = new FormAttachment(0);
+		fd_btn_openDB.width = 100;
+		fd_btn_openDB.height = 28;
+		btn_openDB = new Button(this, SWT.NONE);
+		btn_openDB.setLayoutData(fd_btn_openDB);
+		btn_openDB.setText("Open DB");
+		btn_openDB.setFont(Utility.getFont());
+
+		FormData fd_lb_notloaded = new FormData();
+		fd_lb_notloaded.top = new FormAttachment(0, 7);
+		fd_lb_notloaded.right = new FormAttachment(btn_openDB, -15);
+		fd_lb_notloaded.width = 137;
+		fd_lb_notloaded.height = 15;
 		lb_notloaded = new Label(this, SWT.NONE);
+		lb_notloaded.setLayoutData(fd_lb_notloaded);
 		lb_notloaded.setAlignment(SWT.RIGHT);
-		lb_notloaded.setBounds(1000, 17, 137, 15);
 		lb_notloaded.setText("Database is not loaded.");
+		lb_notloaded.setFont(Utility.getFont());
 		lb_notloaded.setForeground(SWTResourceManager.getColor(SWT.COLOR_RED));
-		
+
+		FormData fd_pbar_loading = new FormData();
+		fd_pbar_loading.top = new FormAttachment(0, 4);
+		fd_pbar_loading.right = new FormAttachment(btn_openDB, -15);
+		fd_pbar_loading.width = 150;
+		fd_pbar_loading.height = 20;
 		pbar_loading = new ProgressBar(this, SWT.NONE);
+		pbar_loading.setLayoutData(fd_pbar_loading);
 		pbar_loading.setBounds(990, 14, 150, 20);
-		pbar_loading.setMaximum(5);
+		pbar_loading.setMaximum(6);
 		pbar_loading.setSelection(0);
 		pbar_loading.setVisible(false);
-
-		btn_openDB = new Button(this, SWT.NONE);
-		btn_openDB.setText("Open DB");
-		btn_openDB.setBounds(1154, 10, 100, 28);
 		
+		FormData fd_hline_top = new FormData();
+		fd_hline_top.left = new FormAttachment(0);
+		fd_hline_top.right = new FormAttachment(100);
+		fd_hline_top.top = new FormAttachment(btn_openDB, 7);
+		fd_hline_top.height = 10;
 		hline_top = new Label(this, SWT.SEPARATOR | SWT.HORIZONTAL);
-		hline_top.setBounds(10, 45, 1244, 10);
+		hline_top.setLayoutData(fd_hline_top);
 
+		FormData fd_tbf_view = new FormData();
+		fd_tbf_view.left = new FormAttachment(0);
+		fd_tbf_view.right = new FormAttachment(100);
+		fd_tbf_view.top = new FormAttachment(hline_top, 5);
+		fd_tbf_view.bottom = new FormAttachment(100);
 		tbf_view = new TabFolder(this, SWT.NONE);
-		tbf_view.setBounds(10, 60, 1244, 700);
+		tbf_view.setLayoutData(fd_tbf_view);
+		tbf_view.setFont(Utility.getFont());
 
 		tbi_summary = new TabItem(tbf_view, SWT.NONE);
 		tbi_summary.setText("Summary");
@@ -200,9 +257,13 @@ public class ResultAnalyzer extends Shell {
 		tbi_chart.setText("Chart");
 		chartView = new ResultChart(tbf_view, SWT.NONE);
 		chartView.setEnabled(false);
-		tbi_chart.setControl(chartView);
+		tbi_chart.setControl(chartView);		
 		
-		/* TODO: ResultRegression */
+		tbi_resource = new TabItem(tbf_view, SWT.NONE);
+		tbi_resource.setText("Resource");
+		resourceView = new ResultResource(tbf_view, SWT.NONE, this);
+		resourceView.setEnabled(false);
+		tbi_resource.setControl(resourceView);
 		
 		droptarget_dbfile = new DropTarget(this, DND.DROP_MOVE | DND.DROP_DEFAULT);
 		droptarget_dbfile.setTransfer(Constant.FILE_TRANSFER_TYPE);
@@ -250,6 +311,7 @@ public class ResultAnalyzer extends Shell {
 					summaryView.setEnabled(false);
 					dataView.setEnabled(false);
 					chartView.setEnabled(false);
+					resourceView.setEnabled(false);
 					btn_openDB.setText("Open DB");
 					lb_notloaded.setVisible(true);
 				}
@@ -284,14 +346,10 @@ public class ResultAnalyzer extends Shell {
 	}
 
 	private void resize(Rectangle rect) {
-		hline_top.setSize(rect.width-20, hline_top.getBounds().height);
-		lb_notloaded.setLocation(rect.width-264, 17);
-		pbar_loading.setLocation(rect.width-275, 14);
-		btn_openDB.setLocation(rect.width-110, 10);
-		tbf_view.setSize(rect.width-20, rect.height-70);
 		summaryView.resize(rect);
 		dataView.resize(rect);
 		chartView.resize(rect);
+		resourceView.resize(rect);
 	}
 
 	public void resetData() {
@@ -302,19 +360,21 @@ public class ResultAnalyzer extends Shell {
 		btn_openDB.setText("Open DB");
 		summaryView.setEnabled(false);
 		dataView.setEnabled(false);
-		chartView.setEnabled(false);		
+		chartView.setEnabled(false);
+		resourceView.setEnabled(false);
 		summaryView.resetData();
 		dataView.resetData();
 		chartView.resetData();
+		resourceView.resetData();
 		tbf_view.setSelection(0);
 	}
 
 	public void loadDBFile(String fileName) {
 		closeDatabase();
+		initDatabase(fileName);
 		resetData();
 
 		try {
-			initDatabase(fileName);
 			lb_notloaded.setVisible(false);
 			pbar_loading.setSelection(0);
 			pbar_loading.setVisible(true);
@@ -328,8 +388,11 @@ public class ResultAnalyzer extends Shell {
 				pbar_loading.setSelection(4);
 				chartView.load();
 				pbar_loading.setSelection(5);
+				resourceView.load();
+				pbar_loading.setSelection(6);
 				dataView.setEnabled(true);
 				chartView.setEnabled(true);
+				resourceView.setEnabled(true);
 				btn_openDB.setText("Close DB");
 			} else {
 				closeDatabase();
@@ -339,11 +402,16 @@ public class ResultAnalyzer extends Shell {
 			MessageUtil.showErrorMessage(instance, "Failed to load the database.");
 			dataView.setEnabled(false);
 			chartView.setEnabled(false);
+			resourceView.setEnabled(false);
 			lb_notloaded.setVisible(true);
 			closeDatabase();
 		} finally {
 			pbar_loading.setVisible(false);
 		}
+	}
+	
+	public void reloadDBFile() {
+		loadDBFile(this.fileName);
 	}
 	
 	private boolean checkVersion() throws Exception {

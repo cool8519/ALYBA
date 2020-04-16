@@ -10,7 +10,7 @@ import dal.tool.analyzer.alyba.output.vo.BadResponseEntryVO;
 import dal.tool.analyzer.alyba.output.vo.DateEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
-import dal.tool.analyzer.alyba.setting.AnalyzerSetting;
+import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
 import dal.util.db.ObjectDBUtil;
 
 public abstract class ResultOutput {
@@ -27,12 +27,12 @@ public abstract class ResultOutput {
 	protected static final SimpleDateFormat SDF_NoDateMinute = new SimpleDateFormat("HH:mm");
 	protected static final SimpleDateFormat SDF_OuputFile = new SimpleDateFormat("yyyyMMdd.HHmm");
 
-	protected AnalyzerSetting setting = null;
+	protected LogAnalyzerSetting setting = null;
 	protected ObjectDBUtil db = null;
 	protected EntityManager em = null;
 	protected String filename = null;
 
-	public ResultOutput(AnalyzerSetting setting, ObjectDBUtil db, EntityManager em, String filename) {
+	public ResultOutput(LogAnalyzerSetting setting, ObjectDBUtil db, EntityManager em, String filename) {
 		this.setting = setting;
 		this.db = db;
 		this.em = em;
@@ -45,6 +45,9 @@ public abstract class ResultOutput {
 		boolean desc = false;
 		if(clazz.getSuperclass() == DateEntryVO.class) {
 			sortColumn = "unit_date";
+			if(type != null) {
+				condition = "WHERE vo.type = '" + type + "' ";
+			}
 		} else if(clazz == KeyEntryVO.class) {
 			if(setting.outputSortBy == "COUNT") {
 				sortColumn = "req_count";

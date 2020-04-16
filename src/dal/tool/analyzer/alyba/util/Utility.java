@@ -202,7 +202,11 @@ public class Utility {
 	public static Font getFont(int style) {
 		return SWTResourceManager.getFont(Constant.DEFAULT_FONT_NAME, Constant.DEFAULT_FONT_SIZE, style);
 	}
-	
+
+	public static Font getFont(String name) {
+		return SWTResourceManager.getFont(name, Constant.DEFAULT_FONT_SIZE, SWT.NONE);
+	}
+
 	public static Font getFont() {
 		return SWTResourceManager.getFont(Constant.DEFAULT_FONT_NAME, Constant.DEFAULT_FONT_SIZE, SWT.NONE);
 	}

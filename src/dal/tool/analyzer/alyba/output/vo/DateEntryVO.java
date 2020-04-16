@@ -10,7 +10,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 
-import dal.tool.analyzer.alyba.setting.AnalyzerSetting;
+import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
 
 @Entity
 public abstract class DateEntryVO extends EntryVO {
@@ -38,6 +38,7 @@ public abstract class DateEntryVO extends EntryVO {
 	private int err_count = 0;
 	private float filter_err_ratio = 0F;
 	private float entry_err_ratio = 0F;
+	private int request_ip_count = 0; 
 	private Set<String> request_ip_list = new HashSet<String>();
 
 	public DateEntryVO(Date unit_date) {
@@ -56,12 +57,13 @@ public abstract class DateEntryVO extends EntryVO {
 		req_count++;
 	}
 
-	public void addData(ResponseEntryVO vo, AnalyzerSetting setting) {
+	public void addData(ResponseEntryVO vo, LogAnalyzerSetting setting) {
 		req_count++;
 		if(setting.fieldMapping.isMappedIP()) {
 			if(vo.getRequestIP() != null) {
 				if(request_ip_list.contains(vo.getRequestIP()) == false) {
 					request_ip_list.add(vo.getRequestIP());
+					request_ip_count = request_ip_list.size();
 				}
 			}
 		}
@@ -194,14 +196,15 @@ public abstract class DateEntryVO extends EntryVO {
 
 	public void addRequestIPList(Set<String> l) {
 		request_ip_list.addAll(l);
+		request_ip_count = request_ip_list.size();
 	}
 
 	public int getRequestIPCount() {
-		return request_ip_list.size();
+		return request_ip_count;
 	}
 
 	public String toString() {
-		return getClass().getSimpleName() + "(" +hashCode() + ")" + " [unit_date=" + unit_date + ", req_total=" + req_total + ", filter_req_total=" + filter_req_total + ", req_count=" + req_count + ", req_ratio=" + req_ratio + ", filter_req_ratio=" + filter_req_ratio + ", avg_response_time=" + avg_response_time + ", max_response_time=" + max_response_time + ", avg_response_byte=" + avg_response_byte + ", max_response_byte=" + max_response_byte + ", err_count=" + err_count + ", filter_err_ratio=" + filter_err_ratio + ", entry_err_ratio=" + entry_err_ratio + ", last_error=" + last_error + ", request_ip_list=" + request_ip_list + "]";
+		return getClass().getSimpleName() + "(" +hashCode() + ")" + " [unit_date=" + unit_date + ", req_total=" + req_total + ", filter_req_total=" + filter_req_total + ", req_count=" + req_count + ", req_ratio=" + req_ratio + ", filter_req_ratio=" + filter_req_ratio + ", avg_response_time=" + avg_response_time + ", max_response_time=" + max_response_time + ", avg_response_byte=" + avg_response_byte + ", max_response_byte=" + max_response_byte + ", err_count=" + err_count + ", filter_err_ratio=" + filter_err_ratio + ", entry_err_ratio=" + entry_err_ratio + ", last_error=" + last_error + ", request_ip_count=" + request_ip_count + ", request_ip_list=" + request_ip_list + "]";
 	}
 
 	public abstract <E extends DateEntryVO> E createEntryVO();

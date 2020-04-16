@@ -1,54 +1,25 @@
 package dal.tool.analyzer.alyba.setting;
 
 import java.util.HashMap;
-import java.util.Locale;
 
 import dal.util.StringUtil;
 
 public class FieldMappingInfo {
 
-	public String logType;
 	public String fieldDelimeter;
 	public String fieldBracelet;
-	public String timeFormat;
-	public String elapsedUnit;
-	public float offsetHour;
-	public int logFieldCount;
 	public HashMap<String, String> mappingInfo = new HashMap<String, String>();
-	public Locale timeLocale;
+	public int fieldCount;
 
 	public FieldMappingInfo() {
 	}
 
-	public FieldMappingInfo(String logType, String delimeter, String bracelet, String tm_format, Locale tm_locale, int offset, String elapsed_unit, String[] field_idx_arr) {
-		this.logType = logType;
+	public FieldMappingInfo(String delimeter, String bracelet, String[] field_idx_arr) {
 		this.fieldDelimeter = delimeter;
 		this.fieldBracelet = bracelet;
-		this.timeFormat = tm_format;
-		this.timeLocale = tm_locale;
-		this.offsetHour = offset;
-		this.elapsedUnit = elapsed_unit;
-		if(field_idx_arr != null) {
-			int idx;
-			String key;
-			String flds;
-			for(int i = 0; i < field_idx_arr.length; i++) {
-				idx = field_idx_arr[i].indexOf(':');
-				key = field_idx_arr[i].substring(0, idx);
-				flds = field_idx_arr[i].substring(idx + 1);
-				mappingInfo.put(key, flds);
-			}
-		}
+		setMappingInfo(field_idx_arr);
 	}
 
-	public String getLogType() {
-		return logType;
-	}
-	
-	public void setLogType(String logType) {
-		this.logType = logType;
-	}
-	
 	public String getFieldDelimeter() {
 		return fieldDelimeter;
 	}
@@ -69,44 +40,12 @@ public class FieldMappingInfo {
 		this.fieldBracelet = field_bracelet;
 	}
 
-	public String getTimeFormat() {
-		return timeFormat;
+	public int getFieldCount() {
+		return fieldCount;
 	}
 
-	public void setTimeFormat(String time_format) {
-		this.timeFormat = time_format;
-	}
-
-	public Locale getTimeLocale() {
-		return timeLocale;
-	}
-
-	public void setTimeLocale(Locale time_locale) {
-		this.timeLocale = time_locale;
-	}
-
-	public String getElapsedUnit() {
-		return elapsedUnit;
-	}
-
-	public void setElapsedUnit(String elapsed_unit) {
-		this.elapsedUnit = elapsed_unit;
-	}
-
-	public float getOffsetHour() {
-		return offsetHour;
-	}
-
-	public void setOffsetHour(float offset_hour) {
-		this.offsetHour = offset_hour;
-	}
-
-	public int getLogFieldCount() {
-		return logFieldCount;
-	}
-
-	public void setLogFieldCount(int field_count) {
-		this.logFieldCount = field_count;
+	public void setFieldCount(int field_count) {
+		this.fieldCount = field_count;
 	}
 
 	public HashMap<String, String> getMappingInfo() {
@@ -117,52 +56,18 @@ public class FieldMappingInfo {
 		this.mappingInfo = mapping_info;
 	}
 	
-	public boolean isMappedElapsed() {
-		return mappingInfo.containsKey("ELAPSED");
-	}
-	
-	public boolean isMappedBytes() {
-		return mappingInfo.containsKey("BYTES");
-	}
-	
-	public boolean isMappedCode() {
-		return mappingInfo.containsKey("CODE");
-	}
-
-	public boolean isMappedMethod() {
-		return mappingInfo.containsKey("METHOD");
-	}
-
-	public boolean isMappedVersion() {
-		return mappingInfo.containsKey("VERSION");
-	}
-
-	public boolean isMappedIP() {
-		return mappingInfo.containsKey("IP");
-	}
-	
-	public static boolean isMappedElapsed(HashMap<String, String> mappingInfo) {
-		return mappingInfo.containsKey("ELAPSED");
-	}
-
-	public static boolean isMappedBytes(HashMap<String, String> mappingInfo) {
-		return mappingInfo.containsKey("BYTES");
-	}
-	
-	public static boolean isMappedCode(HashMap<String, String> mappingInfo) {
-		return mappingInfo.containsKey("CODE");
-	}
-
-	public static boolean isMappedMethod(HashMap<String, String> mappingInfo) {
-		return mappingInfo.containsKey("METHOD");
-	}
-
-	public static boolean isMappedVersion(HashMap<String, String> mappingInfo) {
-		return mappingInfo.containsKey("VERSION");
-	}
-
-	public static boolean isMappedIP(HashMap<String, String> mappingInfo) {
-		return mappingInfo.containsKey("IP");
+	public void setMappingInfo(String[] field_idx_arr) {
+		if(field_idx_arr != null) {
+			int idx;
+			String key;
+			String flds;
+			for(int i = 0; i < field_idx_arr.length; i++) {
+				idx = field_idx_arr[i].indexOf(':');
+				key = field_idx_arr[i].substring(0, idx);
+				flds = field_idx_arr[i].substring(idx + 1);
+				mappingInfo.put(key, flds);
+			}
+		}		
 	}
 
 }

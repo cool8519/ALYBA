@@ -13,6 +13,7 @@ import org.eclipse.swt.widgets.Spinner;
 
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
+import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.swt.FileDialogUtil;
 import dal.util.swt.MessageUtil;
 
@@ -101,28 +102,34 @@ public class OptionSetting extends Composite {
 	protected void createContents() {
 
 		chk_multiThread = new Button(this, SWT.CHECK);
+		chk_multiThread.setFont(Utility.getFont());
 		chk_multiThread.setText("Multi-thread Parsing");
 		chk_multiThread.setBounds(24, 20, 145, 16);
 
 		chk_fixedFields = new Button(this, SWT.CHECK);
+		chk_fixedFields.setFont(Utility.getFont());
 		chk_fixedFields.setText("Check if the number of fields are fixed");
 		chk_fixedFields.setBounds(24, 50, 245, 16);		
 		
 		chk_allowErrors = new Button(this, SWT.CHECK);
+		chk_allowErrors.setFont(Utility.getFont());
 		chk_allowErrors.setText("Allow");
-		chk_allowErrors.setBounds(24, 80, 51, 16);
+		chk_allowErrors.setBounds(24, 80, 53, 16);
 
 		spn_allowErrors = new Spinner(this, SWT.BORDER);
 		spn_allowErrors.setTextLimit(4);
 		spn_allowErrors.setMaximum(1440);
 		spn_allowErrors.setMinimum(1);
-		spn_allowErrors.setBounds(81, 78, 60, 21);
+		spn_allowErrors.setFont(Utility.getFont());
+		spn_allowErrors.setBounds(90, 78, 58, 21);
 
 		Label lb_allowErrors = new Label(this, SWT.NONE);
+		lb_allowErrors.setFont(Utility.getFont());
 		lb_allowErrors.setText("error(s) per file");
-		lb_allowErrors.setBounds(147, 80, 110, 15);
+		lb_allowErrors.setBounds(154, 80, 110, 15);
 
 		chk_includeParams = new Button(this, SWT.CHECK);
+		chk_includeParams.setFont(Utility.getFont());
 		chk_includeParams.setText("URI includes parameters");
 		chk_includeParams.setBounds(24, 110, 226, 16);
 
@@ -130,22 +137,26 @@ public class OptionSetting extends Composite {
 		lb_verticalSeparator.setBounds(280, 18, 2, 220);
 
 		chk_collectTPM = new Button(this, SWT.CHECK);
+		chk_collectTPM.setFont(Utility.getFont());
 		chk_collectTPM.setText("Aggregate TPM every");
-		chk_collectTPM.setBounds(307, 20, 180, 15);
+		chk_collectTPM.setBounds(307, 20, 150, 15);
 
 		spn_tpmUnit = new Spinner(this, SWT.BORDER);
 		spn_tpmUnit.setTextLimit(4);
 		spn_tpmUnit.setMaximum(1440);
 		spn_tpmUnit.setMinimum(1);
-		spn_tpmUnit.setBounds(487, 18, 60, 21);
+		spn_tpmUnit.setFont(Utility.getFont());
+		spn_tpmUnit.setBounds(460, 18, 60, 21);
 
 		Label lb_tpmUnit2 = new Label(this, SWT.NONE);
+		lb_tpmUnit2.setFont(Utility.getFont());
 		lb_tpmUnit2.setText("minute(s)");
-		lb_tpmUnit2.setBounds(553, 20, 59, 15);
+		lb_tpmUnit2.setBounds(526, 20, 59, 15);
 
 		chk_collectElapsed = new Button(this, SWT.CHECK);
+		chk_collectElapsed.setFont(Utility.getFont());
 		chk_collectElapsed.setText("Collect requests that elapsed time was over ");
-		chk_collectElapsed.setBounds(307, 50, 256, 16);
+		chk_collectElapsed.setBounds(307, 50, 265, 16);
 
 		spn_collectElapsed = new Spinner(this, SWT.BORDER);
 		spn_collectElapsed.setPageIncrement(60000);
@@ -153,15 +164,18 @@ public class OptionSetting extends Composite {
 		spn_collectElapsed.setTextLimit(9);
 		spn_collectElapsed.setMaximum(999999999);
 		spn_collectElapsed.setMinimum(100);
-		spn_collectElapsed.setBounds(564, 47, 60, 21);
+		spn_collectElapsed.setFont(Utility.getFont());
+		spn_collectElapsed.setBounds(579, 47, 70, 21);
 
 		Label lb_collectElapsed2 = new Label(this, SWT.NONE);
+		lb_collectElapsed2.setFont(Utility.getFont());
 		lb_collectElapsed2.setText("ms");
-		lb_collectElapsed2.setBounds(630, 50, 30, 15);
+		lb_collectElapsed2.setBounds(655, 50, 30, 15);
 
 		chk_collectBytes = new Button(this, SWT.CHECK);
+		chk_collectBytes.setFont(Utility.getFont());
 		chk_collectBytes.setText("Collect requests that response bytes was over ");
-		chk_collectBytes.setBounds(307, 80, 266, 16);
+		chk_collectBytes.setBounds(307, 80, 278, 16);
 
 		spn_collectBytes = new Spinner(this, SWT.BORDER);
 		spn_collectBytes.setTextLimit(9);
@@ -169,33 +183,41 @@ public class OptionSetting extends Composite {
 		spn_collectBytes.setMaximum(999999999);
 		spn_collectBytes.setMinimum(128);
 		spn_collectBytes.setIncrement(128);
-		spn_collectBytes.setBounds(574, 78, 60, 21);
+		spn_collectBytes.setFont(Utility.getFont());
+		spn_collectBytes.setBounds(589, 78, 60, 21);
 
 		Label lb_collectBytes2 = new Label(this, SWT.NONE);
+		lb_collectBytes2.setFont(Utility.getFont());
 		lb_collectBytes2.setText("KB");
-		lb_collectBytes2.setBounds(640, 80, 30, 15);
+		lb_collectBytes2.setBounds(656, 80, 30, 15);
 		
 		chk_collectErrors = new Button(this, SWT.CHECK);
+		chk_collectErrors.setFont(Utility.getFont());
 		chk_collectErrors.setText("Collect requests that response code was error");
-		chk_collectErrors.setBounds(307, 110, 266, 16);
+		chk_collectErrors.setBounds(307, 110, 276, 16);
 
 		chk_collectIP = new Button(this, SWT.CHECK);
+		chk_collectIP.setFont(Utility.getFont());
 		chk_collectIP.setText("Collect Client IP");
 		chk_collectIP.setBounds(307, 140, 245, 16);
 
 		chk_collectTPS = new Button(this, SWT.CHECK);
+		chk_collectTPS.setFont(Utility.getFont());
 		chk_collectTPS.setText("Aggregate TPS on the most requested day(DB only)");
-		chk_collectTPS.setBounds(307, 170, 245, 16);
+		chk_collectTPS.setBounds(307, 170, 320, 16);
 
 		btn_loadSetting = new Button(this, SWT.NONE);
+		btn_loadSetting.setFont(Utility.getFont());
 		btn_loadSetting.setText("Load setting");
 		btn_loadSetting.setBounds(24, 275, 120, 23);
 
 		btn_saveSetting = new Button(this, SWT.NONE);
+		btn_saveSetting.setFont(Utility.getFont());
 		btn_saveSetting.setText("Save setting");
 		btn_saveSetting.setBounds(160, 275, 120, 23);
 
 		btn_defaultSetting = new Button(this, SWT.NONE);
+		btn_defaultSetting.setFont(Utility.getFont());
 		btn_defaultSetting.setText("Default setting");
 		btn_defaultSetting.setBounds(550, 275, 120, 23);
 		

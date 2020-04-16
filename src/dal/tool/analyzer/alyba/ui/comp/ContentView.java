@@ -9,6 +9,8 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import dal.tool.analyzer.alyba.util.Utility;
+
 public class ContentView extends Shell {
 
 	private Text txt_content;
@@ -39,6 +41,7 @@ public class ContentView extends Shell {
 
 		txt_content = new Text(this, SWT.BORDER | SWT.READ_ONLY | SWT.H_SCROLL | SWT.V_SCROLL);
 		txt_content.setLayoutData(new GridData(GridData.FILL, SWT.FILL, true, true));
+		txt_content.setFont(Utility.getFont());
 
 	}
 

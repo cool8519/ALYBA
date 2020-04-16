@@ -42,15 +42,15 @@ import org.eclipse.swt.widgets.Text;
 
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.output.vo.BadResponseEntryVO;
-import dal.tool.analyzer.alyba.output.vo.DailyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
-import dal.tool.analyzer.alyba.output.vo.HourlyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
+import dal.tool.analyzer.alyba.output.vo.ResourceUsageEntryVO;
 import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SettingEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPSEntryVO;
-import dal.tool.analyzer.alyba.setting.FieldMappingInfo;
+import dal.tool.analyzer.alyba.output.vo.TimeAggregationEntryVO;
+import dal.tool.analyzer.alyba.setting.LogFieldMappingInfo;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
@@ -103,8 +103,8 @@ public class ResultData extends Composite {
 	static {
 		map_table.put("Transaction Per Second", TPSEntryVO.class);
 		map_table.put("Transaction Per Minute", TPMEntryVO.class);
-		map_table.put("Daily Transaction", DailyEntryVO.class);
-		map_table.put("Houly Transaction", HourlyEntryVO.class);
+		map_table.put("Daily Transaction", TimeAggregationEntryVO.class);
+		map_table.put("Houly Transaction", TimeAggregationEntryVO.class);
 		map_table.put("URI Aggregation", KeyEntryVO.class);
 		map_table.put("EXT Aggregation", KeyEntryVO.class);
 		map_table.put("IP Aggregation", KeyEntryVO.class);
@@ -114,7 +114,7 @@ public class ResultData extends Composite {
 		map_table.put("Over-Time Aggregation", BadResponseEntryVO.class);
 		map_table.put("Over-Size Aggregation", BadResponseEntryVO.class);
 		map_table.put("Error-Code Aggregation", BadResponseEntryVO.class);
-
+		map_table.put("System Resource", ResourceUsageEntryVO.class);
 	}
 	
 	public ResultData(Composite parent, int style) {
@@ -180,6 +180,7 @@ public class ResultData extends Composite {
 		fd_tbl_tables.height = 247;
 	    tbl_tables = new Table(grp_left1, SWT.BORDER | SWT.FULL_SELECTION | SWT.SINGLE | SWT.NO_SCROLL);
 	    tbl_tables.setLayoutData(fd_tbl_tables);
+	    tbl_tables.setFont(Utility.getFont());
 		TableColumn tblc_table_name = new TableColumn(tbl_tables, SWT.LEFT);
 		tblc_table_name.setWidth(198);
 		
@@ -215,6 +216,7 @@ public class ResultData extends Composite {
 	    tbl_columns = new Table(grp_left2, SWT.BORDER | SWT.CHECK | SWT.NO_SCROLL | SWT.V_SCROLL | SWT.HIDE_SELECTION);
 	    tbl_columns.setHeaderVisible(true);
 	    tbl_columns.setLayoutData(fd_tbl_columns);
+	    tbl_columns.setFont(Utility.getFont());
 	    TableColumn tblc_column_name = new TableColumn(tbl_columns, SWT.LEFT);
 		tblc_column_name.setWidth(198);
 
@@ -241,6 +243,7 @@ public class ResultData extends Composite {
 		fd_lb_query.top = new FormAttachment(0, 2);
 		lb_query = new Label(grp_right, SWT.LEFT);
 		lb_query.setLayoutData(fd_lb_query);
+		lb_query.setFont(Utility.getFont());
 		lb_query.setText("Query");
 		
 		FormData fd_txt_query = new FormData();
@@ -248,8 +251,9 @@ public class ResultData extends Composite {
 		fd_txt_query.right = new FormAttachment(100, -300);
 		fd_txt_query.top = new FormAttachment(0);
 		txt_query = new Text(grp_right, SWT.BORDER | SWT.NO_SCROLL | SWT.SINGLE);
-		txt_query.setLayoutData(fd_txt_query); 
-	    txt_query.setText("");	    
+		txt_query.setLayoutData(fd_txt_query);
+		txt_query.setFont(Utility.getFont());
+	    txt_query.setText("");
 	    txt_query.setEnabled(false);
 	    txt_query.setToolTipText("Insert query condition.\nUse table alias as t.\n\nEX_1)\nt.req_count > 100 and t.err_count = 0\n\nEX_2)\nt.unit_date >= {ts '2018-12-01 00:00:00'}");
 
@@ -258,7 +262,8 @@ public class ResultData extends Composite {
 		fd_btn_execute.top = new FormAttachment(0, -2);
 		fd_btn_execute.width = 70;
 	    btn_execute = new Button(grp_right, SWT.NONE);
-	    btn_execute.setLayoutData(fd_btn_execute); 
+	    btn_execute.setLayoutData(fd_btn_execute);
+	    btn_execute.setFont(Utility.getFont());
 	    btn_execute.setText("Execute");
 	    btn_execute.setEnabled(false);
 
@@ -268,6 +273,7 @@ public class ResultData extends Composite {
 		fd_btn_export.width = 70;
 	    btn_export = new Button(grp_right, SWT.NONE);
 	    btn_export.setLayoutData(fd_btn_export); 
+	    btn_export.setFont(Utility.getFont());
 	    btn_export.setText("Export");
 	    btn_export.setEnabled(false);
 
@@ -284,39 +290,39 @@ public class ResultData extends Composite {
 	    FormData fd_lb_result_s = new FormData();
 	    fd_lb_result_s.left = new FormAttachment(0, 10);
 	    fd_lb_result_s.top = new FormAttachment(0, -3);
-	    fd_lb_result_s.width = 150;
+	    fd_lb_result_s.width = 250;
 		lb_result_s = new Label(grp_result, SWT.NONE);
 		lb_result_s.setLayoutData(fd_lb_result_s);
-		lb_result_s.setText("Successfully executed.");
 		lb_result_s.setFont(Utility.getFont());
+		lb_result_s.setText("Successfully executed.");
 		lb_result_s.setForeground(SWTResourceManager.getColor(SWT.COLOR_BLUE));
 		lb_result_s.setVisible(false);
 		
 	    FormData fd_lb_result_f = new FormData();
 	    fd_lb_result_f.left = new FormAttachment(0, 10);
 	    fd_lb_result_f.top = new FormAttachment(0, -3);
-	    fd_lb_result_f.width = 150;
+	    fd_lb_result_f.width = 250;
 		lb_result_f = new Label(grp_result, SWT.NONE);
 		lb_result_f.setLayoutData(fd_lb_result_f);
-		lb_result_f.setText("Failed to execute.");
 		lb_result_f.setFont(Utility.getFont());
+		lb_result_f.setText("Failed to execute.");
 		lb_result_f.setForeground(SWTResourceManager.getColor(SWT.COLOR_RED));
 		lb_result_f.setVisible(false);
 		
 	    FormData fd_lb_elapsed = new FormData();
 	    fd_lb_elapsed.top = new FormAttachment(0, -3);
 	    fd_lb_elapsed.right = new FormAttachment(100, -10);
-	    fd_lb_elapsed.width = 120;
+	    fd_lb_elapsed.width = 150;
 		lb_elapsed = new Label(grp_result, SWT.RIGHT);
 		lb_elapsed.setLayoutData(fd_lb_elapsed);
-		lb_elapsed.setText("Elapsed : 0 ms");
 		lb_elapsed.setFont(Utility.getFont(SWT.ITALIC));
+		lb_elapsed.setText("Elapsed : 0 ms");
 		lb_elapsed.setVisible(false);
 
 		FormData fd_lb_rows = new FormData();
 		fd_lb_rows.top = new FormAttachment(0, -3);
 		fd_lb_rows.right = new FormAttachment(lb_elapsed, -10);
-		fd_lb_rows.width = 150;
+		fd_lb_rows.width = 180;
 		lb_rows = new Label(grp_result, SWT.RIGHT);
 		lb_rows.setLayoutData(fd_lb_rows);
 		lb_rows.setText("Row : 0 / 0");
@@ -333,10 +339,12 @@ public class ResultData extends Composite {
 	    tbl_data.setLayoutData(fd_tbl_data);
 		tbl_data.setHeaderVisible(true);
 		tbl_data.setLinesVisible(true);
+		tbl_data.setFont(Utility.getFont());
 		cursor_data = new TableCursor(tbl_data, SWT.NONE);
+		cursor_data.setFont(Utility.getFont());
 		clipboard_data = new Clipboard(this.getDisplay());
 	    
-	    sf_main.setWeights(new int[] {280, 961});
+		resize(new Rectangle(-1, -1, getSize().x+21, getSize().y));
 	    
 	}
 
@@ -540,7 +548,13 @@ public class ResultData extends Composite {
 					tblc.setWidth(130);
 				} else if(tblc.getText().equals("request_uri")) {
 					tblc.setWidth(120);
-				} else if(tblc.getText().equals("request_ip")) {
+				} else if(tblc.getText().equals("request_ip_list")) {
+					tblc.setWidth(100);
+				} else if(tblc.getText().equals("description")) {
+					tblc.setWidth(150);
+				} else if(tblc.getText().equals("name")) {
+					tblc.setWidth(100);
+				} else if(tblc.getText().equals("group")) {
 					tblc.setWidth(100);
 				} else {
 					tblc.pack();
@@ -558,13 +572,14 @@ public class ResultData extends Composite {
 		for(TableItem item : tbl_columns.getItems()) {
 			if((item.getText().indexOf("total") > -1) ||
 			   (item.getText().indexOf("request_date") > -1) ||		
-			   ((item.getText().indexOf("response_time") > -1 || item.getText().indexOf("response_date") > -1) && !FieldMappingInfo.isMappedElapsed(settingVo.getMappingInfo())) ||
-			   (item.getText().indexOf("response_byte") > -1 && !FieldMappingInfo.isMappedBytes(settingVo.getMappingInfo())) ||
-			   ((item.getText().indexOf("error") > -1 || item.getText().indexOf("response_code") > -1) && !FieldMappingInfo.isMappedCode(settingVo.getMappingInfo())) ||
-			   (item.getText().indexOf("request_method") > -1 && !FieldMappingInfo.isMappedMethod(settingVo.getMappingInfo())) ||
-			   (item.getText().indexOf("request_version") > -1 && !FieldMappingInfo.isMappedVersion(settingVo.getMappingInfo())) ||
+			   ((item.getText().indexOf("response_time") > -1 || item.getText().indexOf("response_date") > -1) && !LogFieldMappingInfo.isMappedElapsed(settingVo.getLogMappingInfo())) ||
+			   (item.getText().indexOf("response_byte") > -1 && !LogFieldMappingInfo.isMappedBytes(settingVo.getLogMappingInfo())) ||
+			   ((item.getText().indexOf("error") > -1 || item.getText().indexOf("response_code") > -1) && !LogFieldMappingInfo.isMappedCode(settingVo.getLogMappingInfo())) ||
+			   (item.getText().indexOf("request_method") > -1 && !LogFieldMappingInfo.isMappedMethod(settingVo.getLogMappingInfo())) ||
+			   (item.getText().indexOf("request_version") > -1 && !LogFieldMappingInfo.isMappedVersion(settingVo.getLogMappingInfo())) ||
 			   (item.getText().indexOf("description") > -1 && (!table_name.equals("IP Aggregation") && !table_name.equals("CODE Aggregation"))) ||
-			   (item.getText().indexOf("request_ip") > -1 && (table_name.equals("IP Aggregation") || !FieldMappingInfo.isMappedIP(settingVo.getMappingInfo())))) {
+			   (item.getText().indexOf("request_ip_count") > -1 && (table_name.equals("IP Aggregation") || !LogFieldMappingInfo.isMappedIP(settingVo.getLogMappingInfo()))) ||
+			   (item.getText().indexOf("request_ip_list") > -1)) {
 				item.setChecked(false);
 				toggleColumnVisible(tbl_data, item.getText(), false);
 			}
@@ -651,7 +666,7 @@ public class ResultData extends Composite {
 			}
 			lb_rows.setText("Row : " + tbl_data.getItemCount() + " / " + total_rows);
 			lb_rows.setVisible(true);
-			lb_elapsed.setText("Takes " + elapsed_tm + " ms");
+			lb_elapsed.setText("Elapsed : " + elapsed_tm + " ms");
 			lb_elapsed.setVisible(true);
 			lb_result_s.setVisible(true);
 		} catch(Exception e) {
@@ -738,9 +753,6 @@ public class ResultData extends Composite {
 	public void resize(Rectangle rect) {
 		int width = rect.width - 24;
 	    sf_main.setWeights(new int[] {280, width-280});
-	    if(tbl_data.getColumnCount() > 0) {
-	    	tbl_data.getColumns()[0].setWidth(100);
-	    }
 	}
 	
 	public void resetData() {
@@ -874,6 +886,10 @@ public class ResultData extends Composite {
 	private String getDataTypeByName(String name) {
 		if(name == null) {
 			return null;
+		} else if(name.equals("Daily Transaction")) {
+			return "DAY";
+		} else if(name.equals("Houly Transaction")) {
+			return "HOUR";
 		} else if(name.equals("URI Aggregation")) {
 			return "URI";
 		} else if(name.equals("EXT Aggregation")) {

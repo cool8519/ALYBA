@@ -12,6 +12,7 @@ import dal.tool.analyzer.alyba.output.vo.EntryVO;
 public abstract class Chart {
 
 	public static enum Type { TimeSeries, VerticalBar, HorizontalBar, Pie, ScatterPlot };
+	public static enum ShapeSize { Smallest, Small, Medium, Large, Largest };
 
 	protected static final Class<?> DATA_CLASS = null;
 
@@ -20,6 +21,8 @@ public abstract class Chart {
 	protected JFreeChart jfreeChart;
 	protected String title = "Untitled";
 
+	public Chart() {}
+	
 	public Chart(Type chartType) {
 		this.chartType = chartType;
 	}
@@ -35,6 +38,10 @@ public abstract class Chart {
 	
 	public static Class<?> getDataClass() {
 		return DATA_CLASS;
+	}
+	
+	public JFreeChart getJFreeChart() {
+		return jfreeChart;
 	}
 	
 	public ChartPanel getChartPanel() {
@@ -120,7 +127,7 @@ public abstract class Chart {
 	public abstract Type[] getSupportChartTypes();
 	public abstract Type getDefaultChartType();	
 	protected abstract <E extends EntryVO> void createDataset(List<E> dataList);
-	public abstract void createChart();
+	protected abstract void createChart();
 	
 	protected TextAnchor getTextAnchorByAngle(int angle) {
 		if(angle >= 0 && angle < 30) {

@@ -131,189 +131,226 @@ public class FilterSetting extends Composite {
 	protected void createContents() {
 
 		Label lb_timeRange = new Label(this, SWT.NONE);
+		lb_timeRange.setFont(Utility.getFont());
 		lb_timeRange.setText("Time Range");
 		lb_timeRange.setAlignment(SWT.RIGHT);
-		lb_timeRange.setBounds(10, 14, 100, 15);
+		lb_timeRange.setBounds(10, 19, 100, 15);
 
 		chk_allRange = new Button(this, SWT.CHECK);
+		chk_allRange.setFont(Utility.getFont());
 		chk_allRange.setText("All");
-		chk_allRange.setBounds(133, 13, 45, 16);
+		chk_allRange.setBounds(133, 18, 45, 16);
 
-		dtp_fromDate = new DateTimePicker(this, SWT.NONE);
-		dtp_fromDate.setSize(224, 26);
-		dtp_fromDate.setLocation(184, 8);
+		dtp_fromDate = new DateTimePicker(this, SWT.NONE, Utility.getFont());
+		dtp_fromDate.setBounds(184, 13, 240, 26);
 
 		Label lb_fromto = new Label(this, SWT.NONE);
 		lb_fromto.setFont(Utility.getFont(SWT.BOLD));
 		lb_fromto.setText("~");
 		lb_fromto.setAlignment(SWT.CENTER);
-		lb_fromto.setBounds(411, 14, 30, 15);
+		lb_fromto.setBounds(421, 19, 15, 15);
 
-		dtp_toDate = new DateTimePicker(this, SWT.NONE);
-		dtp_toDate.setBounds(447, 8, 224, 26);
+		dtp_toDate = new DateTimePicker(this, SWT.NONE, Utility.getFont());
+		dtp_toDate.setBounds(446, 13, 240, 26);
 
 		chk_includeFilter = new Button(this, SWT.CHECK);
-		chk_includeFilter.setBounds(133, 49, 94, 16);
+		chk_includeFilter.setFont(Utility.getFont());
 		chk_includeFilter.setText("Include Filter");
+		chk_includeFilter.setBounds(133, 59, 94, 16);
 
 		grp_inclueFilter = new Group(this, SWT.NONE);
-		grp_inclueFilter.setBounds(10, 64, 340, 245);
+		grp_inclueFilter.setBounds(10, 74, 340, 245);
 
 		Label lb_inc_chkOperator = new Label(grp_inclueFilter, SWT.NONE);
+		lb_inc_chkOperator.setFont(Utility.getFont());
 		lb_inc_chkOperator.setText("Check Operator");
 		lb_inc_chkOperator.setAlignment(SWT.RIGHT);
 		lb_inc_chkOperator.setBounds(10, 25, 100, 15);
 
 		btn_inc_chkAnd = new Button(grp_inclueFilter, SWT.RADIO);
-		btn_inc_chkAnd.setBounds(122, 25, 60, 15);
+		btn_inc_chkAnd.setFont(Utility.getFont());
 		btn_inc_chkAnd.setText("AND");
+		btn_inc_chkAnd.setBounds(122, 25, 60, 15);
 
 		btn_inc_chkOr = new Button(grp_inclueFilter, SWT.RADIO);
+		btn_inc_chkOr.setFont(Utility.getFont());
 		btn_inc_chkOr.setText("OR");
 		btn_inc_chkOr.setBounds(188, 25, 60, 15);
 
 		Label lb_inc_ignoreCase = new Label(grp_inclueFilter, SWT.NONE);
+		lb_inc_ignoreCase.setFont(Utility.getFont());
 		lb_inc_ignoreCase.setText("Ignore Case");
 		lb_inc_ignoreCase.setAlignment(SWT.RIGHT);
 		lb_inc_ignoreCase.setBounds(10, 52, 100, 15);
 
 		chk_inc_ignoreCase = new Button(grp_inclueFilter, SWT.CHECK);
+		chk_inc_ignoreCase.setFont(Utility.getFont());
 		chk_inc_ignoreCase.setBounds(122, 51, 94, 16);
 
 		Label lb_inc_uri = new Label(grp_inclueFilter, SWT.NONE);
+		lb_inc_uri.setFont(Utility.getFont());
 		lb_inc_uri.setText("Request URI");
 		lb_inc_uri.setAlignment(SWT.RIGHT);
 		lb_inc_uri.setBounds(10, 79, 100, 15);
 
 		txt_inc_uri = new Text(grp_inclueFilter, SWT.BORDER);
+		txt_inc_uri.setFont(Utility.getFont());
 		txt_inc_uri.setBounds(122, 76, 208, 21);
 		txt_inc_uri.setEnabled(false);
 
 		Label lb_inc_ext = new Label(grp_inclueFilter, SWT.NONE);
+		lb_inc_ext.setFont(Utility.getFont());
 		lb_inc_ext.setText("Request Ext");
 		lb_inc_ext.setAlignment(SWT.RIGHT);
 		lb_inc_ext.setBounds(10, 106, 100, 15);
 
 		txt_inc_ext = new Text(grp_inclueFilter, SWT.BORDER);
+		txt_inc_ext.setFont(Utility.getFont());
 		txt_inc_ext.setBounds(122, 103, 208, 21);
 		txt_inc_ext.setEnabled(false);
 
 		Label lb_inc_ip = new Label(grp_inclueFilter, SWT.NONE);
+		lb_inc_ip.setFont(Utility.getFont());
 		lb_inc_ip.setText("Request IP");
 		lb_inc_ip.setAlignment(SWT.RIGHT);
 		lb_inc_ip.setBounds(10, 133, 100, 15);
 
 		txt_inc_ip = new Text(grp_inclueFilter, SWT.BORDER);
+		txt_inc_ip.setFont(Utility.getFont());
 		txt_inc_ip.setBounds(122, 130, 208, 21);
 		txt_inc_ip.setEnabled(false);
 
 		Label lb_inc_method = new Label(grp_inclueFilter, SWT.NONE);
+		lb_inc_method.setFont(Utility.getFont());
 		lb_inc_method.setText("Request Method");
 		lb_inc_method.setAlignment(SWT.RIGHT);
 		lb_inc_method.setBounds(10, 160, 100, 15);
 
 		txt_inc_method = new Text(grp_inclueFilter, SWT.BORDER);
+		txt_inc_method.setFont(Utility.getFont());
 		txt_inc_method.setBounds(122, 157, 208, 21);
 		txt_inc_method.setEnabled(false);
 
 		Label lb_inc_version = new Label(grp_inclueFilter, SWT.NONE);
+		lb_inc_version.setFont(Utility.getFont());
 		lb_inc_version.setText("Request Version");
 		lb_inc_version.setAlignment(SWT.RIGHT);
 		lb_inc_version.setBounds(10, 187, 100, 15);
 
 		txt_inc_version = new Text(grp_inclueFilter, SWT.BORDER);
+		txt_inc_version.setFont(Utility.getFont());
 		txt_inc_version.setBounds(122, 184, 208, 21);
 		txt_inc_version.setEnabled(false);
 
 		Label lb_inc_code = new Label(grp_inclueFilter, SWT.NONE);
+		lb_inc_code.setFont(Utility.getFont());
 		lb_inc_code.setText("Response Code");
 		lb_inc_code.setAlignment(SWT.RIGHT);
 		lb_inc_code.setBounds(10, 214, 100, 15);
 
 		txt_inc_code = new Text(grp_inclueFilter, SWT.BORDER);
+		txt_inc_code.setFont(Utility.getFont());
 		txt_inc_code.setBounds(122, 211, 208, 21);
 		txt_inc_code.setEnabled(false);
 
 		chk_excludeFilter = new Button(this, SWT.CHECK);
+		chk_excludeFilter.setFont(Utility.getFont());
 		chk_excludeFilter.setText("Exclude Filter");
-		chk_excludeFilter.setBounds(479, 49, 94, 16);
+		chk_excludeFilter.setBounds(479, 59, 94, 16);
 
 		grp_exclueFilter = new Group(this, SWT.NONE);
-		grp_exclueFilter.setBounds(356, 64, 340, 245);
+		grp_exclueFilter.setBounds(356, 74, 340, 245);
 
 		Label lb_exc_chkOperator = new Label(grp_exclueFilter, SWT.NONE);
+		lb_exc_chkOperator.setFont(Utility.getFont());
 		lb_exc_chkOperator.setText("Check Operator");
 		lb_exc_chkOperator.setAlignment(SWT.RIGHT);
 		lb_exc_chkOperator.setBounds(10, 25, 100, 15);
 
 		btn_exc_chkAnd = new Button(grp_exclueFilter, SWT.RADIO);
 		btn_exc_chkAnd.setSelection(true);
+		btn_exc_chkAnd.setFont(Utility.getFont());
 		btn_exc_chkAnd.setText("AND");
 		btn_exc_chkAnd.setBounds(122, 25, 60, 15);
 
 		btn_exc_chkOr = new Button(grp_exclueFilter, SWT.RADIO);
+		btn_exc_chkOr.setFont(Utility.getFont());
 		btn_exc_chkOr.setText("OR");
 		btn_exc_chkOr.setBounds(188, 25, 60, 15);
 
 		Label lb_exc_ignoreCase = new Label(grp_exclueFilter, SWT.NONE);
+		lb_exc_ignoreCase.setFont(Utility.getFont());
 		lb_exc_ignoreCase.setText("Ignore Case");
 		lb_exc_ignoreCase.setAlignment(SWT.RIGHT);
 		lb_exc_ignoreCase.setBounds(10, 52, 100, 15);
 
 		chk_exc_ignoreCase = new Button(grp_exclueFilter, SWT.CHECK);
+		chk_exc_ignoreCase.setFont(Utility.getFont());
 		chk_exc_ignoreCase.setBounds(122, 52, 94, 15);
 
 		Label lb_exc_uri = new Label(grp_exclueFilter, SWT.NONE);
+		lb_exc_uri.setFont(Utility.getFont());
 		lb_exc_uri.setText("Request URI");
 		lb_exc_uri.setAlignment(SWT.RIGHT);
 		lb_exc_uri.setBounds(10, 79, 100, 15);
 
 		txt_exc_uri = new Text(grp_exclueFilter, SWT.BORDER);
+		txt_exc_uri.setFont(Utility.getFont());
 		txt_exc_uri.setBounds(122, 76, 208, 21);
 		txt_exc_uri.setEnabled(false);
 
 		Label lb_exc_ext = new Label(grp_exclueFilter, SWT.NONE);
+		lb_exc_ext.setFont(Utility.getFont());
 		lb_exc_ext.setText("Request Ext");
 		lb_exc_ext.setAlignment(SWT.RIGHT);
 		lb_exc_ext.setBounds(10, 106, 100, 15);
 
 		txt_exc_ext = new Text(grp_exclueFilter, SWT.BORDER);
+		txt_exc_ext.setFont(Utility.getFont());
 		txt_exc_ext.setBounds(122, 103, 208, 21);
 		txt_exc_ext.setEnabled(false);
 
 		Label lb_exc_ip = new Label(grp_exclueFilter, SWT.NONE);
+		lb_exc_ip.setFont(Utility.getFont());
 		lb_exc_ip.setText("Request IP");
 		lb_exc_ip.setAlignment(SWT.RIGHT);
 		lb_exc_ip.setBounds(10, 133, 100, 15);
 
 		txt_exc_ip = new Text(grp_exclueFilter, SWT.BORDER);
+		txt_exc_ip.setFont(Utility.getFont());
 		txt_exc_ip.setBounds(122, 130, 208, 21);
 		txt_exc_ip.setEnabled(false);
 
 		Label lb_exc_method = new Label(grp_exclueFilter, SWT.NONE);
+		lb_exc_method.setFont(Utility.getFont());
 		lb_exc_method.setText("Request Method");
 		lb_exc_method.setAlignment(SWT.RIGHT);
 		lb_exc_method.setBounds(10, 160, 100, 15);
 
 		txt_exc_method = new Text(grp_exclueFilter, SWT.BORDER);
+		txt_exc_method.setFont(Utility.getFont());
 		txt_exc_method.setBounds(122, 157, 208, 21);
 		txt_exc_method.setEnabled(false);
 
 		Label lb_exc_version = new Label(grp_exclueFilter, SWT.NONE);
+		lb_exc_version.setFont(Utility.getFont());
 		lb_exc_version.setText("Request Version");
 		lb_exc_version.setAlignment(SWT.RIGHT);
 		lb_exc_version.setBounds(10, 187, 100, 15);
 
 		txt_exc_version = new Text(grp_exclueFilter, SWT.BORDER);
+		txt_exc_version.setFont(Utility.getFont());
 		txt_exc_version.setBounds(122, 184, 208, 21);
 		txt_exc_version.setEnabled(false);
 
 		Label lb_exc_code = new Label(grp_exclueFilter, SWT.NONE);
+		lb_exc_code.setFont(Utility.getFont());
 		lb_exc_code.setText("Response Code");
 		lb_exc_code.setAlignment(SWT.RIGHT);
 		lb_exc_code.setBounds(10, 214, 100, 15);
 
 		txt_exc_code = new Text(grp_exclueFilter, SWT.BORDER);
+		txt_exc_code.setFont(Utility.getFont());
 		txt_exc_code.setBounds(122, 211, 208, 21);
 		txt_exc_code.setEnabled(false);
 
@@ -392,5 +429,4 @@ public class FilterSetting extends Composite {
 		txt_inc_code.setEnabled(flag);
 		txt_exc_code.setEnabled(flag);
 	}
-
 }

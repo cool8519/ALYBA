@@ -10,8 +10,8 @@ Requirements
 Getting Started
 ---------------
 아래의 두개 버전 중 하나를 다운로드 한다.
-* Windows Executable : [ALYBA_v1.6.0.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.6.0.exe)
-* Java Archive File : [ALYBA_v1.6.0.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.6.0.jar) [ALYBA_v1.6.0_32bit.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.6.0_32bit.jar)
+* Windows Executable : [ALYBA_v1.7.0.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.7.0.exe)
+* Java Archive File : [ALYBA_v1.7.0.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.7.0.jar) [ALYBA_v1.7.0_32bit.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.7.0_32bit.jar)
 
 ALYBA 실행파일을 클릭하거나, 커맨드 창에서 실행시키면 된다.
 `C:\> ALYBA.exe`
@@ -36,7 +36,6 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
 
 ![Screenhot](screenshots/01.jpg)
 
-
 ##### 2. 파일 선택
 분석을 수행 할 대상 로그파일을 지정한다.
 툴 상단의 Title 아래가 파일관리 부분이며, 아래의 Open Files(s), Remove Selected, Remove All 버튼을 이용하여 파일을 추가하고 제거할 수 있다. 편의를 위해서 아래의 기능을 제공한다.
@@ -55,25 +54,25 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
 > Accesslog 포멧이 동일한 로그만 추가해야 하며, 파일간 포멧이 다를 경우 분석 수행과정에서 오류가 발생함
 
 ##### 3. 필드 매핑
-선택한 파일을 파싱하여 분석하기 위해서는 필드 순서와 이름을 매핑해 주는 것이 필요하다. 
+선택한 파일을 파싱하여 분석하기 위해서는 필드 순서와 이름을 매핑해 주는 것이 필요하다.
 툴의 아랫부분에서 Mapping 탭을 선택한다. 매핑은 아래의 순서로 진행한다.
 * Log Type 설정
- * Accesslog 포멧이 일반적인 WEB/WAS의 기본설정인 경우, 목록에서 해당 WEB/WAS 서버를 설정한다.
- * 목록에 존재하지 않는 서버를 사용하거나, 기본 포멧이 아닌경우는 Customized로 설정한다.
+ - Accesslog 포멧이 일반적인 WEB/WAS의 기본설정인 경우, 목록에서 해당 WEB/WAS 서버를 설정한다.
+ - 목록에 존재하지 않는 서버를 사용하거나, 기본 포멧이 아닌경우는 Customized로 설정한다.
 * Sampling & 자동 매핑
- * Log Type을 Customized로 설정하지 않은 경우는 간단히 Sampling 버튼만 누르면 자동으로 매핑을 수행하며, 아래의 과정은 불필요하다.
+ - Log Type을 Customized로 설정하지 않은 경우는 간단히 Sampling 버튼만 누르면 자동으로 매핑을 수행하며, 아래의 과정은 불필요하다.
 * Sampling
- * Delimeter에 필드 구분자를 설정한다. 구분자가 2개 이상일 경우는 붙여서 지정하면 된다. 예) -\t ▶ “-“와 “\t”(탭)을 구분자로 파싱
- * Bracelet에 필드 괄호기호를 설정한다. 괄호기호가 2개 이상일 경우는 공백을 넣어 지정하면 된다. 예) [] "" ▶ []와 “”는 하나의 필드로 파싱
- * 대부분의 경우는 Delimeter와 Bracelet은 기본값으로 남겨두어도 좋다.
- * Sampling 버튼을 누르면 Sampling된 라인의 필드 데이터가 좌측 아랫부분에 표시된다.
+ - Delimeter에 필드 구분자를 설정한다. 구분자가 2개 이상일 경우는 붙여서 지정하면 된다. 예) -\t ▶ “-“와 “\t”(탭)을 구분자로 파싱
+ - Bracelet에 필드 괄호기호를 설정한다. 괄호기호가 2개 이상일 경우는 공백을 넣어 지정하면 된다. 예) [] "" ▶ []와 “”는 하나의 필드로 파싱
+ - 대부분의 경우는 Delimeter와 Bracelet은 기본값으로 남겨두어도 좋다.
+ - Sampling 버튼을 누르면 Sampling된 라인의 필드 데이터가 좌측 아랫부분에 표시된다.
 * Mapping
- * 좌측의 필드 데이터를 드래그하여 오른쪽의 적절한 필드에 드롭한다.
- * Request Time은 필수 매핑 항목이며, 나머지는 선택이다.
- * 좌측의 필드 데이터에 공백으로 구분된 Delimeter가 있을 경우, 선택적으로 매핑이 가능하다.
- * <kbd>Del</kbd>키로 매핑된 필드를 취소할 수 있다.
- * 시간은 기본적으로 UTC+0 기준으로 입력되므로, 로그가 기록된 서버의 TimeZone이 있는 경우는 Hour 단위로 Offset 설정을 한다. (예: IST=5.5시간)
- 
+ - 좌측의 필드 데이터를 드래그하여 오른쪽의 적절한 필드에 드롭한다.
+ - Request Time은 필수 매핑 항목이며, 나머지는 선택이다.
+ - 좌측의 필드 데이터에 공백으로 구분된 Delimeter가 있을 경우, 선택적으로 매핑이 가능하다.
+ - <kbd>Del</kbd>키로 매핑된 필드를 취소할 수 있다.
+ - 시간은 기본적으로 UTC+0 기준으로 입력되므로, 로그가 기록된 서버의 TimeZone이 있는 경우는 Hour 단위로 Offset 설정을 한다. (예: IST=5.5시간)
+
 ![Screenhot](screenshots/03.jpg)
 
 ##### 4. 필터링
@@ -128,7 +127,7 @@ Result Item
 * URL : 요청 URL 별 처리 통계. 많이 호출된 URL, 응답이 지연되거나 에러가 발생된 URL 등을 확인할 수 있다.
 * IP : 요청 IP 별 처리 통계. 요청이 많은 IP를 확인할 수 있다. Country 정보는 GeoIP 기반의 데이터로 신뢰도가 낮으니 참고만 하는 것이 좋다.
 * METHOD : 요청한 HTTP Method 별 처리 통계. 요청이 많은 Method를 확인할 수 있다.
-* EXT : 요청한 URL의 확장자 별 처리 통계. 정적/동적 컨텐츠 처리 현황을 확인할 수 있다. 
+* EXT : 요청한 URL의 확장자 별 처리 통계. 정적/동적 컨텐츠 처리 현황을 확인할 수 있다.
 * CODE : HTTP 응답코드 별 통계. 오류발생 통계를 확인할 수 있다.
 * RES_TIME : 처리시간이 설정한 시간을 초과한 건. 응답시간이 느린 악성 어플리케이션을 확인할 수 있다.
 * RES_BYTE : 응답크기가 설정한 크기를 초과한 건. 응답크기가 큰 악성 어플리케이션을 확인할 수 있다.
@@ -139,13 +138,13 @@ Result Analyzer
 결과분석기를 통해 파싱된 결과를 데이터 또는 그래프 형태로 확인할 수 있다.
 아래의 3가지 뷰를 제공한다.
 
-##### Summary
+##### Summary Tab
 분석된 결과의 요약된 내용이다.
 분석시간, 필터링 정보, 집계된 데이터 건수, Peak 시점, 비정상(시간/크기/에러) 건수를 확인할 수 있다.
 
 ![Screenhot](screenshots/06.jpg)
 
-##### Data
+##### Data Tab
 분석 항목별 데이터를 테이블 형태로 확인할 수 있다.
 
 ![Screenhot](screenshots/07.jpg)
@@ -157,8 +156,10 @@ Export 버튼을 통해 CSV 형식으로 데이터를 내려받을 수 있다. 전체 데이터 또는 분석
 
 선택된 컬럼에서 <kbd>Ctrl</kbd> + <kbd>c</kbd>를 누르면 해당 컬럼의 데이터가 클립보드에 복사된다.
 
-##### Chart
+
+##### Chart Tab
 분석된 결과를 그래프로 볼 수 있다.
+수집된 데이터에 따라 볼 수 있는 차트가 다르며, 필요한 데이터가 없는 경우는 목록에서 해당 차트는 표시되지 않는다.
 
 좌측 Data의 콤보박스 중 데이터를 선택하면, 우측에 관련 그래프가 표시된다.
 집계된 데이터의 타입에 따라 가능한 차트 종류를 선택할 수 있다.
@@ -172,7 +173,29 @@ Export 버튼을 통해 CSV 형식으로 데이터를 내려받을 수 있다. 전체 데이터 또는 분석
 ![Screenhot](screenshots/11.jpg)
 ![Screenhot](screenshots/12.jpg)
 
+Resource Tab에서 자원사용률 데이터를 추가하면 아래와 같은 차트를 선택할 수 있다.
+
+![Screenhot](screenshots/14.jpg)
+![Screenhot](screenshots/15.jpg)
+
 그래프 영역에서 특정 데이터를 클릭하거나 드래그하여 상세하게 확인할 수 있다.
+
+##### Resource Tab (v1.7.0 추가)
+자원사용률 로그를 분석 결과에 추가한다.
+Accesslog와 동일 시간대의 데이터인 경우, 회귀 분석을 통해 미래예측 및 용량산정을 수행할 수 있다.
+
+Accesslog 파싱 과정과 동일하게 아래의 과정을 따른다.
+
+1. 파일 선택 : 리소스 로그 파일을 지정한다. 파일에 Server명과 Group명을 지정하여 서버 및 그룹별로 분석할 수 있다.
+2. 필드 매핑 : 파일 타입은 vmstat, sar, customize를 지원한다.
+ - vmstat : `vmstat -t <interval_secs>` 로 수집된 로그
+ - sar : `sar -u <interval_secs>` 로 수집된 로그
+ - customize : 임의 형식의 텍스트 로그. 사용자 지정 필드 매핑을 해야 한다.
+3. 분석 수행 : 필드 매핑이 완료되면 Analyze 버튼이 활성화되고, 버튼을 클릭하면 분석이 시작된다. 완료되면 좌측 상단에 추가된 자료의 목록이 표시된다.
+
+![Screenhot](screenshots/13.jpg)
+
+리소스사용률 데이터가 추가되면 Chart 탭에 System Resource와 Regression Analysis 그래프가 추가된다.(DB파일 reload 필요)
 
 Release Note
 --------------
@@ -187,14 +210,19 @@ Release Note
 - Table 선택시 불필요한 컬럼을 자동으로 숨김
 - 산포도에서 점 클릭시 상세 데이터 표시
 - 산포도에서 분포 그래프 지원(경계값 변경 가능)
-- IP 지역 기반 그래프 지원  
+- IP 지역 기반 그래프 지원
+
+##### v1.7.0
+- 버그 수정
+- 파일엔코딩 확인처리 성능 개선
+- 자원사용률 로그 파싱 및 그래프 추가
+- 회귀분석 기능 추가
 
 To-do
 --------------
 What ALYBA will implement in the future:
 * Analysis History Management
+* Non-linear Regression Analysis
 * Customized Visualization
-* Regression Analysis for Capacity Calculation
 * Symentic URL support
-
 

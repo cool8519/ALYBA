@@ -10,13 +10,13 @@ import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
-import dal.tool.analyzer.alyba.output.vo.HourlyEntryVO;
+import dal.tool.analyzer.alyba.output.vo.TimeAggregationEntryVO;
 import dal.tool.analyzer.alyba.ui.chart.TimeSeriesChart;
 import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
 
 public class TxHourlyChart extends TimeSeriesChart {
 
-	protected static final Class<?> DATA_CLASS = HourlyEntryVO.class;
+	protected static final Class<?> DATA_CLASS = TimeAggregationEntryVO.class;
 	
 	public TxHourlyChart() {
 		super("Hourly Transaction", "Time of Day", "Transactions");
@@ -36,9 +36,9 @@ public class TxHourlyChart extends TimeSeriesChart {
 	    TimeSeries ts2 = new TimeSeries("Number of IP-Address");
 	    if(merge_item) {
 	    	int count = 0;
-	    	HourlyEntryVO mergedVO = null;
+	    	TimeAggregationEntryVO mergedVO = null;
 	    	for(Object data : dataList) {
-		    	HourlyEntryVO vo = (HourlyEntryVO) data;
+	    		TimeAggregationEntryVO vo = (TimeAggregationEntryVO) data;
 	    		if(merge_item_count > count++) {
 	    			if(mergedVO == null) {
 	    				mergedVO = vo;
@@ -55,7 +55,7 @@ public class TxHourlyChart extends TimeSeriesChart {
 	    	}
 	    } else {	    
 		    for(Object data : dataList) {
-		    	HourlyEntryVO vo = (HourlyEntryVO) data;
+		    	TimeAggregationEntryVO vo = (TimeAggregationEntryVO) data;
 		    	ts.add(new Hour(vo.getUnitDate()), vo.getRequestCount());	    	
 	    		ts2.add(new Hour(vo.getUnitDate()), vo.getRequestIPCount());
 		    }

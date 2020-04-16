@@ -13,7 +13,9 @@ public class UriChart extends KeyValueChart {
 
 	public void afterCreateChart(JFreeChart jfreeChart) {
 		super.afterCreateChart(jfreeChart);
-		jfreeChart.removeLegend();
+		if(chartType != Type.Pie) {
+			jfreeChart.removeLegend();
+		}
 	}	
 	
 }

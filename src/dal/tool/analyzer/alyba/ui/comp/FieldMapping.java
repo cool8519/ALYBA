@@ -41,10 +41,10 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
 import dal.tool.analyzer.alyba.Constant;
-import dal.tool.analyzer.alyba.parser.FieldIndex;
-import dal.tool.analyzer.alyba.parser.ParserUtil;
+import dal.tool.analyzer.alyba.parse.FieldIndex;
+import dal.tool.analyzer.alyba.parse.ParserUtil;
 import dal.tool.analyzer.alyba.setting.DefaultMapping;
-import dal.tool.analyzer.alyba.setting.FieldMappingInfo;
+import dal.tool.analyzer.alyba.setting.LogFieldMappingInfo;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.FileUtil;
@@ -57,7 +57,6 @@ public class FieldMapping extends Composite {
 
 	private FilterSetting filterSetting;
 	private TableItem draggingItem;
-	private List<String> fileEncoding;
 	private HashMap<String, String> mappingData;
 	private int fieldCount;
 	private Locale timeLocale;
@@ -96,7 +95,6 @@ public class FieldMapping extends Composite {
 		super(parent, style);
 		createContents();
 		addEventListener();
-		fileEncoding = new ArrayList<String>();
 		mappingData = new HashMap<String, String>();
 	}
 	
@@ -136,10 +134,6 @@ public class FieldMapping extends Composite {
 		return cb_elapsedUnit.getText();
 	}
 
-	public List<String> getFileEncoding() {
-		return fileEncoding;
-	}
-	
 	public HashMap<String, String> getMappingData() {
 		return mappingData;
 	}
@@ -155,6 +149,7 @@ public class FieldMapping extends Composite {
 	protected void createContents() {
 
 		Label lb_logType = new Label(this, SWT.NONE);
+		lb_logType.setFont(Utility.getFont());
 		lb_logType.setText("Log Type");
 		lb_logType.setAlignment(SWT.RIGHT);
 		lb_logType.setBounds(10, 14, 55, 15);
@@ -162,32 +157,39 @@ public class FieldMapping extends Composite {
 		cb_logType = new CCombo(this, SWT.BORDER | SWT.READ_ONLY);
 		cb_logType.setVisibleItemCount(6);
 		cb_logType.setItems(Constant.LOG_TYPES);
+		cb_logType.setFont(Utility.getFont());
 		cb_logType.setText(Constant.LOG_TYPES[0]);
 		cb_logType.setBounds(71, 11, 170, 21);
 
 		Label lb_delimeter = new Label(this, SWT.NONE);
+		lb_delimeter.setFont(Utility.getFont());
 		lb_delimeter.setText("Delimeter");
 		lb_delimeter.setAlignment(SWT.RIGHT);
 		lb_delimeter.setBounds(276, 14, 55, 15);
 
 		txt_delimeter = new Text(this, SWT.BORDER);
+		txt_delimeter.setFont(Utility.getFont());
 		txt_delimeter.setText(StringUtil.replaceMetaCharacter(Constant.LOG_DEFAULT_DELIMETER, true));
 		txt_delimeter.setBounds(337, 11, 110, 21);
 
 		btn_sampling = new Button(this, SWT.NONE);
-		btn_sampling.setBounds(453, 10, 100, 23);
+		btn_sampling.setFont(Utility.getFont());
 		btn_sampling.setText("Sampling");
+		btn_sampling.setBounds(453, 10, 100, 23);
 
 		Label lb_bracelet = new Label(this, SWT.NONE);
+		lb_bracelet.setFont(Utility.getFont());
 		lb_bracelet.setText("Bracelet");
 		lb_bracelet.setAlignment(SWT.RIGHT);
 		lb_bracelet.setBounds(276, 38, 55, 15);
 
 		txt_bracelet = new Text(this, SWT.BORDER);
+		txt_bracelet.setFont(Utility.getFont());
 		txt_bracelet.setText(StringUtil.getStringFromArray(Constant.LOG_DEFAULT_BRACELETS, " "));
 		txt_bracelet.setBounds(337, 35, 110, 21);
 
 		btn_resetMapping = new Button(this, SWT.NONE);
+		btn_resetMapping.setFont(Utility.getFont());
 		btn_resetMapping.setText("Reset");
 		btn_resetMapping.setBounds(596, 10, 100, 23);
 
@@ -198,6 +200,7 @@ public class FieldMapping extends Composite {
 		tbl_line = tblv_line.getTable();
 		tbl_line.setLinesVisible(true);
 		tbl_line.setHeaderVisible(true);
+		tbl_line.setFont(Utility.getFont());
 		tbl_line.setBounds(10, 17, 220, 245);
 		TableColumn tblc_index = new TableColumn(tbl_line, SWT.CENTER);
 		tblc_index.setText("Idx");
@@ -210,28 +213,32 @@ public class FieldMapping extends Composite {
 
 		Label lb_arrow = new Label(grp_customizeMapping, SWT.NONE);
 		lb_arrow.setForeground(SWTResourceManager.getColor(SWT.COLOR_WIDGET_NORMAL_SHADOW));
-		lb_arrow.setFont(Utility.getFont(14, SWT.NONE));
+		lb_arrow.setFont(Utility.getFont(Constant.DEFAULT_FONT_SIZE+5, SWT.NONE));
 		lb_arrow.setText("\u25B6");
 		lb_arrow.setBounds(248, 120, 20, 27);
 
 		Label lb_uri = new Label(grp_customizeMapping, SWT.NONE);
+		lb_uri.setFont(Utility.getFont());
 		lb_uri.setText("Request URI");
 		lb_uri.setAlignment(SWT.RIGHT);
 		lb_uri.setBounds(287, 28, 110, 15);
 
 		txt_uri = new Text(grp_customizeMapping, SWT.BORDER);
 		txt_uri.setEditable(false);
+		txt_uri.setFont(Utility.getFont());
 		txt_uri.setBounds(406, 25, 270, 21);
 		dt_textUri = new DropTarget(txt_uri, DND.DROP_MOVE | DND.DROP_COPY);
 		dt_textUri.setTransfer(Constant.TEXT_TRANSFER_TYPE);
 
 		Label lb_time = new Label(grp_customizeMapping, SWT.NONE);
+		lb_time.setFont(Utility.getFont());
 		lb_time.setText("Request Time");
 		lb_time.setAlignment(SWT.RIGHT);
 		lb_time.setBounds(287, 55, 110, 15);
 
 		txt_time = new Text(grp_customizeMapping, SWT.BORDER);
 		txt_time.setEditable(false);
+		txt_time.setFont(Utility.getFont());
 		txt_time.setBounds(406, 52, 167, 21);
 		dt_textTime = new DropTarget(txt_time, DND.DROP_MOVE | DND.DROP_COPY);
 		dt_textTime.setTransfer(Constant.TEXT_TRANSFER_TYPE);
@@ -244,10 +251,12 @@ public class FieldMapping extends Composite {
 		spn_offset.setMaximum(240);
 		spn_offset.setIncrement(5);
 		spn_offset.setSelection(0);
+		spn_offset.setFont(Utility.getFont());
 		spn_offset.setBounds(579, 52, 55, 21);
 
 		Label lb_hour = new Label(grp_customizeMapping, SWT.NONE);
 		lb_hour.setToolTipText("offset");
+		lb_hour.setFont(Utility.getFont());
 		lb_hour.setText("Hour");
 		lb_hour.setBounds(640, 55, 30, 15);
 
@@ -255,75 +264,89 @@ public class FieldMapping extends Composite {
 		cb_timeFormat.setEnabled(false);
 		cb_timeFormat.setItems(Constant.TIME_FORMATS);
 		cb_timeFormat.add(Constant.UNIX_TIME_STR);
+		cb_timeFormat.setFont(Utility.getFont());
 		cb_timeFormat.setText(Constant.TIME_FORMATS[0]);
 		cb_timeFormat.setBounds(406, 79, 167, 21);
 
 		lb_resultTimeChk = new Label(grp_customizeMapping, SWT.NONE);
+		lb_resultTimeChk.setFont(Utility.getFont());
 		lb_resultTimeChk.setText("Not checked");
 		lb_resultTimeChk.setBounds(579, 82, 96, 15);
 
 		Label lb_ip = new Label(grp_customizeMapping, SWT.NONE);
+		lb_ip.setFont(Utility.getFont());
 		lb_ip.setText("Request IP");
 		lb_ip.setAlignment(SWT.RIGHT);
 		lb_ip.setBounds(287, 109, 110, 15);
 
 		txt_ip = new Text(grp_customizeMapping, SWT.BORDER);
 		txt_ip.setEditable(false);
+		txt_ip.setFont(Utility.getFont());
 		txt_ip.setBounds(406, 106, 167, 21);
 		dt_textIp = new DropTarget(txt_ip, DND.DROP_MOVE | DND.DROP_COPY);
 		dt_textIp.setTransfer(Constant.TEXT_TRANSFER_TYPE);
 
 		Label lb_method = new Label(grp_customizeMapping, SWT.NONE);
+		lb_method.setFont(Utility.getFont());
 		lb_method.setText("Request Method");
 		lb_method.setAlignment(SWT.RIGHT);
 		lb_method.setBounds(287, 136, 110, 15);
 
 		txt_method = new Text(grp_customizeMapping, SWT.BORDER);
 		txt_method.setEditable(false);
+		txt_method.setFont(Utility.getFont());
 		txt_method.setBounds(406, 133, 167, 21);
 		dt_textMethod = new DropTarget(txt_method, DND.DROP_MOVE | DND.DROP_COPY);
 		dt_textMethod.setTransfer(Constant.TEXT_TRANSFER_TYPE);
 
 		Label lb_version = new Label(grp_customizeMapping, SWT.NONE);
+		lb_version.setFont(Utility.getFont());
 		lb_version.setText("Request Version");
 		lb_version.setAlignment(SWT.RIGHT);
 		lb_version.setBounds(287, 163, 110, 15);
 
 		txt_version = new Text(grp_customizeMapping, SWT.BORDER);
 		txt_version.setEditable(false);
+		txt_version.setFont(Utility.getFont());
 		txt_version.setBounds(406, 160, 167, 21);
 		dt_textVersion = new DropTarget(txt_version, DND.DROP_MOVE | DND.DROP_COPY);
 		dt_textVersion.setTransfer(Constant.TEXT_TRANSFER_TYPE);
 
 		Label lb_code = new Label(grp_customizeMapping, SWT.NONE);
+		lb_code.setFont(Utility.getFont());
 		lb_code.setText("Response Code");
 		lb_code.setAlignment(SWT.RIGHT);
 		lb_code.setBounds(287, 190, 110, 15);
 
 		txt_code = new Text(grp_customizeMapping, SWT.BORDER);
 		txt_code.setEditable(false);
+		txt_code.setFont(Utility.getFont());
 		txt_code.setBounds(406, 187, 167, 21);
 		dt_textCode = new DropTarget(txt_code, DND.DROP_MOVE | DND.DROP_COPY);
 		dt_textCode.setTransfer(Constant.TEXT_TRANSFER_TYPE);
 
 		Label lb_bytes = new Label(grp_customizeMapping, SWT.NONE);
+		lb_bytes.setFont(Utility.getFont());
 		lb_bytes.setText("Response Bytes");
 		lb_bytes.setAlignment(SWT.RIGHT);
 		lb_bytes.setBounds(287, 217, 110, 15);
 
 		txt_bytes = new Text(grp_customizeMapping, SWT.BORDER);
 		txt_bytes.setEditable(false);
+		txt_bytes.setFont(Utility.getFont());
 		txt_bytes.setBounds(406, 214, 167, 21);
 		dt_textBytes = new DropTarget(txt_bytes, DND.DROP_MOVE | DND.DROP_COPY);
 		dt_textBytes.setTransfer(Constant.TEXT_TRANSFER_TYPE);
 
 		Label lb_elapsed = new Label(grp_customizeMapping, SWT.NONE);
+		lb_elapsed.setFont(Utility.getFont());
 		lb_elapsed.setText("Elapsed Time");
 		lb_elapsed.setAlignment(SWT.RIGHT);
 		lb_elapsed.setBounds(247, 244, 150, 15);
 
 		txt_elapsed = new Text(grp_customizeMapping, SWT.BORDER);
 		txt_elapsed.setEditable(false);
+		txt_elapsed.setFont(Utility.getFont());
 		txt_elapsed.setBounds(406, 241, 167, 21);
 		dt_textElapsed = new DropTarget(txt_elapsed, DND.DROP_MOVE | DND.DROP_COPY);
 		dt_textElapsed.setTransfer(Constant.TEXT_TRANSFER_TYPE);
@@ -331,12 +354,13 @@ public class FieldMapping extends Composite {
 		cb_elapsedUnit = new CCombo(grp_customizeMapping, SWT.BORDER | SWT.READ_ONLY);
 		cb_elapsedUnit.setEnabled(false);
 		cb_elapsedUnit.setItems(Constant.ELAPSED_TIME_UNITS);
+		cb_elapsedUnit.setFont(Utility.getFont());
 		cb_elapsedUnit.setText(Constant.ELAPSED_TIME_UNITS[0]);
 		cb_elapsedUnit.setBounds(579, 241, 97, 21);
 
 		grp_customizeMapping.setTabList(new Control[] { txt_uri, txt_time, spn_offset, cb_timeFormat, txt_ip, txt_method, txt_version, txt_code, txt_bytes, txt_elapsed, cb_elapsedUnit });
 
-		setTabList(new Control[] { cb_logType, txt_delimeter, btn_sampling, btn_resetMapping });
+		setTabList(new Control[] { cb_logType, txt_delimeter, txt_bracelet, btn_sampling, btn_resetMapping });
 
 	}
 
@@ -347,15 +371,17 @@ public class FieldMapping extends Composite {
 				resetMappings();
 				boolean isCustomize = cb_logType.getText().equals(Constant.LOG_TYPES[0]);
 				grp_customizeMapping.setEnabled(isCustomize);
-				FieldMappingInfo info = getDefaultMappingInfo(cb_logType.getText());
-				if(info != null) {
+				LogFieldMappingInfo info = getDefaultMappingInfo(cb_logType.getText());
+				if(info == null) {
+					txt_delimeter.setText(StringUtil.replaceMetaCharacter(Constant.LOG_DEFAULT_DELIMETER, true));
+					txt_bracelet.setText(StringUtil.getStringFromArray(Constant.LOG_DEFAULT_BRACELETS, " "));
+				} else {
 					txt_delimeter.setText(StringUtil.replaceMetaCharacter(info.fieldDelimeter, true));
 					txt_bracelet.setText(info.fieldBracelet);
 				}
 				txt_delimeter.setEnabled(isCustomize);
 				txt_bracelet.setEnabled(isCustomize);
 				resetMappings();
-				autoMapping();
 			}
 		});
 
@@ -645,15 +671,20 @@ public class FieldMapping extends Composite {
 		}
 		if(appendFlag) {
 			String joinChar = key.equals("URI") ? "?" : " ";
-			String[] idx_arr = mappingData.get(key).split(",");
-			if(idx_arr.length == 1) {
+			if(key.equals("URI")) {
+				String[] idx_arr = mappingData.get(key).split(",");
+				if(idx_arr.length == 1) {
+					mapStr = (String)mappingData.get(key) + "," + mapStr;
+					fldStr = txtCtrl.getText() + joinChar + fldStr;
+				} else {
+					String orgIdx = (String)mappingData.get(key);
+					String orgFld = txtCtrl.getText();
+					mapStr = orgIdx.substring(0, orgIdx.indexOf(",") + 1) + mapStr;
+					fldStr = orgFld.substring(0, orgFld.indexOf(joinChar) + 1) + fldStr;
+				}
+			} else if(key.equals("TIME")) {
 				mapStr = (String)mappingData.get(key) + "," + mapStr;
 				fldStr = txtCtrl.getText() + joinChar + fldStr;
-			} else {
-				String orgIdx = (String)mappingData.get(key);
-				String orgFld = txtCtrl.getText();
-				mapStr = orgIdx.substring(0, orgIdx.indexOf(",") + 1) + mapStr;
-				fldStr = orgFld.substring(0, orgFld.indexOf(joinChar) + 1) + fldStr;
 			}
 		}
 		debug("mapping:" + mapStr + ", field:" + fldStr);
@@ -876,14 +907,7 @@ public class FieldMapping extends Composite {
 			debug("Failed to sample a file.");
 			return null;
 		} else {
-			String logfile_encoding = FileUtil.getFileEncoding(logfile.getPath());
-			if("WINDOWS-1252".equals(logfile_encoding)) {
-				String default_encoding = System.getProperty("file.encoding");
-				debug("Unknown file encoding : " + logfile_encoding + ". It will be set to default(" + default_encoding + ")");
-				logfile_encoding = default_encoding;
-			}
-			debug("File encoding : path='" + logfile.getPath() + "', encoding=" + logfile_encoding);
-			
+			String logfile_encoding = AlybaGUI.getInstance().getFileEncoding(logfile);
 			int bound = 100 * 2;
 			int line_number = 0;
 			String line = null;
@@ -912,8 +936,7 @@ public class FieldMapping extends Composite {
 		TableItem[] items = AlybaGUI.getInstance().tbl_files.getItems();
 		for(int i = 0; i < items.length; i++) {
 			File logfile = (File)items[i].getData("file");
-			String logfile_encoding = FileUtil.getFileEncoding(logfile.getPath());
-			fileEncoding.add(logfile_encoding);
+			String logfile_encoding = AlybaGUI.getInstance().getFileEncoding(logfile);
 			BufferedReader br = null;
 			String line = null;
 			try {
@@ -997,7 +1020,7 @@ public class FieldMapping extends Composite {
 	protected void resetMappings() {
 		mappingData = new HashMap<String, String>();
 		fieldCount = 0;
-		timeLocale = null;
+		timeLocale = Constant.TIME_LOCALES[0];
 		tbl_line.removeAll();
 		txt_uri.setText("");
 		txt_time.setText("");
@@ -1009,7 +1032,12 @@ public class FieldMapping extends Composite {
 		txt_code.setText("");
 		txt_bytes.setText("");
 		txt_elapsed.setText("");
-		cb_elapsedUnit.setText(Constant.ELAPSED_TIME_UNITS[0]);
+		cb_elapsedUnit.setText(Constant.ELAPSED_TIME_UNITS[0]);		
+		filterSetting.setURIEnabled(false);
+		filterSetting.setIPEnabled(false);
+		filterSetting.setMethodEnabled(false);
+		filterSetting.setVersionEnabled(false);
+		filterSetting.setCodeEnabled(false);		
 		AlybaGUI.getInstance().toggleAnalyzingButton(checkParsingAvailable());
 	}
 
@@ -1029,9 +1057,9 @@ public class FieldMapping extends Composite {
 		spnCtrl.setSelection(value);
 	}
 
-	public void autoMapping(FieldMappingInfo info) {
+	public void autoMapping(LogFieldMappingInfo info) {
 		try {
-			setTextValue(txt_delimeter, info.fieldDelimeter);
+			setTextValue(txt_delimeter, StringUtil.replaceMetaCharacter(info.fieldDelimeter, true));
 			setComboValue(cb_timeFormat, info.timeFormat);
 			setSpinnerValue(spn_offset, (int)(info.offsetHour*10));
 			setComboValue(cb_elapsedUnit, info.elapsedUnit);
@@ -1045,6 +1073,18 @@ public class FieldMapping extends Composite {
 				boolean success = mappingField(key, idx_str);
 				if(!success) {
 					throw new Exception("Failed to map default setting automatically. key=" + key + ", idx=" + idx_str);
+				} else {
+					if("URI".equals(key)) {
+						filterSetting.setURIEnabled(true);
+					} else if("IP".equals(key)) {
+						filterSetting.setIPEnabled(true);
+					} else if("METHOD".equals(key)) {
+						filterSetting.setMethodEnabled(true);
+					} else if("VERSION".equals(key)) {
+						filterSetting.setVersionEnabled(true);
+					} else if("CODE".equals(key)) {
+						filterSetting.setCodeEnabled(true);		
+					}
 				}
 				String[] idx_str_arr = idx_str.split(",");
 				FieldIndex[] fld_idx_arr = new FieldIndex[idx_str_arr.length];
@@ -1077,14 +1117,14 @@ public class FieldMapping extends Composite {
 
 	protected void autoMapping() {
 		String type = cb_logType.getText();
-		FieldMappingInfo info = getDefaultMappingInfo(type);
+		LogFieldMappingInfo info = getDefaultMappingInfo(type);
 		if(info != null) {
 			autoMapping(info);
 		}
 	}
 
-	protected FieldMappingInfo getDefaultMappingInfo(String type) {
-		FieldMappingInfo info = null;
+	protected LogFieldMappingInfo getDefaultMappingInfo(String type) {
+		LogFieldMappingInfo info = null;
 		if(type.equals("Apache")) {
 			info = DefaultMapping.APACHE;
 		} else if(type.equals("Tomcat")) {

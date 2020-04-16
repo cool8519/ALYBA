@@ -16,6 +16,7 @@ import java.util.TreeSet;
 import javax.persistence.EntityManager;
 
 import org.apache.commons.math3.stat.regression.SimpleRegression;
+import org.eclipse.swt.SWT;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartMouseListener;
@@ -40,6 +41,7 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.data.Range;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.function.LineFunction2D;
@@ -69,6 +71,7 @@ import dal.util.db.ObjectDBUtil;
 public abstract class DistributionChart extends KeyValueChart {
 
 	protected static final Class<?> DATA_CLASS = ResponseEntryVO.class;
+	protected static final ShapeSize DEFAULT_SHAPE_SIZE = ShapeSize.Large;
 
 	protected String label_x = "X";
 	protected String label_y = "Y";
@@ -76,8 +79,8 @@ public abstract class DistributionChart extends KeyValueChart {
 	protected boolean use_date_axis = false;
 	protected String date_format = "yyyy.MM.dd HH:mm";
 	protected DateTickUnit tick_unit = null;
-	protected int shape_size = 3;
-	protected boolean show_regression_linear = false;
+	protected ShapeSize shape_size = DEFAULT_SHAPE_SIZE;
+	protected boolean show_regression_line = false;
 	protected boolean show_regression_equation = true;
 	protected SimpleRegression regression = null;
 	protected Double[] boundary_values = { 0D };
@@ -115,12 +118,16 @@ public abstract class DistributionChart extends KeyValueChart {
 		return tick_unit;
 	}
 	
-	public int getShapeSize() {
+	public ShapeSize getShapeSize() {
 		return shape_size;
 	}
 	
-	public boolean getShowLinearRegression() {
-		return show_regression_linear;
+	public int getShapeSizeNumber() {
+		return shape_size.ordinal()+1;
+	}
+	
+	public boolean getShowRegressionLine() {
+		return show_regression_line;
 	}
 
 	public boolean getShowRegressionEquation() {
@@ -156,12 +163,16 @@ public abstract class DistributionChart extends KeyValueChart {
 		this.tick_unit = tick_unit;
 	}
 
-	public void setShapeSize(int shape_size) {
+	public void setShapeSize(ShapeSize shape_size) {
 		this.shape_size = shape_size;
 	}
 	
-	public void setShowLinearRegression(boolean show_regression_linear) {
-		this.show_regression_linear = show_regression_linear;
+	public void setShapeSizeNumber(int shape_size) {
+		this.shape_size = ShapeSize.values()[shape_size-1];
+	}
+	
+	public void setShowRegressionLine(boolean show_regression_line) {
+		this.show_regression_line = show_regression_line;
 	}
 
 	public void setShowRegressionEquation(boolean show_regression_equation) {
@@ -206,8 +217,12 @@ public abstract class DistributionChart extends KeyValueChart {
 				numberAxis.setVerticalTickLabels(true);
 				xyPlot.setDomainAxis(numberAxis);
 			}
+			NumberAxis rangeAxis = (NumberAxis)xyPlot.getRangeAxis();
+			NumberFormat formatter = NumberFormat.getIntegerInstance();
+			rangeAxis.setNumberFormatOverride(formatter);			
 			XYItemRenderer renderer = xyPlot.getRenderer();
-			Shape shape = new Ellipse2D.Double(1-shape_size, 1-shape_size, shape_size*2-1, shape_size*2-1);
+			int size = shape_size.ordinal() + 1;
+			Shape shape = new Ellipse2D.Double(-size, -size, size, size);
 			renderer.setSeriesShape(0, shape);
 			StandardXYToolTipGenerator tooltipGenerator = new StandardXYToolTipGenerator() {
 				private static final long serialVersionUID = 1L;
@@ -216,7 +231,7 @@ public abstract class DistributionChart extends KeyValueChart {
 				}
 			};
 			renderer.setBaseToolTipGenerator(tooltipGenerator);
-			if(show_regression_linear) {
+			if(show_regression_line) {
 				LineFunction2D lineFunction2D = new LineFunction2D(regression.getIntercept(), regression.getSlope());
 				double start = dataset.getXValue(0, 0);
 				double end = dataset.getXValue(0, dataset.getItemCount(0)-1);
@@ -240,7 +255,7 @@ public abstract class DistributionChart extends KeyValueChart {
 				    annotation.setTextAnchor(TextAnchor.BOTTOM_CENTER);
 				    annotation.setBackgroundPaint(new Color(0, 0, 255, 63));
 				    annotation.setOutlineVisible(false);
-				    annotation.setFont(new Font("Arial", Font.ITALIC, 12));
+				    annotation.setFont(new Font("Arial", Font.ITALIC, annotation.getFont().getSize()+3));
 				    xyPlot.addAnnotation(annotation);
 				}
 			}
@@ -282,7 +297,11 @@ public abstract class DistributionChart extends KeyValueChart {
 		    } else {
 			    renderer.setBaseItemLabelsVisible(false);
 		    }
-		}	
+		}
+		TextTitle title = jfreeChart.getTitle();
+		RectangleInsets padding = title.getPadding();
+		double bottomPadding = Math.max(padding.getBottom(), 4.0D);
+		title.setPadding(padding.getTop(), padding.getLeft(), bottomPadding, padding.getRight());
 	}
 	
 	public void afterCreateChartPanel(final ChartPanel chartPanel) {
@@ -300,12 +319,12 @@ public abstract class DistributionChart extends KeyValueChart {
 	
 	public void afterCreateChart(JFreeChart jfreeChart) {
 		super.afterCreateChart(jfreeChart);
-		if(chartType != Type.Pie || (chartType == Type.ScatterPlot && !show_regression_linear)) {
+		if(chartType != Type.Pie || (chartType == Type.ScatterPlot && !show_regression_line)) {
 			jfreeChart.removeLegend();
 		}
 	}
 	
-	protected void setTimeRangeFromSetting(DateAxis dateAxis) {
+	public void setTimeRangeFromSetting(DateAxis dateAxis) {
 		Date from, to;		
 		ObjectDBUtil db = null;
 		EntityManager em = null;
@@ -331,7 +350,7 @@ public abstract class DistributionChart extends KeyValueChart {
 		}
 	}
 	
-	protected int getAngleForAnnotation(XYPlot xyPlot, double x, double y) {
+	public int getAngleForAnnotation(XYPlot xyPlot, double x, double y) {
 		DateRange range_x = (DateRange)((DateAxis)xyPlot.getDomainAxis()).getRange();
 		Range range_y = ((NumberAxis)xyPlot.getRangeAxis()).getRange();
 		double center_x = (range_x.getLowerMillis() + range_x.getUpperMillis()) / 2;
@@ -349,7 +368,7 @@ public abstract class DistributionChart extends KeyValueChart {
 		}
 	}
 	
-	protected String getTooltipText(XYDataset dataset, int series, int item) {
+	public String getTooltipText(XYDataset dataset, int series, int item) {
 		Date dt = new Date((long)dataset.getXValue(series, item));
 		long val = (long)dataset.getYValue(series, item);
 		String str_dt = DateUtil.dateToString(dt, DateUtil.SDF_DATETIME);
@@ -357,7 +376,7 @@ public abstract class DistributionChart extends KeyValueChart {
 		return "\"" + str_dt + "\": " + str_val;
 	}
 	
-	protected <E extends EntryVO> void createDistributionDataset(List<E> dataList) {
+	public <E extends EntryVO> void createDistributionDataset(List<E> dataList) {
 		List<ValueRange> distRange = getDistributionRanges();
 		if(chartType == Type.Pie) {
 			pieDataset = new DefaultPieDataset();
@@ -373,14 +392,16 @@ public abstract class DistributionChart extends KeyValueChart {
     	}
 		for(ValueRange rangeItem : distRange) {
 			if(chartType == Type.Pie) {
-				pieDataset.setValue(rangeItem.getRangeString(), rangeItem.count);
+				if(rangeItem.count > 0) {
+					pieDataset.setValue(rangeItem.getRangeString(), rangeItem.count);
+				}
 			} else {
 				categoryDataset.addValue(rangeItem.count, category_name, rangeItem.getRangeString());
 			}
 		}    		
 	}
 
-	protected List<ValueRange> getDistributionRanges() {
+	public List<ValueRange> getDistributionRanges() {
 		return DistributionChart.getDistributionRanges(getBoundaryValues());
 	}
 	
@@ -403,7 +424,7 @@ public abstract class DistributionChart extends KeyValueChart {
 		return ranges;
 	}
 
-	protected void showAnnotation(XYItemEntity entity) {		
+	public void showAnnotation(XYItemEntity entity) {		
 		XYSeries series = ((XYSeriesCollection)dataset).getSeries(entity.getSeriesIndex());
 		XYDataItem item = series.getDataItem(entity.getItem());
 		Date dt = new Date((long)item.getXValue());
@@ -414,20 +435,20 @@ public abstract class DistributionChart extends KeyValueChart {
 		renderer.setSeriesPaint(0, Color.BLACK);
 		int angle = getAngleForAnnotation(xyPlot, dt.getTime(), val);
 		MultiLineXYPointerAnnotation annotation = new MultiLineXYPointerAnnotation(annotation_text, dt.getTime(), val, Math.toRadians(angle));
-	    annotation.setFont(new Font("Arial", 0, 11));
+	    annotation.setFont(new Font("Arial", SWT.NONE, annotation.getFont().getSize()+1));
 	    annotation.setTextAnchor(getTextAnchorByAngle(angle));
 	    annotation.setBackgroundPaint(Color.WHITE);
 	    renderer.addAnnotation(annotation);
 	    xyPlot.setRenderer(1, renderer);
 	}
 
-	protected String getAnnotationText(XYDataItem item) {
+	public String getAnnotationText(XYDataItem item) {
 		Date dt = new Date((long)item.getXValue());
 		long val = (long)item.getYValue();
 		return "\"" + DateUtil.dateToString(dt, DateUtil.SDF_DATETIME) + "\": " + NumberUtil.numberToString(val, NumberUtil.DF_NO_DOT_THOUSAND);
 	}
 
-	protected abstract Double[] getDefaultBoundaryValues();	
-	protected abstract double getDistributionValue(EntryVO vo);	
+	public abstract Double[] getDefaultBoundaryValues();	
+	public abstract double getDistributionValue(EntryVO vo);	
 	
 }
