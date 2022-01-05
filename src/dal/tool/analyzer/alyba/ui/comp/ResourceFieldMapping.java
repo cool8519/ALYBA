@@ -49,6 +49,7 @@ import dal.tool.analyzer.alyba.parse.ParserUtil;
 import dal.tool.analyzer.alyba.setting.DefaultMapping;
 import dal.tool.analyzer.alyba.setting.ResourceFieldMappingInfo;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
+import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.FileUtil;
 import dal.util.NumberUtil;
@@ -575,7 +576,7 @@ public class ResourceFieldMapping extends Composite {
 			public void modifyText(ModifyEvent e) {
 				String timeStr = txt_time.getText();
 				if(timeStr.length() > 0) {
-					debug("Check TimeFormat : " + timeStr + ", " + cb_timeFormat.getText());
+					Logger.debug("Check TimeFormat : " + timeStr + ", " + cb_timeFormat.getText());
 					checkTimeString(new String[] { cb_timeFormat.getText() }, timeStr);
 				}
 			}
@@ -726,7 +727,7 @@ public class ResourceFieldMapping extends Composite {
 			mapStr = (String)mappingData.get(key) + "," + mapStr;
 			fldStr = txtCtrl.getText() + " " + fldStr;
 		}
-		debug("mapping:" + mapStr + ", field:" + fldStr);
+		Logger.debug("mapping:" + mapStr + ", field:" + fldStr);
 		mappingData.put(key, mapStr);
 		txtCtrl.setText(fldStr);
 		draggingItem = null;
@@ -736,7 +737,7 @@ public class ResourceFieldMapping extends Composite {
 	
 	protected void removeMappingData(String key, Text txtCtrl) {
 		if(!txtCtrl.getText().equals("")) {
-			debug("remove mapping:" + mappingData.remove(key) + ", field:" + txtCtrl.getText());
+			Logger.debug("remove mapping:" + mappingData.remove(key) + ", field:" + txtCtrl.getText());
 			txtCtrl.setText("");
 			draggingItem = null;
 			owner.toggleAnalyzingButton(checkParsingAvailable());
@@ -834,7 +835,8 @@ public class ResourceFieldMapping extends Composite {
 		try {
 			file_line = getSampleLine();
 		} catch(Exception e) {
-			debug(e);
+			Logger.debug("Failed to sample a line from logfile.");
+			Logger.error(e);
 		}
 		if(file_line == null) {
 			MessageUtil.showErrorMessage(getShell(), "Failed to sample a line.");
@@ -843,7 +845,7 @@ public class ResourceFieldMapping extends Composite {
 
 		String delimeter = StringUtil.replaceMetaCharacter(getDelimeter(), false);
 		String[] bracelets = StringUtil.getArrayFromString(getBracelet(), " ");
-		List<String> tokenList = ParserUtil.getTokenList(file_line, delimeter, bracelets);
+		List<String> tokenList = ParserUtil.getTokenList(file_line, delimeter, bracelets, AlybaGUI.getInstance().optionSetting.checkStrictCheck());
 		if(tokenList == null) {
 			return;
 		}
@@ -852,7 +854,7 @@ public class ResourceFieldMapping extends Composite {
 			TableItem item = new TableItem(tbl_line, SWT.NULL);
 			item.setText(0, String.valueOf(i + 1));
 			item.setText(1, tokenList.get(i));
-			debug("TOKEN_" + (i + 1) + " : " + tokenList.get(i));
+			Logger.debug("TOKEN_" + (i + 1) + " : " + tokenList.get(i));
 		}
 	}
 
@@ -915,7 +917,7 @@ public class ResourceFieldMapping extends Composite {
 		} while(file.length() == 0);
 		
 		if(cnt == Constant.MAX_SAMPLING_COUNT) {
-			debug("Failed to sample a file.");
+			Logger.debug("Failed to sample a file.");
 			return null;
 		} else {
 			int bound = 100 * 2;
@@ -936,13 +938,13 @@ public class ResourceFieldMapping extends Composite {
 					read_header = true;
 				}
 				cnt++;
-				debug("sample a line(" + line_number + ") : " + line);
+				Logger.debug("sample a line(" + line_number + ") : " + line);
 			} while(line == null || line.trim().equals("") || line.startsWith("#") || headerOfVmstat(line) || headerOfSar(line));
 			if(cnt == Constant.MAX_SAMPLING_COUNT) {
-				debug("Failed to sample a line : " + file.getCanonicalPath());
+				Logger.debug("Failed to sample a line : " + file.getCanonicalPath());
 				return null;
 			} else {
-				debug("Sampled Line(" + file.getCanonicalPath() + ":" + line_number + ") : \n" + line);
+				Logger.debug("Sampled Line(" + file.getCanonicalPath() + ":" + line_number + ") : \n" + line);
 				return line;
 			}
 		}
@@ -986,8 +988,8 @@ public class ResourceFieldMapping extends Composite {
 					if(count < 3 || line == null || line.trim().equals("") || line.startsWith("#") || headerOfVmstat(line) || headerOfSar(line)) {
 						continue;
 					}
-					debug("check a line : " + line);
-					List<String> main_tokens = ParserUtil.getTokenList(line, delimeter, bracelets);
+					Logger.debug("check a line : " + line);
+					List<String> main_tokens = ParserUtil.getTokenList(line, delimeter, bracelets, AlybaGUI.getInstance().optionSetting.checkStrictCheck());
 					try {
 						String time_str = "";
 						for(String temp_idx : time_idx_arr) {
@@ -1010,26 +1012,28 @@ public class ResourceFieldMapping extends Composite {
 							}
 						}
 						time_str = time_str.trim();
-						debug("time field : " + time_str);
+						Logger.debug("time field : " + time_str);
 						if(cb_timeFormat.getText().equals(Constant.UNIX_TIME_STR)) {
 							if(ParserUtil.isMatchedUnixTimeFormat(time_str) == false) {
-								debug("INVALID TIME TOKEN(" + time_idx + ") : " + time_str);
+								Logger.debug("INVALID TIME TOKEN(" + time_idx + ") : " + time_str);
 								return i;
 							}
 						} else {
 							if(ParserUtil.isMatchedTimeFormat(cb_timeFormat.getText(), time_str, timeLocale) == false) {
-								debug("INVALID TIME TOKEN(" + time_idx + ") : " + time_str);
+								Logger.debug("INVALID TIME TOKEN(" + time_idx + ") : " + time_str);
 								return i;
 							}
 						}
 					} catch(Exception e) {
-						debug(e);
+						Logger.debug("Failed to validate field data for mapping.");
+						Logger.error(e);
 						return i;
 					}
 					break;
 				}
 			} catch(Exception e) {
-				debug(e);
+				Logger.debug("Failed to check mapping validation.");
+				Logger.error(e);
 			} finally {
 				if(br != null) {
 					try {
@@ -1048,10 +1052,10 @@ public class ResourceFieldMapping extends Composite {
 		timeLocale = null;
 		header = null;
 		tbl_line.removeAll();
-		txt_cpu.setText("");
 		txt_time.setText("");
 		spn_offset.setSelection(0);
 		cb_timeFormat.setText(Constant.TIME_FORMATS[0]);
+		txt_cpu.setText("");
 		txt_mem.setText("");
 		txt_disk.setText("");
 		txt_network.setText("");
@@ -1089,7 +1093,7 @@ public class ResourceFieldMapping extends Composite {
 			int cnt = 1;
 			for(String key : mappingData.keySet()) {
 				idx_str = mappingData.get(key);
-				debug("auto mapping(" + key + ") : " + idx_str);
+				Logger.debug("auto mapping(" + key + ") : " + idx_str);
 				boolean success = mappingField(key, idx_str);
 				if(!success) {
 					throw new Exception("Failed to map default setting automatically. key=" + key + ", idx=" + idx_str);
@@ -1115,7 +1119,7 @@ public class ResourceFieldMapping extends Composite {
 						data += " " + temp_data;
 					}
 				}
-				debug("[" + cnt + "] idx : " + idx_str + ", data : " + data);
+				Logger.debug("[" + cnt + "] idx : " + idx_str + ", data : " + data);
 				cnt++;
 			}
 			spn_offset.setEnabled(false);
@@ -1130,7 +1134,8 @@ public class ResourceFieldMapping extends Composite {
 			chk_network_isIdle.setSelection(info.isNetworkIdle());
 		} catch(Exception e) {
 			MessageUtil.showErrorMessage(getShell(), "Failed to map default setting automatically.");
-			debug(e);
+			Logger.debug("Failed to map default setting automatically.");
+			Logger.error(e);
 			resetMappings();
 		}
 	}
@@ -1172,16 +1177,4 @@ public class ResourceFieldMapping extends Composite {
 		resetMappings();
 	}
 
-	protected void debug(String s) {
-		if(AlybaGUI.instance != null) {
-			AlybaGUI.getInstance().debug(s);
-		}
-	}
-
-	protected void debug(Throwable t) {
-		if(AlybaGUI.instance != null) {
-			AlybaGUI.getInstance().debug(t);
-		}
-	}
-	
 }

@@ -140,7 +140,7 @@ public class DateTimePicker extends Composite {
 		if(btn_first != null) {
 			btn_first.addSelectionListener(new SelectionAdapter() {
 				public void widgetSelected(SelectionEvent e) {
-					dt_Time.setTime(0, 0, 0);
+					setTimeToFirstOfDay();
 				}
 			});
 		}
@@ -148,11 +148,19 @@ public class DateTimePicker extends Composite {
 		if(btn_last != null) {
 			btn_last.addSelectionListener(new SelectionAdapter() {
 				public void widgetSelected(SelectionEvent e) {
-					dt_Time.setTime(23, 59, 59);
+					setTimeToLastOfDay();
 				}
 			});
 		}
 
+	}
+	
+	public void setTimeToFirstOfDay() {
+		dt_Time.setTime(0, 0, 0);
+	}
+	
+	public void setTimeToLastOfDay() {
+		dt_Time.setTime(23, 59, 59);
 	}
 
 	public void setEnabled(boolean enabled) {

@@ -17,6 +17,7 @@ public class OutputTask extends ProgressBarTask {
 		this.output = output;
 		status = new int[output.getAnalyzerSetting().getOutputCount()+1];
 		tasksPercent = new int[output.getAnalyzerSetting().getOutputCount()+1];
+		tasksDetail = new String[output.getAnalyzerSetting().getOutputCount()+1];
 		for(int i = 0; i < status.length; i++) {
 			status[i] = STATUS_READY;
 			tasksPercent[i] = 0;
@@ -28,7 +29,7 @@ public class OutputTask extends ProgressBarTask {
 	}
 
 	public void doCancel() {
-		Logger.logln("Unable to cancel");
+		Logger.debug("Unable to cancel");
 	}
 
 	public void doTask() throws Exception {

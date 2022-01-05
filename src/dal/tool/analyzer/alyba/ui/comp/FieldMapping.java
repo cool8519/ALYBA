@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.eclipse.jface.viewers.TableViewer;
@@ -46,8 +47,10 @@ import dal.tool.analyzer.alyba.parse.ParserUtil;
 import dal.tool.analyzer.alyba.setting.DefaultMapping;
 import dal.tool.analyzer.alyba.setting.LogFieldMappingInfo;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
+import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.FileUtil;
+import dal.util.JsonUtil;
 import dal.util.NumberUtil;
 import dal.util.StringUtil;
 import dal.util.swt.MessageUtil;
@@ -55,14 +58,18 @@ import dal.util.swt.SWTResourceManager;
 
 public class FieldMapping extends Composite {
 
+	public URIMappingManager uriMappingManager;
+	
 	private FilterSetting filterSetting;
 	private TableItem draggingItem;
 	private HashMap<String, String> mappingData;
 	private int fieldCount;
 	private Locale timeLocale;
+	private boolean isJsonMapType;
 
 	private Group grp_customizeMapping;
 	public CCombo cb_logType;
+	public CCombo cb_timestampType;
 	public CCombo cb_elapsedUnit;
 	public CCombo cb_timeFormat;
 	public Spinner spn_offset;
@@ -78,6 +85,7 @@ public class FieldMapping extends Composite {
 	private Text txt_code;
 	private Text txt_bytes;
 	private Text txt_elapsed;
+	private Button btn_uriMapping;
 	private Button btn_sampling;
 	private Button btn_resetMapping;
 	private Label lb_resultTimeChk;
@@ -133,6 +141,10 @@ public class FieldMapping extends Composite {
 	public String getElapsedUnit() {
 		return cb_elapsedUnit.getText();
 	}
+	
+	public String getTimestampType() {
+		return cb_timestampType.getText();
+	}
 
 	public HashMap<String, String> getMappingData() {
 		return mappingData;
@@ -145,6 +157,10 @@ public class FieldMapping extends Composite {
 	public Locale getTimeLocale() {
 		return timeLocale;
 	}
+	
+	public boolean isJsonMapType() {
+		return isJsonMapType;
+	}
 
 	protected void createContents() {
 
@@ -155,12 +171,12 @@ public class FieldMapping extends Composite {
 		lb_logType.setBounds(10, 14, 55, 15);
 
 		cb_logType = new CCombo(this, SWT.BORDER | SWT.READ_ONLY);
-		cb_logType.setVisibleItemCount(6);
 		cb_logType.setItems(Constant.LOG_TYPES);
 		cb_logType.setFont(Utility.getFont());
 		cb_logType.setText(Constant.LOG_TYPES[0]);
+		cb_logType.setToolTipText("Specify one of the predefined accesslog formats.\nThis makes it easy to map fields.");
 		cb_logType.setBounds(71, 11, 170, 21);
-
+		
 		Label lb_delimeter = new Label(this, SWT.NONE);
 		lb_delimeter.setFont(Utility.getFont());
 		lb_delimeter.setText("Delimeter");
@@ -170,11 +186,13 @@ public class FieldMapping extends Composite {
 		txt_delimeter = new Text(this, SWT.BORDER);
 		txt_delimeter.setFont(Utility.getFont());
 		txt_delimeter.setText(StringUtil.replaceMetaCharacter(Constant.LOG_DEFAULT_DELIMETER, true));
+		txt_delimeter.setToolTipText("The parser will split the field with these characters.\nEnter delimiter characters in a row.");
 		txt_delimeter.setBounds(337, 11, 110, 21);
 
 		btn_sampling = new Button(this, SWT.NONE);
 		btn_sampling.setFont(Utility.getFont());
 		btn_sampling.setText("Sampling");
+		btn_sampling.setToolTipText("It parses a sampled line in files and displays them below so that the fields can be mapped.");
 		btn_sampling.setBounds(453, 10, 100, 23);
 
 		Label lb_bracelet = new Label(this, SWT.NONE);
@@ -186,13 +204,14 @@ public class FieldMapping extends Composite {
 		txt_bracelet = new Text(this, SWT.BORDER);
 		txt_bracelet.setFont(Utility.getFont());
 		txt_bracelet.setText(StringUtil.getStringFromArray(Constant.LOG_DEFAULT_BRACELETS, " "));
+		txt_bracelet.setToolTipText("A string surrounded by Bracelet characters is considered a single field.\nEnter pairs of bracelet characters with a space as a delimiter.");
 		txt_bracelet.setBounds(337, 35, 110, 21);
 
 		btn_resetMapping = new Button(this, SWT.NONE);
 		btn_resetMapping.setFont(Utility.getFont());
 		btn_resetMapping.setText("Reset");
 		btn_resetMapping.setBounds(596, 10, 100, 23);
-
+		
 		grp_customizeMapping = new Group(this, SWT.NONE);
 		grp_customizeMapping.setBounds(10, 59, 686, 272);
 
@@ -226,15 +245,29 @@ public class FieldMapping extends Composite {
 		txt_uri = new Text(grp_customizeMapping, SWT.BORDER);
 		txt_uri.setEditable(false);
 		txt_uri.setFont(Utility.getFont());
-		txt_uri.setBounds(406, 25, 270, 21);
+		txt_uri.setBounds(406, 25, 167, 21);
 		dt_textUri = new DropTarget(txt_uri, DND.DROP_MOVE | DND.DROP_COPY);
 		dt_textUri.setTransfer(Constant.TEXT_TRANSFER_TYPE);
 
+		btn_uriMapping = new Button(grp_customizeMapping, SWT.NONE);
+		btn_uriMapping.setFont(Utility.getFont());
+		btn_uriMapping.setText("URI Mapping");
+		btn_uriMapping.setToolTipText("If the request URI matches a pattern added here, it will be aggregated as the pattern.\nIt supports RESTful semantic URLs such as springframework's @PathVariable.");
+		btn_uriMapping.setBounds(579, 24, 100, 23);
+
+		cb_timestampType = new CCombo(grp_customizeMapping, SWT.BORDER | SWT.READ_ONLY | SWT.RIGHT_TO_LEFT);
+		cb_timestampType.setEnabled(false);
+		cb_timestampType.setItems(new String[]{"Res", "Req"});
+		cb_timestampType.setFont(Utility.getFont());
+		cb_timestampType.setText("Res");
+		cb_timestampType.setToolTipText("Specify whether this timestamp is the request or response time.");
+		cb_timestampType.setBounds(270, 52, 55, 21);
+
 		Label lb_time = new Label(grp_customizeMapping, SWT.NONE);
 		lb_time.setFont(Utility.getFont());
-		lb_time.setText("Request Time");
+		lb_time.setText("Timestamp");
 		lb_time.setAlignment(SWT.RIGHT);
-		lb_time.setBounds(287, 55, 110, 15);
+		lb_time.setBounds(327, 55, 70, 15);
 
 		txt_time = new Text(grp_customizeMapping, SWT.BORDER);
 		txt_time.setEditable(false);
@@ -252,6 +285,7 @@ public class FieldMapping extends Composite {
 		spn_offset.setIncrement(5);
 		spn_offset.setSelection(0);
 		spn_offset.setFont(Utility.getFont());
+		spn_offset.setToolTipText("If the logged time differs from your local time, adjust the time difference to a positive or negative value.");
 		spn_offset.setBounds(579, 52, 55, 21);
 
 		Label lb_hour = new Label(grp_customizeMapping, SWT.NONE);
@@ -358,7 +392,7 @@ public class FieldMapping extends Composite {
 		cb_elapsedUnit.setText(Constant.ELAPSED_TIME_UNITS[0]);
 		cb_elapsedUnit.setBounds(579, 241, 97, 21);
 
-		grp_customizeMapping.setTabList(new Control[] { txt_uri, txt_time, spn_offset, cb_timeFormat, txt_ip, txt_method, txt_version, txt_code, txt_bytes, txt_elapsed, cb_elapsedUnit });
+		grp_customizeMapping.setTabList(new Control[] { txt_uri, btn_uriMapping, cb_timestampType, txt_time, spn_offset, cb_timeFormat, txt_ip, txt_method, txt_version, txt_code, txt_bytes, txt_elapsed, cb_elapsedUnit });
 
 		setTabList(new Control[] { cb_logType, txt_delimeter, txt_bracelet, btn_sampling, btn_resetMapping });
 
@@ -368,9 +402,9 @@ public class FieldMapping extends Composite {
 
 		cb_logType.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
-				resetMappings();
-				boolean isCustomize = cb_logType.getText().equals(Constant.LOG_TYPES[0]);
-				grp_customizeMapping.setEnabled(isCustomize);
+				//resetMappings();
+				//boolean isCustomize = isCustomizeType() || isJsonType();
+				//grp_customizeMapping.setEnabled(true);
 				LogFieldMappingInfo info = getDefaultMappingInfo(cb_logType.getText());
 				if(info == null) {
 					txt_delimeter.setText(StringUtil.replaceMetaCharacter(Constant.LOG_DEFAULT_DELIMETER, true));
@@ -379,8 +413,8 @@ public class FieldMapping extends Composite {
 					txt_delimeter.setText(StringUtil.replaceMetaCharacter(info.fieldDelimeter, true));
 					txt_bracelet.setText(info.fieldBracelet);
 				}
-				txt_delimeter.setEnabled(isCustomize);
-				txt_bracelet.setEnabled(isCustomize);
+				txt_delimeter.setEnabled(isCustomizeType());
+				txt_bracelet.setEnabled(isCustomizeType());
 				resetMappings();
 			}
 		});
@@ -416,7 +450,7 @@ public class FieldMapping extends Composite {
 		btn_sampling.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				resetMappings();
-				boolean isCustomize = cb_logType.getText().equals(Constant.LOG_TYPES[0]);
+				boolean isCustomize = isCustomizeType() || isJsonType();
 				if(!isCustomize) {
 					autoMapping();
 				} else {
@@ -430,10 +464,17 @@ public class FieldMapping extends Composite {
 				reset();
 			}
 		});
+		
+		btn_uriMapping.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				openUriMappingManager();
+			}
+		});
 
 		txt_time.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				String timeStr = txt_time.getText();
+				cb_timestampType.setEnabled(timeStr.length() > 0);
 				spn_offset.setEnabled(timeStr.length() > 0);
 				cb_timeFormat.setEnabled(timeStr.length() > 0);
 				if(timeStr.length() > 0) {
@@ -449,7 +490,7 @@ public class FieldMapping extends Composite {
 			public void modifyText(ModifyEvent e) {
 				String timeStr = txt_time.getText();
 				if(timeStr.length() > 0) {
-					debug("Check TimeFormat : " + timeStr + ", " + cb_timeFormat.getText());
+					Logger.debug("Check TimeFormat : " + timeStr + ", " + cb_timeFormat.getText());
 					checkTimeString(new String[] { cb_timeFormat.getText() }, timeStr);
 				}
 			}
@@ -687,7 +728,7 @@ public class FieldMapping extends Composite {
 				fldStr = txtCtrl.getText() + joinChar + fldStr;
 			}
 		}
-		debug("mapping:" + mapStr + ", field:" + fldStr);
+		Logger.debug("mapping:" + mapStr + ", field:" + fldStr);
 		mappingData.put(key, mapStr);
 		txtCtrl.setText(fldStr);
 		draggingItem = null;
@@ -697,7 +738,7 @@ public class FieldMapping extends Composite {
 	
 	protected void removeMappingData(String key, Text txtCtrl) {
 		if(!txtCtrl.getText().equals("")) {
-			debug("remove mapping:" + mappingData.remove(key) + ", field:" + txtCtrl.getText());
+			Logger.debug("remove mapping:" + mappingData.remove(key) + ", field:" + txtCtrl.getText());
 			txtCtrl.setText("");
 			draggingItem = null;
 			AlybaGUI.getInstance().toggleAnalyzingButton(checkParsingAvailable());
@@ -759,7 +800,7 @@ public class FieldMapping extends Composite {
 				String joinChar = key.equals("URI") ? "?" : " ";
 				int cnt = 1;
 				while(st.hasMoreTokens()) {
-					FieldIndex fld_idx = new FieldIndex(key + "_" + cnt, st.nextToken());
+					FieldIndex fld_idx = new FieldIndex(key + "_" + cnt, keyToIndex(st.nextToken()));
 					String main_fld = tbl_line.getItem(fld_idx.getMainIndex()).getText(1);
 					val = fld_idx.getField(main_fld, delimeter, bracelets);
 					if(cnt == 1) {
@@ -775,7 +816,7 @@ public class FieldMapping extends Composite {
 				txtCtrl.setText(concatValue);
 			}
 		} else {
-			FieldIndex fld_idx = new FieldIndex(key, value);
+			FieldIndex fld_idx = new FieldIndex(key, keyToIndex(value));
 			String main_fld = tbl_line.getItem(fld_idx.getMainIndex()).getText(1);
 			val = fld_idx.getField(main_fld, delimeter, bracelets);
 			if(val == null) {
@@ -789,31 +830,101 @@ public class FieldMapping extends Composite {
 		AlybaGUI.getInstance().toggleAnalyzingButton(checkParsingAvailable());
 		return true;
 	}
+	
+	protected String keyToIndex(String value) {
+		if(!isJsonMapType) {
+			return value;
+		}
+		int idx = value.indexOf("-");
+		if(idx < 0) {
+			int main_idx = getKeyIndex(value);
+			return main_idx < 0 ? "UNKNOWN" : String.valueOf(main_idx+1);
+		} else {
+			int main_idx = getKeyIndex(value.substring(0, idx));
+			String main_str = main_idx < 0 ? "UNKNOWN" : String.valueOf(main_idx+1);
+			return main_str + value.substring(idx);
+		}		
+	}
+	
+	protected int getKeyIndex(String key) {
+		TableItem[] items = tbl_line.getItems();
+		for(int i = 0; i < items.length; i++) {
+			if(items[i].getText(0).equals(key)) {
+				return i;
+			}
+		}
+		return -1;
+	}
 
+	protected boolean isCustomizeType() {
+		return cb_logType.getText().equals(Constant.LOG_TYPES[0]);
+	}
+
+	protected boolean isJsonType() {
+		return cb_logType.getText().equals(Constant.LOG_TYPES[7]);
+	}
+	
 	protected void addLine() {
 		String log_line = "";
 		try {
 			log_line = getSampleLogLine();
 		} catch(Exception e) {
-			debug(e);
+			Logger.debug("Failed to sample a line from logfile.");
+			Logger.error(e);
 		}
 		if(log_line == null) {
 			MessageUtil.showErrorMessage(getShell(), "Failed to sample a line.");
 			return;
 		}
 
-		String delimeter = StringUtil.replaceMetaCharacter(getDelimeter(), false);
-		String[] bracelets = StringUtil.getArrayFromString(getBracelet(), " ");
-		List<String> tokenList = ParserUtil.getTokenList(log_line, delimeter, bracelets);
-		if(tokenList == null) {
-			return;
-		}
-		fieldCount = tokenList.size();
-		for(int i = 0; i < tokenList.size(); i++) {
-			TableItem item = new TableItem(tbl_line, SWT.NULL);
-			item.setText(0, String.valueOf(i + 1));
-			item.setText(1, tokenList.get(i));
-			debug("TOKEN_" + (i + 1) + " : " + tokenList.get(i));
+		List<String> tokenList = null;
+		List<String> keyList = null;
+		try {
+			if(isJsonType()) {
+				// json type
+				if(log_line.startsWith("{") && log_line.endsWith("}")) {
+					isJsonMapType = true;
+					Map<String,String> map = JsonUtil.jsonToMap(log_line, String.class, String.class);
+					tokenList = new ArrayList<String>(map.values());
+					keyList = new ArrayList<String>(map.keySet());
+				} else if(log_line.startsWith("[") && log_line.endsWith("]")) {
+					// json array type
+					tokenList = JsonUtil.jsonToList(log_line, String.class);
+				} else {
+					throw new Exception("Failed to parse a line to json object.");
+				}
+			} else {
+				// column-separated type
+				String delimeter = StringUtil.replaceMetaCharacter(getDelimeter(), false);
+				String[] bracelets = StringUtil.getArrayFromString(getBracelet(), " ");
+				tokenList = ParserUtil.getTokenList(log_line, delimeter, bracelets, AlybaGUI.getInstance().optionSetting.checkStrictCheck());
+			}
+
+			if(tokenList == null) {
+				throw new Exception("The list of token is null.");
+			}
+			fieldCount = tokenList.size();
+			for(int i = 0; i < tokenList.size(); i++) {
+				TableItem item = new TableItem(tbl_line, SWT.NULL);
+				if(isJsonMapType) {
+					item.setText(0, keyList.get(i));
+				} else {
+					item.setText(0, String.valueOf(i + 1));
+				}
+				item.setText(1, tokenList.get(i)+"");
+
+				if(keyList == null) {
+					Logger.debug("TOKEN_" + (i + 1) + " : " + tokenList.get(i));
+				} else {
+					Logger.debug("TOKEN_" + (i + 1) + " : " + keyList.get(i) + " : " + tokenList.get(i));
+				}
+			}	
+			if(isJsonMapType) {
+				tbl_line.getColumn(0).pack();
+			}
+		} catch(Exception e) {
+			Logger.debug("Failed to get tokens from the line : " + log_line);
+			Logger.error(e);
 		}
 	}
 
@@ -904,7 +1015,7 @@ public class FieldMapping extends Composite {
 		} while(logfile.length() == 0);
 		
 		if(cnt == Constant.MAX_SAMPLING_COUNT) {
-			debug("Failed to sample a file.");
+			Logger.debug("Failed to sample a file.");
 			return null;
 		} else {
 			String logfile_encoding = AlybaGUI.getInstance().getFileEncoding(logfile);
@@ -920,13 +1031,13 @@ public class FieldMapping extends Composite {
 				line_number = NumberUtil.getRandomNumber(bound) + 1;
 				line = FileUtil.readFileLine(logfile, line_number, logfile_encoding);
 				cnt++;
-				debug("sample a line(" + line_number + ") : " + line);
+				Logger.debug("sample a line(" + line_number + ") : " + line);
 			} while(line == null || line.trim().equals("") || line.startsWith("#") || line.startsWith("format="));
 			if(cnt == Constant.MAX_SAMPLING_COUNT) {
-				debug("Failed to sample a line : " + logfile.getCanonicalPath());
+				Logger.debug("Failed to sample a line : " + logfile.getCanonicalPath());
 				return null;
 			} else {
-				debug("Sampled Line(" + logfile.getCanonicalPath() + ":" + line_number + ") : \n" + line);
+				Logger.debug("Sampled Line(" + logfile.getCanonicalPath() + ":" + line_number + ") : \n" + line);
 				return line;
 			}
 		}
@@ -955,12 +1066,29 @@ public class FieldMapping extends Composite {
 					if(line.startsWith("#") || line.startsWith("format=") || line.trim().equals("")) {
 						continue;
 					}
-					debug("check a line : " + line);
-					List<String> main_tokens = ParserUtil.getTokenList(line, delimeter, bracelets);
+					Logger.debug("check a line : " + line);
+					
+					List<String> main_tokens = null;
+					try {
+						if(isJsonType()) {
+							if(isJsonMapType) {
+								Map<String,String> map = JsonUtil.jsonToMap(line, String.class, String.class);
+								main_tokens = new ArrayList<String>(map.values());
+							} else {
+								main_tokens = JsonUtil.jsonToList(line, String.class);
+							}	
+						} else {
+							main_tokens = ParserUtil.getTokenList(line, delimeter, bracelets, AlybaGUI.getInstance().optionSetting.checkStrictCheck());
+						}
+					} catch(Exception e) {
+						Logger.debug("Failed to get tokens from the line : " + line);
+						Logger.error(e);
+					}
+					
 					try {
 						String time_str = "";
 						for(String temp_idx : time_idx_arr) {
-							FieldIndex fld_idx = new FieldIndex("", temp_idx);
+							FieldIndex fld_idx = new FieldIndex("", keyToIndex(temp_idx));
 							String temp_fld = fld_idx.getField(main_tokens, delimeter, bracelets);
 							if(temp_fld == null) {
 								time_str = "";
@@ -970,22 +1098,22 @@ public class FieldMapping extends Composite {
 							}
 						}
 						time_str = time_str.trim();
-						debug("time field : " + time_str);
+						Logger.debug("time field : " + time_str);
 						if(cb_timeFormat.getText().equals(Constant.UNIX_TIME_STR)) {
 							if(ParserUtil.isMatchedUnixTimeFormat(time_str) == false) {
-								debug("INVALID TIME TOKEN(" + time_idx + ") : " + time_str);
+								Logger.debug("INVALID TIME TOKEN(" + time_idx + ") : " + time_str);
 								return i;
 							}
 						} else {
 							if(ParserUtil.isMatchedTimeFormat(cb_timeFormat.getText(), time_str, timeLocale) == false) {
-								debug("INVALID TIME TOKEN(" + time_idx + ") : " + time_str);
+								Logger.debug("INVALID TIME TOKEN(" + time_idx + ") : " + time_str);
 								return i;
 							}
 						}
 						if(uri_idx_arr != null) {
 							String uri_str = "";
 							for(String temp_idx : uri_idx_arr) {
-								FieldIndex fld_idx = new FieldIndex("", temp_idx);
+								FieldIndex fld_idx = new FieldIndex("", keyToIndex(temp_idx));
 								String temp_fld = fld_idx.getField(main_tokens, delimeter, bracelets);
 								if(temp_fld == null) {
 									uri_str = "";
@@ -995,16 +1123,18 @@ public class FieldMapping extends Composite {
 								}
 							}
 							uri_str = uri_str.startsWith("?") ? uri_str.substring(1) : uri_str;
-							debug("uri field : " + uri_str);
+							Logger.debug("uri field : " + uri_str);
 						}
 					} catch(Exception e) {
-						debug(e);
+						Logger.debug("Failed to validate field data for mapping.");
+						Logger.error(e);
 						return i;
 					}
 					break;
 				}
 			} catch(Exception e) {
-				debug(e);
+				Logger.debug("Failed to check mapping validation.");
+				Logger.error(e);
 			} finally {
 				if(br != null) {
 					try {
@@ -1020,9 +1150,12 @@ public class FieldMapping extends Composite {
 	protected void resetMappings() {
 		mappingData = new HashMap<String, String>();
 		fieldCount = 0;
+		isJsonMapType = false;
 		timeLocale = Constant.TIME_LOCALES[0];
 		tbl_line.removeAll();
+		tbl_line.getColumn(0).setWidth(35);
 		txt_uri.setText("");
+		cb_timestampType.setText("Res");
 		txt_time.setText("");
 		spn_offset.setSelection(0);
 		cb_timeFormat.setText(Constant.TIME_FORMATS[0]);
@@ -1060,6 +1193,7 @@ public class FieldMapping extends Composite {
 	public void autoMapping(LogFieldMappingInfo info) {
 		try {
 			setTextValue(txt_delimeter, StringUtil.replaceMetaCharacter(info.fieldDelimeter, true));
+			setComboValue(cb_timestampType, info.timestampType);
 			setComboValue(cb_timeFormat, info.timeFormat);
 			setSpinnerValue(spn_offset, (int)(info.offsetHour*10));
 			setComboValue(cb_elapsedUnit, info.elapsedUnit);
@@ -1069,7 +1203,7 @@ public class FieldMapping extends Composite {
 			int cnt = 1;
 			for(String key : mappingData.keySet()) {
 				idx_str = mappingData.get(key);
-				debug("auto mapping(" + key + ") : " + idx_str);
+				Logger.debug("auto mapping(" + key + ") : " + idx_str);
 				boolean success = mappingField(key, idx_str);
 				if(!success) {
 					throw new Exception("Failed to map default setting automatically. key=" + key + ", idx=" + idx_str);
@@ -1090,7 +1224,7 @@ public class FieldMapping extends Composite {
 				FieldIndex[] fld_idx_arr = new FieldIndex[idx_str_arr.length];
 				String data = null;
 				for(int i = 0; i < idx_str_arr.length; i++) {
-					fld_idx_arr[i] = new FieldIndex(key + "_" + i, idx_str_arr[i]);
+					fld_idx_arr[i] = new FieldIndex(key + "_" + i, keyToIndex(idx_str_arr[i]));
 					String temp_data = fld_idx_arr[i].getField(tbl_line.getItem(fld_idx_arr[i].getMainIndex()).getText(1), info.fieldDelimeter, info.getFieldBracelets());
 					if(i == 0) {
 						data = temp_data;
@@ -1098,19 +1232,25 @@ public class FieldMapping extends Composite {
 						data += "?" + temp_data;
 					}
 				}
-				debug("[" + cnt + "] idx : " + idx_str + ", data : " + data);
+				Logger.debug("[" + cnt + "] idx : " + idx_str + ", data : " + data);
 				cnt++;
 			}
-			spn_offset.setEnabled(false);
-			cb_timeFormat.setEnabled(false);
-			cb_elapsedUnit.setEnabled(false);
+			if(!txt_time.getText().isEmpty()) {
+				cb_timestampType.setEnabled(isCustomizeType() || isJsonType());
+				spn_offset.setEnabled(isCustomizeType() || isJsonType());
+				cb_timeFormat.setEnabled(isCustomizeType() || isJsonType());
+			}
+			if(!txt_elapsed.getText().isEmpty()) {
+				cb_elapsedUnit.setEnabled(isCustomizeType() || isJsonType());
+			}
 			if(!lb_resultTimeChk.getText().equals("OK")) {
 				MessageUtil.showErrorMessage(getShell(), "Time format is invalid.");
 				resetMappings();
 			}
 		} catch(Exception e) {
+			Logger.debug("Failed to map default setting automatically.");
+			Logger.error(e);
 			MessageUtil.showErrorMessage(getShell(), "Failed to map default setting automatically.");
-			debug(e);
 			resetMappings();
 		}
 	}
@@ -1126,17 +1266,17 @@ public class FieldMapping extends Composite {
 	protected LogFieldMappingInfo getDefaultMappingInfo(String type) {
 		LogFieldMappingInfo info = null;
 		if(type.equals("Apache")) {
-			info = DefaultMapping.APACHE;
+			info = (LogFieldMappingInfo)DefaultMapping.APACHE.clone();
 		} else if(type.equals("Tomcat")) {
-			info = DefaultMapping.TOMCAT;
+			info = (LogFieldMappingInfo)DefaultMapping.TOMCAT.clone();
 		} else if(type.equals("WebtoB")) {
-			info = DefaultMapping.WEBTOB;
+			info = (LogFieldMappingInfo)DefaultMapping.WEBTOB.clone();
 		} else if(type.equals("Nginx")) {
-			info = DefaultMapping.NGINX;
+			info = (LogFieldMappingInfo)DefaultMapping.NGINX.clone();
 		} else if(type.equals("JEUS")) {
-			info = DefaultMapping.JEUS;
+			info = (LogFieldMappingInfo)DefaultMapping.JEUS.clone();
 		} else if(type.equals("IIS")) {
-			info = DefaultMapping.IIS;
+			info = (LogFieldMappingInfo)DefaultMapping.IIS.clone();
 		}
 		return info;
 	}
@@ -1149,19 +1289,21 @@ public class FieldMapping extends Composite {
 		}
 	}
 
+	public void openUriMappingManager() {
+		if(uriMappingManager == null) {
+			uriMappingManager = new URIMappingManager(this.getDisplay(), SWT.SHELL_TRIM & ~SWT.RESIZE & ~SWT.MAX & ~SWT.MIN);
+			uriMappingManager.setVisible(false);
+		}
+		uriMappingManager.setVisible(true);
+		uriMappingManager.forceActive();
+	}
+
 	public void reset() {
 		cb_logType.setText(Constant.LOG_TYPES[0]);
+		cb_timestampType.setText("Res");
 		txt_delimeter.setText(StringUtil.replaceMetaCharacter(Constant.LOG_DEFAULT_DELIMETER, true));
 		txt_bracelet.setText(StringUtil.getStringFromArray(Constant.LOG_DEFAULT_BRACELETS, " "));
 		resetMappings();
-	}
-
-	protected void debug(String s) {
-		AlybaGUI.getInstance().debug(s);
-	}
-
-	protected void debug(Throwable t) {
-		AlybaGUI.getInstance().debug(t);
 	}
 
 }

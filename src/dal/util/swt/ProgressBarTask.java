@@ -2,7 +2,7 @@ package dal.util.swt;
 
 import java.text.DecimalFormat;
 
-import dal.tool.analyzer.alyba.util.Logger;
+import dal.tool.analyzer.alyba.ui.Logger;
 import dal.util.StringUtil;
 
 public abstract class ProgressBarTask implements Runnable {
@@ -16,6 +16,7 @@ public abstract class ProgressBarTask implements Runnable {
 
 	protected int[] status = null;
 	protected int[] tasksPercent = null;
+	protected String[] tasksDetail = null;	
 	protected long total = 0;
 	protected long current = 0;
 	protected int percent = 0;
@@ -39,13 +40,14 @@ public abstract class ProgressBarTask implements Runnable {
 		try {
 			doTask();
 		} catch(InterruptedException ie) {
-			Logger.printStackTrace(ie);
+			Logger.debug("Interrupted thread during the task.");
 		} catch(Exception e) {
 			isSuccessed = false;
 			if(failedMessage == null) {
 				failedMessage = e.toString();
 			}
-			Logger.printStackTrace(e);
+			Logger.debug("Failed to complete the task : " + failedMessage);
+			Logger.error(e);
 		}
 		if(!isCanceled) {
 			isComplete = true;
@@ -81,6 +83,14 @@ public abstract class ProgressBarTask implements Runnable {
 
 	public void setTasksPercent(int idx, int taskPercent) {
 		tasksPercent[idx] = (taskPercent<0) ? 0 : ((taskPercent>100)?100:taskPercent);
+	}
+
+	public String[] getTasksDetail() {
+		return tasksDetail;
+	}
+
+	public void setTasksDetail(int idx, String taskDetail) {
+		tasksDetail[idx] = taskDetail;
 	}
 
 	public long getTotal() {
@@ -138,7 +148,7 @@ public abstract class ProgressBarTask implements Runnable {
 	public void setDetailMessage(String msg, String sub_msg) {
 		this.detailMessage = msg;
 		if(sub_msg == null) {
-			Logger.logln(detailMessage);
+			Logger.debug(detailMessage);
 		} else {
 			setDetailSubMessage(sub_msg);
 		}
@@ -151,7 +161,7 @@ public abstract class ProgressBarTask implements Runnable {
 	public void setDetailSubMessage(String msg, boolean logging) {
 		this.detailSubMessage = msg;
 		if(logging) {
-			Logger.logln(detailMessage + " : " + msg);
+			Logger.debug(detailMessage + " : " + msg);
 		}
 	}
 
@@ -206,7 +216,8 @@ public abstract class ProgressBarTask implements Runnable {
 			setTotalTimeMessage("[" + elapsed_str + "/" + total_str + "]");
 			setTotalPercentMessage("Total " + PERCENT_FORMAT.format(percent) + "% complete");
 		} catch(Exception e) {
-			Logger.printStackTrace(e);
+			Logger.debug("Failed to update percent and time.");
+			Logger.error(e);
 		}
 	}
 

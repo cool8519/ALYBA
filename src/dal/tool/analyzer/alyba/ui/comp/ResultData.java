@@ -8,6 +8,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -41,15 +43,15 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
 import dal.tool.analyzer.alyba.Constant;
-import dal.tool.analyzer.alyba.output.vo.BadResponseEntryVO;
+import dal.tool.analyzer.alyba.output.vo.BadTransactionEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.ResourceUsageEntryVO;
-import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SettingEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPSEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TimeAggregationEntryVO;
+import dal.tool.analyzer.alyba.output.vo.TransactionEntryVO;
 import dal.tool.analyzer.alyba.setting.LogFieldMappingInfo;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
@@ -80,12 +82,14 @@ public class ResultData extends Composite {
 	private TableViewer tblv_data;
 	private TableCursor cursor_data;
 	private Clipboard clipboard_data;
-	private Text txt_query;
+	private Text txt_cquery;
+	private Text txt_squery;
 	private Button btn_execute;
 	private Button btn_export;
 	private Label lb_table_cnt;
 	private Label lb_column_cnt;
-	private Label lb_query;
+	private Label lb_cquery;
+	private Label lb_squery;
 	private Label lb_rows;
 	private Label lb_elapsed;
 	private Label lb_result_s;
@@ -111,9 +115,9 @@ public class ResultData extends Composite {
 		map_table.put("METHOD Aggregation", KeyEntryVO.class);
 		map_table.put("VERSION Aggregation", KeyEntryVO.class);
 		map_table.put("CODE Aggregation", KeyEntryVO.class);
-		map_table.put("Over-Time Aggregation", BadResponseEntryVO.class);
-		map_table.put("Over-Size Aggregation", BadResponseEntryVO.class);
-		map_table.put("Error-Code Aggregation", BadResponseEntryVO.class);
+		map_table.put("Over-Time Aggregation", BadTransactionEntryVO.class);
+		map_table.put("Over-Size Aggregation", BadTransactionEntryVO.class);
+		map_table.put("Error-Code Aggregation", BadTransactionEntryVO.class);
 		map_table.put("System Resource", ResourceUsageEntryVO.class);
 	}
 	
@@ -238,27 +242,46 @@ public class ResultData extends Composite {
 		grp_right.setFont(Utility.getFont(SWT.BOLD));
 		grp_right.setText(" DATA ");
 
-		FormData fd_lb_query = new FormData();
-		fd_lb_query.left = new FormAttachment(0, 5);
-		fd_lb_query.top = new FormAttachment(0, 2);
-		lb_query = new Label(grp_right, SWT.LEFT);
-		lb_query.setLayoutData(fd_lb_query);
-		lb_query.setFont(Utility.getFont());
-		lb_query.setText("Query");
+		FormData fd_lb_cquery = new FormData();
+		fd_lb_cquery.left = new FormAttachment(0, 5);
+		fd_lb_cquery.top = new FormAttachment(0, 2);
+		lb_cquery = new Label(grp_right, SWT.LEFT);
+		lb_cquery.setLayoutData(fd_lb_cquery);
+		lb_cquery.setFont(Utility.getFont());
+		lb_cquery.setText("Condition Query");
 		
-		FormData fd_txt_query = new FormData();
-		fd_txt_query.left = new FormAttachment(lb_query, 15);
-		fd_txt_query.right = new FormAttachment(100, -300);
-		fd_txt_query.top = new FormAttachment(0);
-		txt_query = new Text(grp_right, SWT.BORDER | SWT.NO_SCROLL | SWT.SINGLE);
-		txt_query.setLayoutData(fd_txt_query);
-		txt_query.setFont(Utility.getFont());
-	    txt_query.setText("");
-	    txt_query.setEnabled(false);
-	    txt_query.setToolTipText("Insert query condition.\nUse table alias as t.\n\nEX_1)\nt.req_count > 100 and t.err_count = 0\n\nEX_2)\nt.unit_date >= {ts '2018-12-01 00:00:00'}");
+		FormData fd_txt_cquery = new FormData();
+		fd_txt_cquery.left = new FormAttachment(lb_cquery, 10);
+		fd_txt_cquery.right = new FormAttachment(100, -500);
+		fd_txt_cquery.top = new FormAttachment(0);
+		txt_cquery = new Text(grp_right, SWT.BORDER | SWT.NO_SCROLL | SWT.SINGLE);
+		txt_cquery.setLayoutData(fd_txt_cquery);
+		txt_cquery.setFont(Utility.getFont());
+		txt_cquery.setText("");
+		txt_cquery.setEnabled(false);
+		txt_cquery.setToolTipText("Insert condition query.\nUse table alias as t.\n\nEX_1)\nt.req_count > 100 and t.err_count = 0\n\nEX_2)\nt.unit_date >= {ts '2018-12-01 00:00:00'}");
 
+		FormData fd_lb_squery = new FormData();
+		fd_lb_squery.left = new FormAttachment(txt_cquery, 15);
+		fd_lb_squery.top = new FormAttachment(0, 2);
+		lb_squery = new Label(grp_right, SWT.LEFT);
+		lb_squery.setLayoutData(fd_lb_squery);
+		lb_squery.setFont(Utility.getFont());
+		lb_squery.setText("Sort Query");
+		
+		FormData fd_txt_squery = new FormData();
+		fd_txt_squery.left = new FormAttachment(lb_squery, 10);
+		fd_txt_squery.right = new FormAttachment(100, -200);
+		fd_txt_squery.top = new FormAttachment(0);
+		txt_squery = new Text(grp_right, SWT.BORDER | SWT.NO_SCROLL | SWT.SINGLE);
+		txt_squery.setLayoutData(fd_txt_squery);
+		txt_squery.setFont(Utility.getFont());
+		txt_squery.setText("");
+		txt_squery.setEnabled(false);
+		txt_squery.setToolTipText("Insert sort query.\nUse table alias as t.\n\nEX)\nt.request_ip, t.response_date DESC");	    
+	    
 		FormData fd_btn_execute = new FormData();
-		fd_btn_execute.left = new FormAttachment(txt_query, 10);
+		fd_btn_execute.left = new FormAttachment(txt_squery, 10);
 		fd_btn_execute.top = new FormAttachment(0, -2);
 		fd_btn_execute.width = 70;
 	    btn_execute = new Button(grp_right, SWT.NONE);
@@ -332,7 +355,7 @@ public class ResultData extends Composite {
 		FormData fd_tbl_data = new FormData();
 		fd_tbl_data.left = new FormAttachment(0);
 		fd_tbl_data.right = new FormAttachment(100);
-		fd_tbl_data.top = new FormAttachment(txt_query, 10);
+		fd_tbl_data.top = new FormAttachment(txt_cquery, 10);
 		fd_tbl_data.bottom = new FormAttachment(grp_result, -5);
 	    tblv_data = new TableViewer(grp_right, SWT.BORDER | SWT.FULL_SELECTION | SWT.SINGLE);
 	    tbl_data = tblv_data.getTable();
@@ -384,7 +407,8 @@ public class ResultData extends Composite {
 		
 	    btn_execute.addSelectionListener(new SelectionAdapter() {
 	    	public void widgetSelected(SelectionEvent e) {
-	    		loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_query.getText().trim(), sort_query, false, true);
+	    		sort_query = txt_squery.getText().trim();
+	    		loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, false, true);
 	    	}
 	    });
 
@@ -418,30 +442,42 @@ public class ResultData extends Composite {
 	    scrollBar.addSelectionListener(new SelectionAdapter() {
 	    	public void widgetSelected(SelectionEvent event) {
 	    		if(scrollBar.getSelection() + scrollBar.getThumb() == scrollBar.getMaximum()) {
-	    			loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_query.getText().trim(), sort_query, true, true);
+	    			loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, true, true);
 	    		}
 	    	}
 	    } );
 	    
-	    txt_query.addKeyListener(new KeyAdapter() {
+	    txt_cquery.addKeyListener(new KeyAdapter() {
 	        public void keyPressed(KeyEvent e) {
 	            if(e.stateMask == SWT.CTRL && e.keyCode == 'a') {
-	                txt_query.selectAll();
+	            	txt_cquery.selectAll();
 	                e.doit = false;
 	            } else if(e.keyCode == SWT.CR || e.keyCode == SWT.KEYPAD_CR) {
-	            	sort_query = "";
-		    		loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_query.getText().trim(), sort_query, false, true);
+	            	sort_query = txt_squery.getText().trim();
+		    		loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, false, true);
 	            }
 	        }
 	    });
-	    
+
+	    txt_squery.addKeyListener(new KeyAdapter() {
+	        public void keyPressed(KeyEvent e) {
+	            if(e.stateMask == SWT.CTRL && e.keyCode == 'a') {
+	            	txt_squery.selectAll();
+	                e.doit = false;
+	            } else if(e.keyCode == SWT.CR || e.keyCode == SWT.KEYPAD_CR) {
+	            	sort_query = txt_squery.getText().trim();
+		    		loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, false, true);
+	            }
+	        }
+	    });
+
 	    cursor_data.addSelectionListener(new SelectionAdapter() {
 	        public void widgetSelected(SelectionEvent e) {
 	        	TableItem item_cursor = cursor_data.getRow();
 	        	tbl_data.setSelection(new TableItem[]{item_cursor});
 	        	TableItem[] items = tbl_data.getItems();
 	        	if(items != null && items.length > 0 && item_cursor.equals(items[items.length-1])) {
-	    			loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_query.getText().trim(), sort_query, true, true);
+	    			loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, true, true);
 	        	}
 	        }
 	    });
@@ -468,8 +504,8 @@ public class ResultData extends Composite {
 					String itemValue = item.getText(columnIdx);
 					String column_name = tbl_data.getColumn(columnIdx).getText();
 					Object hidden_data = item.getData(column_name);
-					if(hidden_data != null && hidden_data instanceof ResponseEntryVO) {
-						tbl_data.setToolTipText(((ResponseEntryVO)hidden_data).toPrettyString());
+					if(hidden_data != null && hidden_data instanceof TransactionEntryVO) {
+						tbl_data.setToolTipText(((TransactionEntryVO)hidden_data).toPrettyString());
 					} else if(itemValue.startsWith("[") && itemValue.endsWith("]")) {
 						String listValue = itemValue.substring(1, itemValue.length()-1);
 						if(listValue.length() > 0) {
@@ -500,8 +536,10 @@ public class ResultData extends Composite {
 	}
 
 	private void selectTable(String table_name) {
-		txt_query.setEnabled(true);
-		txt_query.setText("");
+		txt_cquery.setEnabled(true);
+		txt_cquery.setText("");
+		txt_squery.setEnabled(true);
+		txt_squery.setText("");
 		btn_execute.setEnabled(true);
 		loadColumns(table_name);
 		sort_query = "";
@@ -540,7 +578,7 @@ public class ResultData extends Composite {
 				TableItem tbli = new TableItem(tbl_columns, SWT.NONE);
 				tbli.setText(f.getName());
 				tbli.setChecked(true);
-				int align = (ReflectionUtil.isNumberType(f)||f.getType()==ResponseEntryVO.class) ? SWT.RIGHT : SWT.NONE;
+				int align = (ReflectionUtil.isNumberType(f)||f.getType()==TransactionEntryVO.class) ? SWT.RIGHT : SWT.NONE;
 				TableColumn tblc = new TableColumn(tbl_data, align);
 				tblc.setText(f.getName());
 				tblc.setMoveable(true);
@@ -563,29 +601,10 @@ public class ResultData extends Composite {
 			}
 		}
 		addColumnListener();
-		uncheckUselessColumn(table_name);		
 		refreshColumnCount();
 		tbl_data.setSortDirection(SWT.NONE);
 	}
 	
-	private void uncheckUselessColumn(String table_name) {
-		for(TableItem item : tbl_columns.getItems()) {
-			if((item.getText().indexOf("total") > -1) ||
-			   (item.getText().indexOf("request_date") > -1) ||		
-			   ((item.getText().indexOf("response_time") > -1 || item.getText().indexOf("response_date") > -1) && !LogFieldMappingInfo.isMappedElapsed(settingVo.getLogMappingInfo())) ||
-			   (item.getText().indexOf("response_byte") > -1 && !LogFieldMappingInfo.isMappedBytes(settingVo.getLogMappingInfo())) ||
-			   ((item.getText().indexOf("error") > -1 || item.getText().indexOf("response_code") > -1) && !LogFieldMappingInfo.isMappedCode(settingVo.getLogMappingInfo())) ||
-			   (item.getText().indexOf("request_method") > -1 && !LogFieldMappingInfo.isMappedMethod(settingVo.getLogMappingInfo())) ||
-			   (item.getText().indexOf("request_version") > -1 && !LogFieldMappingInfo.isMappedVersion(settingVo.getLogMappingInfo())) ||
-			   (item.getText().indexOf("description") > -1 && (!table_name.equals("IP Aggregation") && !table_name.equals("CODE Aggregation"))) ||
-			   (item.getText().indexOf("request_ip_count") > -1 && (table_name.equals("IP Aggregation") || !LogFieldMappingInfo.isMappedIP(settingVo.getLogMappingInfo()))) ||
-			   (item.getText().indexOf("request_ip_list") > -1)) {
-				item.setChecked(false);
-				toggleColumnVisible(tbl_data, item.getText(), false);
-			}
-		}		
-	}
-
 	private void refreshColumnCount() {
     	TableItem[] items = tbl_columns.getItems();
     	int cnt = 0;
@@ -637,6 +656,8 @@ public class ResultData extends Composite {
 				start_row = 0;
 			}
 			long start_tm = System.currentTimeMillis();
+			condition_query = replaceColumnNames(condition_query);
+			sort_query = replaceColumnNames(sort_query);
 			List<E> results = getDataFromDB(table_name, condition_query, sort_query, start_row, (paging?Constant.ANALYZER_DATA_PAGESIZE:0));
 			start_row += results.size();
 			bindDataToTable(results, append);
@@ -664,12 +685,14 @@ public class ResultData extends Composite {
 					}
 				}
 			}
+			uncheckUselessColumn(table_name);
 			lb_rows.setText("Row : " + tbl_data.getItemCount() + " / " + total_rows);
 			lb_rows.setVisible(true);
 			lb_elapsed.setText("Elapsed : " + elapsed_tm + " ms");
 			lb_elapsed.setVisible(true);
 			lb_result_s.setVisible(true);
 		} catch(Exception e) {
+			Logger.debug("Failed to load data from DB : " + type);
 			Logger.error(e);
 			lb_result_f.setVisible(true);
 			lb_result_f.setToolTipText(e.getMessage());
@@ -677,6 +700,34 @@ public class ResultData extends Composite {
 		}
 	}
 	
+	private void uncheckUselessColumn(String table_name) {
+		if(tbl_data.getItemCount() < 1) return;
+		for(int idx = 0; idx < tbl_columns.getItemCount(); idx++) {
+			TableItem item = tbl_columns.getItem(idx);
+			TableItem firstRow = tbl_data.getItem(0);
+			if((item.getText().equals("request_date") && firstRow.getText(idx).isEmpty()) ||
+			   (item.getText().equals("response_date") && firstRow.getText(idx).isEmpty()) ||
+			   (item.getText().equals("request_uri") && !LogFieldMappingInfo.isMappedURI(settingVo.getLogMappingInfo())) ||
+			   (item.getText().equals("request_ip") && !LogFieldMappingInfo.isMappedIP(settingVo.getLogMappingInfo())) ||
+			   (item.getText().indexOf("response_time") > -1 && !LogFieldMappingInfo.isMappedElapsed(settingVo.getLogMappingInfo())) ||
+			   (item.getText().indexOf("response_byte") > -1 && !LogFieldMappingInfo.isMappedBytes(settingVo.getLogMappingInfo())) ||
+			   (item.getText().equals("response_code") && !LogFieldMappingInfo.isMappedCode(settingVo.getLogMappingInfo())) ||
+			   (item.getText().equals("request_method") && !LogFieldMappingInfo.isMappedMethod(settingVo.getLogMappingInfo())) ||
+			   (item.getText().equals("request_version") && !LogFieldMappingInfo.isMappedVersion(settingVo.getLogMappingInfo())) ||
+			   (item.getText().equals("request_ext") && !LogFieldMappingInfo.isMappedURI(settingVo.getLogMappingInfo())) ||
+			   (item.getText().equals("description") && (!table_name.equals("IP Aggregation") && !table_name.equals("CODE Aggregation"))) ||
+			   (item.getText().equals("request_ip_count") && (table_name.equals("IP Aggregation") || !LogFieldMappingInfo.isMappedIP(settingVo.getLogMappingInfo()))) ||
+			   (item.getText().equals("request_ip_list")) ||
+			   (item.getText().indexOf("total") > -1) ||
+			   (item.getText().indexOf("error") > -1 && !LogFieldMappingInfo.isMappedCode(settingVo.getLogMappingInfo())) ||
+			   (item.getText().indexOf("err_") > -1 && !settingVo.isCollectErrors()) ||
+			   (item.getText().indexOf("filter") > -1 && (!settingVo.isDateFilterEnable() && !settingVo.isIncludeFilterEnable() && !settingVo.isExcludeFilterEnable()))) {
+				item.setChecked(false);
+				toggleColumnVisible(tbl_data, item.getText(), false);
+			}
+		}		
+	}
+
 	private <E extends EntryVO> void bindDataToTable(List<E> results, boolean append) throws Exception {
 		List<Field> fields = null;
 		if(!append) {
@@ -694,7 +745,7 @@ public class ResultData extends Composite {
 					f.setAccessible(true);
 					Object value = f.get(entry);
 					item.setText(columnIdx++, objectToStringByColumn(f.getName(), value));
-					if(value instanceof ResponseEntryVO) {
+					if(value instanceof TransactionEntryVO) {
 						item.setData(f.getName(), value);
 					}
 				}
@@ -721,13 +772,9 @@ public class ResultData extends Composite {
 					tbl_data.setSortDirection(SWT.DOWN);
 				}
 				String sort_column = column.getText();
-				if(sort_column.startsWith("max_")) {
-					sort_column += "." + column.getText().substring(4);
-				} else if(sort_column.startsWith("last_error")) {
-					sort_column += ".response_code"; 
-				}
 				sort_query = "t." + sort_column + (tbl_data.getSortDirection() == SWT.DOWN ? " DESC" : "");
-				loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_query.getText().trim(), sort_query, false, true);
+				txt_squery.setText(sort_query);
+				loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, false, true);
 			}
 		};
 		for(TableColumn column : tbl_data.getColumns()) {
@@ -762,8 +809,10 @@ public class ResultData extends Composite {
 		while(tbl_data.getColumnCount() > 0) {
 			tbl_data.getColumns()[0].dispose();
 		}
-		txt_query.setEnabled(false);
-		txt_query.setText("");
+		txt_cquery.setEnabled(false);
+		txt_cquery.setText("");
+		txt_squery.setEnabled(false);
+		txt_squery.setText("");		
 		btn_execute.setEnabled(false);
 		btn_export.setEnabled(false);
 		lb_table_cnt.setVisible(false);
@@ -776,8 +825,8 @@ public class ResultData extends Composite {
 	}
 
 	private String objectToStringByColumn(String column, Object obj) {
-		if(obj instanceof ResponseEntryVO) {
-			ResponseEntryVO vo = (ResponseEntryVO)obj;
+		if(obj instanceof TransactionEntryVO) {
+			TransactionEntryVO vo = (TransactionEntryVO)obj;
 			if("max_response_time".equals(column)) {
 				return objectToString(vo.getResponseTime());
 			} else if("max_response_byte".equals(column)) {
@@ -826,7 +875,7 @@ public class ResultData extends Composite {
 				throw new Exception("No data to export.");
 			}
 			if(all) {
-				List<E> results = getDataFromDB(tbl_tables.getSelection()[0].getText(), txt_query.getText().trim(), sort_query, 0, -1);
+				List<E> results = getDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, 0, -1);
 				List<Field> visibleFields = null;
 				for(int i = 0; i < results.size(); i++) {
 					E entry = results.get(i);
@@ -878,8 +927,9 @@ public class ResultData extends Composite {
 					break;
 			}
 		} catch(Exception e) {
+			Logger.debug("Failed to export data to file : " + filename);
 			Logger.error(e);
-			MessageUtil.showErrorMessage(getShell(), e.getMessage());
+			MessageUtil.showErrorMessage(getShell(), "Failed to export data to file.");
 		}
 	}
 	
@@ -910,6 +960,29 @@ public class ResultData extends Composite {
 			return "CODE";
 		}
 		return null;
+	}
+	
+	private String replaceColumnNames(String str) {
+		if(str == null) {
+			return null;
+		}
+		Pattern p = Pattern.compile("(max_\\w+|last_error)");
+		Matcher m = p.matcher(str);
+		StringBuffer sb = new StringBuffer();
+		int idx = 0;
+		while(m.find()) {
+			sb.append(str.substring(idx, m.start()));
+			String text = m.group(1);
+			if(text.startsWith("max_")) {
+				text += "." + text.substring(4);
+			} else if(text.startsWith("last_error")) {
+				text += ".response_code"; 
+			}
+			sb.append(text);
+			idx = m.end();
+		}
+		sb.append(str.substring(idx));		
+		return sb.toString();
 	}
 	
 }

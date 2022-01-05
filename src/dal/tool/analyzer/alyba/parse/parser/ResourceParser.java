@@ -1,10 +1,6 @@
 package dal.tool.analyzer.alyba.parse.parser;
 
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -26,6 +22,7 @@ import dal.tool.analyzer.alyba.parse.FieldIndex;
 import dal.tool.analyzer.alyba.parse.FileInfo;
 import dal.tool.analyzer.alyba.parse.ParserUtil;
 import dal.tool.analyzer.alyba.setting.ResourceAnalyzerSetting;
+import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.util.DateUtil;
 import dal.util.NumberUtil;
@@ -51,6 +48,7 @@ public class ResourceParser extends FileLineParser {
 	protected String prev_filepath = null;
 	protected SimpleDateFormat sdf = null;
 	protected SimpleDateFormat sdf_date_sar = null;
+	protected SimpleDateFormat sdf_no_under_score = null;
 	protected String under_second_format = null;
 	protected DateTimeFormatter usf = null;
 	protected String delimeter = null;
@@ -63,7 +61,8 @@ public class ResourceParser extends FileLineParser {
 		if(!setting.fieldMapping.timeFormat.equals(Constant.UNIX_TIME_STR)) {
 			Matcher m = Pattern.compile("S+").matcher(setting.fieldMapping.timeFormat);
 			if(m.find()) {
-				under_second_format = setting.fieldMapping.timeFormat.substring(m.start(), m.end());			
+				under_second_format = setting.fieldMapping.timeFormat.substring(m.start(), m.end());
+				sdf_no_under_score = new SimpleDateFormat(setting.fieldMapping.timeFormat.replaceAll("S+", ""), setting.fieldMapping.timeLocale);
 			}
 		}
 	}
@@ -84,6 +83,14 @@ public class ResourceParser extends FileLineParser {
 		db = null;
 	}
 	
+	public boolean isDatabaseReady() {
+		return db != null && db.isReady(em); 
+	}
+	
+	public String getTaskDetailMessage() {
+		return null;
+	}
+
 	public ResourceAnalyzerSetting getSetting() {
 		return setting;
 	}
@@ -112,7 +119,7 @@ public class ResourceParser extends FileLineParser {
 			if(line.indexOf("%idle") > -1 || line.startsWith("Average:")) {
 				return;
 			} else if(line.length() > 0 && line.charAt(0) != ' ' && Character.isDigit(line.charAt(0)) == false) {
-				List<String> headerTokenList = ParserUtil.getTokenList(line, delimeter, bracelets);
+				List<String> headerTokenList = ParserUtil.getTokenList(line, delimeter, bracelets, AlybaGUI.getInstance().optionSetting.checkStrictCheck());
 				String time_idx_str = setting.getFieldMapping().getMappingInfo().get("TIME");
 				String[] time_idx = time_idx_str.split(",");
 				for(String idx : time_idx) {
@@ -130,7 +137,7 @@ public class ResourceParser extends FileLineParser {
 			}
 		}
 
-		List<String> tokenList = ParserUtil.getTokenList(line, delimeter, bracelets);
+		List<String> tokenList = ParserUtil.getTokenList(line, delimeter, bracelets, AlybaGUI.getInstance().optionSetting.checkStrictCheck());
 		if(tokenList.size() != setting.fieldMapping.fieldCount) {
 			Logger.debug("Field count is different : " + tokenList.size() + " != " + setting.fieldMapping.fieldCount);
 			throw new Exception("Invaid line : " + line);
@@ -145,15 +152,10 @@ public class ResourceParser extends FileLineParser {
 				if(sdf == null) {
 					sdf = new SimpleDateFormat(setting.fieldMapping.timeFormat, setting.fieldMapping.timeLocale);
 				}
-				if(under_second_format == null) {
+				if(under_second_format == null || under_second_format.length() < 4) {
 					dt = sdf.parse(date_str);
 				} else {
-					if(usf == null) {
-						usf = DateTimeFormatter.ofPattern(setting.fieldMapping.timeFormat, setting.fieldMapping.timeLocale);
-					}
-					LocalTime localTime = LocalTime.parse(date_str, usf);
-					LocalDateTime localDateTime = localTime.atDate(LocalDate.ofEpochDay(0));
-					dt = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());		
+					dt = sdf_no_under_score.parse(date_str);
 				}				
 			}
 			Calendar c = Calendar.getInstance();
@@ -179,7 +181,7 @@ public class ResourceParser extends FileLineParser {
 		
 		String s_cpu = getStringOfField(tokenList, "CPU");
 		double d_cpu = -1;
-		if(s_cpu != null && NumberUtil.isNumeric(s_cpu, true)) {
+		if(s_cpu != null && NumberUtil.isNumeric(s_cpu.trim(), true)) {
 			d_cpu = ParserUtil.stringToDouble(s_cpu);
 			if(setting.getFieldMapping().isCpuIdle()) {
 				if(d_cpu > 100L) {
@@ -193,7 +195,7 @@ public class ResourceParser extends FileLineParser {
 
 		String s_mem = getStringOfField(tokenList, "MEM");
 		double d_mem = -1;
-		if(s_mem != null && NumberUtil.isNumeric(s_mem, true)) {
+		if(s_mem != null && NumberUtil.isNumeric(s_mem.trim(), true)) {
 			d_mem = ParserUtil.stringToDouble(s_mem);
 			if(setting.getFieldMapping().isMemoryIdle()) {
 				if(d_mem > 100L) {
@@ -207,7 +209,7 @@ public class ResourceParser extends FileLineParser {
 
 		String s_disk = getStringOfField(tokenList, "DISK");
 		double d_disk = -1;
-		if(s_disk != null && NumberUtil.isNumeric(s_disk, true)) {
+		if(s_disk != null && NumberUtil.isNumeric(s_disk.trim(), true)) {
 			d_disk = ParserUtil.stringToDouble(s_disk);
 			if(setting.getFieldMapping().isDiskIdle()) {
 				if(d_disk > 100L) {
@@ -221,7 +223,7 @@ public class ResourceParser extends FileLineParser {
 
 		String s_network = getStringOfField(tokenList, "NETWORK");
 		double d_network = -1;
-		if(s_network != null && NumberUtil.isNumeric(s_network, true)) {
+		if(s_network != null && NumberUtil.isNumeric(s_network.trim(), true)) {
 			d_network = ParserUtil.stringToDouble(s_network);
 			if(setting.getFieldMapping().isNetworkIdle()) {
 				if(d_network > 100L) {
@@ -244,7 +246,8 @@ public class ResourceParser extends FileLineParser {
 				curr_cal = Calendar.getInstance();
 			}
 			curr_cal.setTime(dt);			
-			if(prev_cal.get(Calendar.AM_PM) == Calendar.PM && curr_cal.get(Calendar.AM_PM) == Calendar.AM &&
+			if(curr_cal.get(Calendar.MONTH) == prev_cal.get(Calendar.MONTH) && curr_cal.get(Calendar.DATE) == prev_cal.get(Calendar.DATE) && 
+			   prev_cal.get(Calendar.AM_PM) == Calendar.PM && curr_cal.get(Calendar.AM_PM) == Calendar.AM &&
 			   prev_cal.get(Calendar.HOUR_OF_DAY) == 23 && curr_cal.get(Calendar.HOUR_OF_DAY) == 0 &&
 			   fileInfo.getFilePath().equals(prev_filepath)) {					
 				curr_cal = DateUtil.addCalendarUnit(curr_cal, Calendar.DATE, 1);
@@ -278,8 +281,15 @@ public class ResourceParser extends FileLineParser {
 			list_vo = (List<ResourceUsageEntryVO>)aggr_data.get(key);
 			db.beginTransaction(em);
 			Logger.debug("Inserting Aggregation Data to DB : " + key);
-			for (int i = 1; i <= list_vo.size(); i++) {
-				db.insert(em, list_vo.get(i-1));
+			for(int i = 1; i <= list_vo.size(); i++) {				
+				ResourceUsageEntryVO newVo = list_vo.get(i-1);
+				HashMap<String,Object> paramMap = new HashMap<String,Object>();
+				paramMap.put("group", newVo.getServerGroup());
+				paramMap.put("name", newVo.getServerName());
+				paramMap.put("unit_date", newVo.getUnitDate());
+				ResourceUsageEntryVO oldVo = db.select(em, "select t from ResourceUsageEntryVO as t where t.group = :group and t.name = :name and t.unit_date = :unit_date", ResourceUsageEntryVO.class, paramMap);
+				oldVo = (oldVo == null) ? newVo : mergeVo(oldVo, newVo);
+				db.insert(em, oldVo);
 				if((i%1000) == 0) {
 					db.commitTransaction(em, true, true);
 					db.beginTransaction(em);
@@ -287,6 +297,22 @@ public class ResourceParser extends FileLineParser {
 			}
 			db.commitTransaction(em);
 		}	
+	}
+	
+	private ResourceUsageEntryVO mergeVo(ResourceUsageEntryVO oldVo, ResourceUsageEntryVO newVo) {
+		if(oldVo.getCpuUsage() == -1D || newVo.getCpuUsage() != -1D) {
+			oldVo.setCpuUsage(newVo.getCpuUsage());
+		}
+		if(oldVo.getMemoryUsage() == -1D || newVo.getMemoryUsage() != -1D) {
+			oldVo.setMemoryUsage(newVo.getMemoryUsage());
+		}
+		if(oldVo.getDiskUsage() == -1D || newVo.getDiskUsage() != -1D) {
+			oldVo.setDiskUsage(newVo.getDiskUsage());
+		}
+		if(oldVo.getNetworkUsage() == -1D || newVo.getNetworkUsage() != -1D) {
+			oldVo.setNetworkUsage(newVo.getNetworkUsage());
+		}
+		return oldVo;
 	}
 
 	public void fillWithNullTime(ProgressBarTask progressbar) throws Exception {
@@ -480,5 +506,5 @@ public class ResourceParser extends FileLineParser {
 			aggr_time.add(vo);
 		}
 	}
-	
+
 }

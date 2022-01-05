@@ -43,6 +43,7 @@ import dal.util.swt.SWTResourceManager;
 
 public class ResultAnalyzer extends Shell {
 
+	public static String title_prefix = "ALYBA " + Constant.PROGRAM_VERSION + " - Result Analyzer";
 	public static ProgressBar pbar_loading;
 
 	private ResultAnalyzer instance;
@@ -126,12 +127,12 @@ public class ResultAnalyzer extends Shell {
 		open();
 		layout(true, true);
 		if(fileName != null) {
-			this.fileName = fileName;
 			loadDBFile(fileName);
 		}
 	}
 	
 	public void initDatabase(String fileName) {
+		this.fileName = fileName;
 		if(db != null) {
 			db.close(em);
 		}
@@ -150,6 +151,7 @@ public class ResultAnalyzer extends Shell {
 		}
 		em = null;
 		db = null;
+		setText(title_prefix);
 	}
 
 	protected void createContents() {
@@ -158,7 +160,7 @@ public class ResultAnalyzer extends Shell {
 		
 		setSize(1280, 815);
 		setMinimumSize(1100, 815);
-		setText("ALYBA " + Constant.PROGRAM_VERSION + " - Result Analyzer");
+		setText(title_prefix);
 		Rectangle dispRect = getDisplay().getMonitors()[0].getBounds();
 		Rectangle shellRect = getBounds();
 		setLocation((dispRect.width - shellRect.width) / 2, (dispRect.height - shellRect.height) / 2);		
@@ -322,10 +324,11 @@ public class ResultAnalyzer extends Shell {
 			public void drop(DropTargetEvent event) {
 				String[] sourceFileList = (String[])event.data;
 				if(sourceFileList != null && sourceFileList.length == 1) {
-					String fileName = sourceFileList[0];
-					String ext = fileName.substring(fileName.lastIndexOf(".")+1, fileName.length());
+					String dropFileName = sourceFileList[0];
+					String ext = dropFileName.substring(dropFileName.lastIndexOf(".")+1, dropFileName.length());
 					if(ext.equals("adb")) {
-						loadDBFile(fileName);
+						loadDBFile(dropFileName);
+						fileName = dropFileName;
 					} else {
 						MessageUtil.showErrorMessage(instance, "Only .adb files can be read.");
 					}
@@ -394,10 +397,12 @@ public class ResultAnalyzer extends Shell {
 				chartView.setEnabled(true);
 				resourceView.setEnabled(true);
 				btn_openDB.setText("Close DB");
+				setText(title_prefix + " (" + fileName + ")");
 			} else {
 				closeDatabase();
 			}
 		} catch(Exception e) {
+			Logger.debug("Failed to load the database : " + fileName);
 			Logger.error(e);
 			MessageUtil.showErrorMessage(instance, "Failed to load the database.");
 			dataView.setEnabled(false);
@@ -416,7 +421,9 @@ public class ResultAnalyzer extends Shell {
 	
 	private boolean checkVersion() throws Exception {
 		SummaryEntryVO summaryVo = db.select(em, SummaryEntryVO.class);
-		if(Constant.PROGRAM_VERSION.equals(summaryVo.getVersion())) {
+		String programVersion = Constant.PROGRAM_VERSION.indexOf('_') < 0 ? Constant.PROGRAM_VERSION : Constant.PROGRAM_VERSION.split("_")[0];
+		String databaseVersion = summaryVo.getVersion().indexOf('_') < 0 ? summaryVo.getVersion() : summaryVo.getVersion().split("_")[0]; 
+		if(programVersion.equals(databaseVersion)) {
 			return true;
 		} else {
 			String msg = "Version mismatch. Do you really want to continue?\n\n- Database : " + summaryVo.getVersion() + "\n- Program: " + Constant.PROGRAM_VERSION;

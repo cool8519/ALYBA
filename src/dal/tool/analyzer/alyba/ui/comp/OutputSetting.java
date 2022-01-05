@@ -12,7 +12,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import dal.tool.analyzer.alyba.Constant;
-import dal.tool.analyzer.alyba.ui.AlybaGUI;
+import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.swt.FileDialogUtil;
 
@@ -153,7 +153,7 @@ public class OutputSetting extends Composite {
 					try {
 						txt_directory.setText(f.getCanonicalPath());
 					} catch(Exception ex) {
-						AlybaGUI.getInstance().debug(ex);
+						Logger.error(ex);
 					}
 				}
 			}

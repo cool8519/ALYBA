@@ -3,7 +3,17 @@ package dal.tool.analyzer.alyba.parse.task;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.parse.FileInfo;
@@ -28,6 +38,7 @@ public class LogAnalyzeTask extends ProgressBarTask {
 		this.parserClass = parser_clazz;
 		status = new int[setting.getLogFileList().size()];
 		tasksPercent = new int[setting.getLogFileList().size()];
+		tasksDetail = new String[setting.getLogFileList().size()];
 		for(int i = 0; i < status.length; i++) {
 			status[i] = STATUS_READY;
 			tasksPercent[i] = 0;
@@ -44,10 +55,10 @@ public class LogAnalyzeTask extends ProgressBarTask {
 			for(LogLineParser p : parserList) {
 				p.cancel();
 			}
-			Logger.logln("CANCEL called");
+			Logger.debug("CANCEL called");
 			parser = null;
 		} else {
-			Logger.logln("Nothing to cancel");
+			Logger.debug("Nothing to cancel");
 		}
 	}
 
@@ -88,7 +99,7 @@ public class LogAnalyzeTask extends ProgressBarTask {
 					fileReaders[i] = new FileReaderThread(i + 1);
 					fileReaders[i].setCaller(this);
 					fileReaders[i].setParser(parser[i]);
-					fileReaders[i].setMaxErrorCount(parser[i].getSetting().allowErrorCount);
+					fileReaders[i].setMaxErrorCount(parser[i].getSetting().allowErrors ? parser[i].getSetting().allowErrorCount : -1);
 					FileInfo fileEntry = new FileInfo(f);
 					fileEntry.setFileMeta("encoding", encodingList.get(i));
 					fileReaders[i].setFile(fileEntry);
@@ -115,7 +126,7 @@ public class LogAnalyzeTask extends ProgressBarTask {
 				FileReaderThread fileReader = new FileReaderThread(1);
 				fileReader.setCaller(this);
 				fileReader.setParser(parser[0]);
-				fileReader.setMaxErrorCount(parser[0].getSetting().allowErrorCount);
+				fileReader.setMaxErrorCount(parser[0].getSetting().allowErrors ? parser[0].getSetting().allowErrorCount : -1);
 				fileReader.setFiles(fileEntry_arr);
 				setDetailMessage("Starting Single-thread parser");
 				Thread.currentThread().setName("ThreadManager");
@@ -146,19 +157,17 @@ public class LogAnalyzeTask extends ProgressBarTask {
 		try {
 			setDetailMessage("Truncating result data");
 			List<LogLineParser> parserList = Arrays.asList(parser);
-			int size = parserList.size();
 			LogLineParser p = null;
-			for(int i = 0; i < size; i++) {
+			for(int i = 0; i < parserList.size(); i++) {
 				p = (LogLineParser)parserList.get(i);
-				setDetailSubMessage("checking " + (i+1) + "/" + size);
+				setDetailSubMessage("checking " + (i+1) + "/" + parserList.size());
 				if(p.isFailed()) {
 					parserList.remove(p);
 				}
 			}
-			size = parserList.size();
 
 			setDetailMessage("Arranging result data");
-			for(int i = 0; i < size; i++) {
+			for(int i = 0; i < parserList.size(); i++) {
 				checkCanceled();
 				p = parserList.get(i);
 				setDetailSubMessage("sorting data");
@@ -168,29 +177,24 @@ public class LogAnalyzeTask extends ProgressBarTask {
 			}
 
 			setDetailMessage("Collecting result data");
-			LogLineParser firstParser = parserList.get(0);
-			for(int i = 1; i < size; i++) {
-				checkCanceled();
-				setDetailSubMessage("merging " + i + "/" + (size-1));
-				firstParser.mergeData(parserList.get(i));
-			}
-
+			LogLineParser mergedParser = mergeParser(parserList);
+			
 			setDetailMessage("Arranging final data");
 			setDetailSubMessage("filling null-data");
-			firstParser.fillWithNullTime(this);
+			mergedParser.fillWithNullTime(this);
 			setDetailSubMessage("sorting data");
-			firstParser.sortData();
+			mergedParser.sortData();
 			setDetailSubMessage("setting total");
-			firstParser.setTotalToResult();
+			mergedParser.setTotalToResult();
 
 			setDetailMessage("Generating database");
 			setDetailSubMessage("writing data to db");
-			if(firstParser.getFilteredRequestCount() > 0) {
-				firstParser.writeDataToDB();
+			if(mergedParser.getFilteredRequestCount() > 0) {
+				mergedParser.writeDataToDB();
 			} else {
 				isSuccessed = false;
 				setFailedMessage("No request to parse.");
-				Logger.logln("No request to parse : total=" + firstParser.getTotalRequestCount() + ", filtered= " + firstParser.getFilteredRequestCount());
+				Logger.debug("No request to parse : total=" + mergedParser.getTotalRequestCount() + ", filtered=" + mergedParser.getFilteredRequestCount());
 			}
 
 			setDetailMessage("Clearing memory", "removing parsers");
@@ -199,12 +203,137 @@ public class LogAnalyzeTask extends ProgressBarTask {
 				parser[i] = null;
 			}			
 			parserList = null;
-			firstParser = null;
+			mergedParser = null;
 			this.parser = null;
 
 			setDetailMessage("Analyzer task is completed");
 		} catch(Exception e) {
-			Logger.debug(e);
+			Logger.debug("Failed to make up result for the parsers.");
+			Logger.error(e);
+		}
+	}
+
+	private LogLineParser mergeParser(List<LogLineParser> parserList) throws Exception {
+		ExecutorService executorService = Executors.newFixedThreadPool(Constant.MAX_THREAD_COUNT);
+		try {
+			class MergeTask implements Callable<LogLineParser> {
+				private LogLineParser p1;
+				private LogLineParser p2;
+				public MergeTask(LogLineParser p1, LogLineParser p2) {
+					this.p1 = p1;
+					this.p2 = p2;
+				}
+				public LogLineParser call() throws Exception {
+					p1.mergeData(p2);
+					return p1;
+				}
+			}
+			Queue<LogLineParser> parserQueue = new LinkedList<LogLineParser>(parserList);
+			Queue<Future<LogLineParser>> futureQueue = new LinkedList<Future<LogLineParser>>();
+			while(parserQueue.size() > 1) {
+				setDetailSubMessage("merging from " + parserQueue.size() + " to " + (int)Math.ceil((double)parserQueue.size()/2));
+				while(parserQueue.size() > 1) {
+					checkCanceled();
+					LogLineParser p1 = parserQueue.poll();
+					if(parserQueue.isEmpty()) {
+						parserQueue.offer(p1);
+					} else {
+						LogLineParser p2 = parserQueue.poll();
+						futureQueue.offer(executorService.submit(new MergeTask(p1, p2)));
+					}
+				}
+				while(!futureQueue.isEmpty()) {
+					checkCanceled();
+					Future<LogLineParser> f = futureQueue.poll();
+					parserQueue.offer(f.get());
+				}
+			}
+			return parserQueue.poll();
+		} finally {
+			executorService.shutdownNow();
+		}		
+	}
+
+	@SuppressWarnings("unused")
+	private LogLineParser mergeParser2(List<LogLineParser> parserList) throws Exception {
+		ExecutorService threadPool = Executors.newFixedThreadPool(Constant.MAX_THREAD_COUNT);
+		BlockingQueue<LogLineParser> parserQueue = new LinkedBlockingQueue<LogLineParser>(parserList);
+		Queue<Future<LogLineParser>> futureQueue = new LinkedList<Future<LogLineParser>>();
+		
+		class MergeTask implements Callable<LogLineParser> {
+			private LogLineParser p1;
+			private LogLineParser p2;
+			public MergeTask(LogLineParser p1, LogLineParser p2) {
+				this.p1 = p1;
+				this.p2 = p2;
+			}
+			public LogLineParser call() throws Exception {
+				p1.mergeData(p2);
+				return p1;
+			}
+		}
+		
+		class ResultChecker implements Runnable {
+			private int maxMergeCnt;
+			private boolean flag = true;
+			public ResultChecker(int count) { this.maxMergeCnt = count; }
+			@Override
+			public void run() {
+				int mergeCnt = 0;
+				setDetailSubMessage("merged parser : " + mergeCnt + " / " + maxMergeCnt);
+				while(flag) {
+					if(futureQueue.isEmpty()) {
+						try {
+							Thread.sleep(100L);
+						} catch(InterruptedException e) {
+							flag = false;
+							break;
+						}
+						continue;
+					}
+					Future<LogLineParser> f = futureQueue.poll();
+					try {
+						LogLineParser parser = f.get(500L, TimeUnit.MILLISECONDS);
+						parserQueue.offer(parser);
+						mergeCnt++;
+						setDetailSubMessage("merged parser : " + mergeCnt + " / " + maxMergeCnt);
+						if(mergeCnt == maxMergeCnt) {
+							flag = false;							
+						}
+					} catch(TimeoutException toe) {
+						futureQueue.offer(f);
+					} catch(InterruptedException ie) {
+						flag = false;
+					} catch(Exception e) {
+						e.printStackTrace();
+					}						
+				}
+			}				
+		}
+		
+		int maxMergeCount = parserList.size() - 1;
+		int maxTakeCount = parserList.size() * 2 - 1;
+		ResultChecker resultChecker = new ResultChecker(maxMergeCount);
+		new Thread(resultChecker).start();
+		LogLineParser resultParser = null;
+
+		try {			
+			int takeCnt = 0;
+			while(true) {
+				LogLineParser p1 = parserQueue.take();
+				takeCnt++;
+				if(takeCnt == maxTakeCount) {
+					resultParser = p1;
+					break;		
+				}
+				LogLineParser p2 = parserQueue.take();
+				takeCnt++;
+				futureQueue.offer(threadPool.submit(new MergeTask(p1, p2)));
+			}
+			return resultParser;
+		} finally {
+			resultChecker.flag = false;
+			threadPool.shutdownNow();
 		}
 	}
 

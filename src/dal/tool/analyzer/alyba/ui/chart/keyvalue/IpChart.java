@@ -46,7 +46,7 @@ public class IpChart extends KeyValueChart {
 		long sum_value = 0L;
 		int sum_count = 0;
 		int item_count = 0;
-		int req_total = 0;
+		long req_total = 0;
 		String last_other_name = null;
 		Map<String,Long> loc_map = new HashMap<String,Long>();
 		

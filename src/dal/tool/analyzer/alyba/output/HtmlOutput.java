@@ -12,14 +12,14 @@ import java.util.List;
 import javax.persistence.EntityManager;
 
 import dal.tool.analyzer.alyba.Constant;
-import dal.tool.analyzer.alyba.output.vo.BadResponseEntryVO;
+import dal.tool.analyzer.alyba.output.vo.BadTransactionEntryVO;
 import dal.tool.analyzer.alyba.output.vo.DateEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
-import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TimeAggregationEntryVO;
+import dal.tool.analyzer.alyba.output.vo.TransactionEntryVO;
 import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
 import dal.tool.analyzer.alyba.util.Logger;
 import dal.util.DateUtil;
@@ -34,7 +34,7 @@ public class HtmlOutput extends ResultOutput {
 
 	public void generate() throws Exception {
 		try {
-			dal.tool.analyzer.alyba.ui.Logger.logln("Writing to the html file : " + filename);
+			dal.tool.analyzer.alyba.ui.Logger.debug("Writing to the html file : " + filename);
 			exportToHtml(filename);
 		} catch(Exception e) {
 			try {
@@ -44,7 +44,7 @@ public class HtmlOutput extends ResultOutput {
 				}
 			} catch(Exception e2) {
 			}
-			dal.tool.analyzer.alyba.ui.Logger.logln("Failed to create html file : " + filename);
+			dal.tool.analyzer.alyba.ui.Logger.debug("Failed to create html file : " + filename);
 			throw e;
 		}
 	}
@@ -80,14 +80,14 @@ public class HtmlOutput extends ResultOutput {
 				try {
 					line = replaceVariable(line, summaryVo);
 				} catch(Exception e) {
-					dal.tool.analyzer.alyba.ui.Logger.logln("Fail to replace data to html format");
+					dal.tool.analyzer.alyba.ui.Logger.debug("Failed to replace data to html format");
 					dal.tool.analyzer.alyba.ui.Logger.debug(e);
 				} finally {
 					htmlContent.append(line + "\n");
 				}
 			}
 		} catch(Exception e) {
-			dal.tool.analyzer.alyba.ui.Logger.logln("Fail to get html content from template file");
+			dal.tool.analyzer.alyba.ui.Logger.debug("Failed to get html content from template file");
 			dal.tool.analyzer.alyba.ui.Logger.debug(e);
 			return null;
 		} finally {
@@ -117,7 +117,7 @@ public class HtmlOutput extends ResultOutput {
 			} else if(variable.equals("REQUEST_RANGE")) {
 				value = (summaryVo.getFirstRequestTime() == null) ? "N/A" : (DateUtil.dateToString(summaryVo.getFirstRequestTime(), SDF_DateSecond) + " ~ " + DateUtil.dateToString(summaryVo.getLastRequestTime(), SDF_DateSecond));
 			} else if(variable.equals("TOTAL_REQ_COUNT")) {
-				value = new Integer(summaryVo.getTotalRequestCount()).toString();
+				value = new Long(summaryVo.getTotalRequestCount()).toString();
 			} else if(variable.equals("TOTAL_ERR_COUNT")) {
 				value = new Integer(summaryVo.getTotalErrorCount()).toString();
 			} else if(variable.equals("TIME_RANGE_FILTER")) {
@@ -127,8 +127,8 @@ public class HtmlOutput extends ResultOutput {
 			} else if(variable.equals("EXCLUDE_FILTER")) {
 				value = summaryVo.getFilterExcludeInfo();
 			} else if(variable.equals("FILTERED_REQ_COUNT")) {
-				int total_req = summaryVo.getTotalRequestCount();
-				int filtered_req = summaryVo.getFilteredRequestCount();
+				long total_req = summaryVo.getTotalRequestCount();
+				long filtered_req = summaryVo.getFilteredRequestCount();
 				value = filtered_req + " (" + ((double)filtered_req / total_req * 100) + "%)";
 			} else if(variable.equals("FILTERED_ERR_COUNT")) {
 				int total_err = summaryVo.getTotalErrorCount();
@@ -189,29 +189,29 @@ public class HtmlOutput extends ResultOutput {
 			} else if(variable.equals("BAD_RESPONSE_TIME_AGGR_DATA")) {
 				int long_resp = summaryVo.getBadElapsedCount();
 				if(long_resp > 1000) {
-					dal.tool.analyzer.alyba.ui.Logger.logln("Too many long transaction : count=" + long_resp);
+					dal.tool.analyzer.alyba.ui.Logger.debug("Too many long transaction : count=" + long_resp);
 					value = getHideDivHtml("restime_div");
 				} else {
-					value = createHtmlString("restime_div", getEntryList(BadResponseEntryVO.class, "TIME"), Type.BAD_TIME);
+					value = createHtmlString("restime_div", getEntryList(BadTransactionEntryVO.class, "TIME"), Type.BAD_TIME);
 				}
 			} else if(variable.equals("BAD_RESPONSE_BYTE_AGGR_DATA")) {
 				int large_resp = summaryVo.getBadByteCount();
 				if(large_resp > 1000) {
-					dal.tool.analyzer.alyba.ui.Logger.logln("Too many large response : count=" + large_resp);
+					dal.tool.analyzer.alyba.ui.Logger.debug("Too many large response : count=" + large_resp);
 					value = getHideDivHtml("resbyte_div");
 				} else {
-					value = createHtmlString("resbyte_div", getEntryList(BadResponseEntryVO.class, "SIZE"), Type.BAD_BYTE);
+					value = createHtmlString("resbyte_div", getEntryList(BadTransactionEntryVO.class, "SIZE"), Type.BAD_BYTE);
 				}
 			} else if(variable.equals("BAD_RESPONSE_CODE_AGGR_DATA")) {
 				int total_err = summaryVo.getBadCodeCount();
 				if(total_err > 1000) {
-					dal.tool.analyzer.alyba.ui.Logger.logln("Too many error response : count=" + total_err);
+					dal.tool.analyzer.alyba.ui.Logger.debug("Too many error response : count=" + total_err);
 					value = getHideDivHtml("rescode_div");
 				} else {
-					value = createHtmlString("rescode_div", getEntryList(BadResponseEntryVO.class, "CODE"), Type.BAD_CODE);
+					value = createHtmlString("rescode_div", getEntryList(BadTransactionEntryVO.class, "CODE"), Type.BAD_CODE);
 				}
 			} else {
-				dal.tool.analyzer.alyba.ui.Logger.logln("No such variable data (" + variable + ")");
+				dal.tool.analyzer.alyba.ui.Logger.debug("No such variable data (" + variable + ")");
 				return line;
 			}
 			temp = temp.substring(0, init) + value + temp.substring(end + 1);
@@ -234,10 +234,10 @@ public class HtmlOutput extends ResultOutput {
 			for(int i = 0; i < size; i++) {
 				sb.append("<tr class=\"TableRow" + cnt + "\">");
 				if(type == Type.BAD_TIME || type == Type.BAD_BYTE || type == Type.BAD_CODE) {
-					ResponseEntryVO vo = (ResponseEntryVO)data.get(i);
+					TransactionEntryVO vo = (TransactionEntryVO)data.get(i);
 					sb.append(td_front_right + (i + 1) + td_rear);
-					sb.append(td_front_center + DateUtil.dateToString(vo.getRequestDate(), SDF_DateSecond) + td_rear);
-					sb.append(td_front_center + DateUtil.dateToString(vo.getResponseDate(), SDF_DateSecond) + td_rear);
+					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getRequestDate(), SDF_DateSecond)) + td_rear);
+					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getResponseDate(), SDF_DateSecond)) + td_rear);
 					sb.append(td_front_left + NVL(vo.getRequestIP()) + td_rear);
 					sb.append(td_front_left + NVL(vo.getRequestURI()) + td_rear);
 					sb.append(td_front_right + NVL(vo.getResponseTime()) + td_rear);
@@ -250,26 +250,24 @@ public class HtmlOutput extends ResultOutput {
 					DateEntryVO vo = (DateEntryVO)data.get(i);
 					if(type == Type.TPM) {
 						sb.append(td_front_center + DateUtil.dateToString(vo.getUnitDate(), SDF_DateMinute) + "&nbsp;&nbsp;~&nbsp;&nbsp;" + DateUtil.dateToString(DateUtil.addDateUnit(vo.getUnitDate(), Calendar.MINUTE, setting.tpmUnitMinutes), SDF_NoDateMinute) + td_rear);
-						sb.append(td_front_right + vo.getRequestIPCount() + td_rear);
 					} else if(type == Type.DAY) {
 						sb.append(td_front_center + DateUtil.dateToString(vo.getUnitDate(), SDF_DateOnly) + td_rear);
-						sb.append(td_front_right + vo.getRequestIPCount() + td_rear);
 					} else if(type == Type.HOUR) {
 						sb.append(td_front_center + DateUtil.dateToString(vo.getUnitDate(), SDF_NoDateMinute) + "&nbsp;&nbsp;~&nbsp;&nbsp;" + DateUtil.dateToString(DateUtil.addDateUnit(vo.getUnitDate(), Calendar.MINUTE, 60), SDF_NoDateMinute) + td_rear);
-						sb.append(td_front_right + vo.getRequestIPCount() + td_rear);
 					}
+					sb.append(td_front_right + vo.getRequestIPCount() + td_rear);
 					sb.append(td_front_right + vo.getRequestCount() + td_rear);
 					sb.append(td_front_right + vo.getFilterdRequestRatio() + td_rear);
 					sb.append(td_front_right + DF_FloatPoint.format(vo.getAverageResponseTime()) + td_rear);
 					sb.append(td_front_right + vo.getMaxResponseTime().getResponseTime() + td_rear);
-					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getMaxResponseTime().getResponseDate(), SDF_DateSecond)) + td_rear);
+					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getMaxResponseTime().getDate(), SDF_DateSecond)) + td_rear);
 					sb.append(td_front_right + DF_FloatPoint.format(vo.getAverageResponseBytes()) + td_rear);
 					sb.append(td_front_right + vo.getMaxResponseBytes().getResponseBytes() + td_rear);
-					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getMaxResponseBytes().getResponseDate(), SDF_DateSecond)) + td_rear);
+					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getMaxResponseBytes().getDate(), SDF_DateSecond)) + td_rear);
 					sb.append(td_front_right + vo.getErrorCount() + td_rear);
 					sb.append(td_front_right + vo.getEntryErrorRatio() + td_rear);
 					sb.append(td_front_left + NVL(vo.getLastError().getResponseCode()) + td_rear);
-					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getLastError().getResponseDate(), SDF_DateSecond)) + td_rear);					
+					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getLastError().getDate(), SDF_DateSecond)) + td_rear);					
 				} else {
 					KeyEntryVO vo = (KeyEntryVO)data.get(i);
 					sb.append(td_front_right + (i + 1) + td_rear);
@@ -281,14 +279,14 @@ public class HtmlOutput extends ResultOutput {
 					sb.append(td_front_right + vo.getFilterdRequestRatio() + td_rear);
 					sb.append(td_front_right + DF_FloatPoint.format(vo.getAverageResponseTime()) + td_rear);
 					sb.append(td_front_right + vo.getMaxResponseTime().getResponseTime() + td_rear);
-					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getMaxResponseTime().getResponseDate(), SDF_DateSecond)) + td_rear);
+					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getMaxResponseTime().getDate(), SDF_DateSecond)) + td_rear);
 					sb.append(td_front_right + DF_FloatPoint.format(vo.getAverageResponseBytes()) + td_rear);
 					sb.append(td_front_right + vo.getMaxResponseBytes().getResponseBytes() + td_rear);
-					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getMaxResponseBytes().getResponseDate(), SDF_DateSecond)) + td_rear);
+					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getMaxResponseBytes().getDate(), SDF_DateSecond)) + td_rear);
 					sb.append(td_front_right + vo.getErrorCount() + td_rear);
 					sb.append(td_front_right + vo.getEntryErrorRatio() + td_rear);
 					sb.append(td_front_left + NVL(vo.getLastError().getResponseCode()) + td_rear);
-					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getLastError().getResponseDate(), SDF_DateSecond)) + td_rear);
+					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getLastError().getDate(), SDF_DateSecond)) + td_rear);
 				}
 				sb.append("</tr>");
 				cnt = (cnt == 1) ? 2 : 1;

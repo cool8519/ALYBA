@@ -26,6 +26,7 @@ public class LogAnalyzerSetting {
 	public String outputSortBy;
 	public boolean multiThreadParsing;
 	public boolean checkFieldCount;
+	public boolean checkStrict;
 	public boolean allowErrors;
 	public int allowErrorCount;
 	public boolean uriIncludeParams;
@@ -161,6 +162,14 @@ public class LogAnalyzerSetting {
 	public void setCheckFieldCount(boolean checkFieldCount) {
 		this.checkFieldCount = checkFieldCount;
 	}
+	
+	public boolean isCheckStrict() {
+		return checkStrict;
+	}
+	
+	public void setCheckStrict(boolean checkStrict) {
+		this.checkStrict = checkStrict;
+	}
 
 	public boolean isAllowErrors() {
 		return allowErrors;
@@ -267,13 +276,15 @@ public class LogAnalyzerSetting {
 		sb.append("    FILELIST : " + getLogFileList() + "\n");
 		sb.append("    ENCODINGLIST : " + getLogFileEncodingList() + "\n");
 		sb.append("Mapping\n");
-		sb.append("    LOG TYPE : " + fieldMapping.getLogType() + "\n");
+		sb.append("    LOG TYPE : " + fieldMapping.getLogType() + "(" + (fieldMapping.isJsonMapType()?"Map":"Array") + ")\n");
 		sb.append("    DELIMETER : " + fieldMapping.getFieldDelimeter() + "\n");
 		sb.append("    BRACELET : " + Arrays.asList(fieldMapping.getFieldBracelets()) + "\n");
 		sb.append("    MAPPING DATA : " + fieldMapping.getMappingInfo().toString() + "\n");
-		sb.append("    OFFSET HOUR : " + fieldMapping.getOffsetHour() + "\n");
+		sb.append("    URI MAPPING PATTERNS : " + (fieldMapping.getURIMappingPatterns() == null ? 0 : fieldMapping.getURIMappingPatterns().size()) + "\n");		
+		sb.append("    TIMESTAMP TYPE : " + fieldMapping.getTimestampType() + "\n");
 		sb.append("    TIME FORMAT : " + fieldMapping.getTimeFormat() + "\n");
 		sb.append("    TIME LOCALE : " + fieldMapping.getTimeLocale() + "\n");
+		sb.append("    TIME OFFSET HOUR : " + fieldMapping.getOffsetHour() + "\n");
 		sb.append("    ELAPSED UNIT : " + fieldMapping.getElapsedUnit() + "\n");
 		sb.append("    FIELD COUNT : " + fieldMapping.getFieldCount() + "\n");
 		sb.append("Filter\n");
@@ -295,6 +306,7 @@ public class LogAnalyzerSetting {
 		sb.append("Option\n");
 		sb.append("    MULTI THREAD : " + multiThreadParsing + "\n");
 		sb.append("    CHECK FIELD COUNT : " + checkFieldCount + "\n");
+		sb.append("    CHECK STRICT : " + checkStrict + "\n");
 		sb.append("    ALLOW ERRORS : " + allowErrors + "\n");
 		sb.append("    ALLOW ERROR COUNT : " + allowErrorCount + "\n");
 		sb.append("    URI INCLUDE PARAMETER : " + uriIncludeParams + "\n");

@@ -5,14 +5,16 @@ import dal.tool.analyzer.alyba.ui.chart.MultiChart;
 
 public class RegressionChart extends MultiChart {
 
-	public static enum VariableX { TX, IP };
-	public static enum VariableY { CPU, MEMORY, DISK, NETWORK, AVG_RESPONSE, ERROR };
+	public static enum VariableX { TX, IP }
+	public static enum VariableY { CPU, MEMORY, DISK, NETWORK, AVG_RESPONSE, ERROR }
 	public static enum AggregationType { ALL, GROUP, NAME }
-	public static enum RegressionType { LINEAR/*, EXPONENTIAL, LOGARITHMIC, POWER, POLYNOMIAL*/ };
+	public static enum RegressionType { LINEAR/*, EXPONENTIAL, LOGARITHMIC, POWER, POLYNOMIAL*/ }
+	public static enum ResourceMergeType { AVG, SUM }
 
 	protected VariableX var_x = VariableX.TX;
 	protected VariableY var_y = VariableY.CPU;
 	protected AggregationType aggregation_type = AggregationType.NAME;
+	protected ResourceMergeType resource_merge_type = ResourceMergeType.AVG;
 	protected RegressionType regression_type = RegressionType.LINEAR;
 	protected boolean show_regression_line = true;
 	protected boolean show_regression_equation = true;
@@ -34,6 +36,10 @@ public class RegressionChart extends MultiChart {
 		this.aggregation_type = type;		
 	}
 
+	public void setResourceMergeType(ResourceMergeType type) {
+		this.resource_merge_type = type;		
+	}
+
 	public void setRegressionType(RegressionType type) {
 		this.regression_type = type;
 	}
@@ -51,8 +57,8 @@ public class RegressionChart extends MultiChart {
 	}
 
 	public void initCharts() {
-		setChart(0, new RegressionVariablesChart(title, var_x, var_y, aggregation_type, resource_axis_to_100));
-		setChart(1, new RegressionAnalysisChart(null, var_x, var_y, aggregation_type, regression_type, show_regression_line, show_regression_equation, resource_axis_to_100));
+		setChart(0, new RegressionVariablesChart(title, var_x, var_y, aggregation_type, resource_merge_type, resource_axis_to_100));
+		setChart(1, new RegressionAnalysisChart(null, var_x, var_y, aggregation_type, resource_merge_type, regression_type, show_regression_line, show_regression_equation, resource_axis_to_100));
 	}
 
 	public static Number getVariableData(RegressionEntryVO vo, String name) {

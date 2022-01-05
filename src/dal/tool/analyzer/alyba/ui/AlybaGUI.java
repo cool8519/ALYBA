@@ -60,6 +60,7 @@ import dal.tool.analyzer.alyba.parse.parser.PostParser;
 import dal.tool.analyzer.alyba.parse.task.FileEncodingCheckTask;
 import dal.tool.analyzer.alyba.parse.task.LogAnalyzeTask;
 import dal.tool.analyzer.alyba.parse.task.OutputTask;
+import dal.tool.analyzer.alyba.setting.AlybaSetting;
 import dal.tool.analyzer.alyba.setting.FilterSettingInfo;
 import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
 import dal.tool.analyzer.alyba.setting.LogFieldMappingInfo;
@@ -70,10 +71,10 @@ import dal.tool.analyzer.alyba.ui.comp.FilterSetting;
 import dal.tool.analyzer.alyba.ui.comp.OptionSetting;
 import dal.tool.analyzer.alyba.ui.comp.OutputSetting;
 import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
+import dal.tool.analyzer.alyba.ui.comp.TPMAnalyzer;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.DateUtil;
 import dal.util.FileUtil;
-import dal.util.LoggingUtil;
 import dal.util.NumberUtil;
 import dal.util.StringUtil;
 import dal.util.db.ObjectDBUtil;
@@ -90,6 +91,7 @@ public class AlybaGUI {
 	public static boolean debugMode = false;
 	
 	public DebugConsole console = null;
+	public TPMAnalyzer tpmAnalyzer = null;
 	public ResultAnalyzer resultAnalyzer = null;
 
 	public FieldMapping fieldMapping;
@@ -118,6 +120,7 @@ public class AlybaGUI {
 	private Button btn_removeFiles;
 	private Button btn_removeAll;
 	private Button btn_analyzing;
+	private Button btn_tpmAnalyzer;
 	private Button btn_resultAnalyzer;
 	private HeapStatus heapstatus;
 	private int last_help;
@@ -187,7 +190,7 @@ public class AlybaGUI {
 					isRead = display.readAndDispatch();
 				} catch(Throwable t) {
 					if(instance != null) {
-						instance.debug(t);
+						Logger.error(t);
 					}
 					isRead = false;
 				}
@@ -223,16 +226,22 @@ public class AlybaGUI {
 	 * @wbp.parser.entryPoint
 	 */
 	public void init() {
-		createContents();
-		addEventListener();
-		shell.open();
-		shell.layout();
+		try {
+			createContents();
+			addEventListener();
+			shell.open();
+			shell.layout();
+		} catch(Exception e) {			
+			System.out.println("Failed to start ALYBA GUI.");
+			System.out.println();
+			e.printStackTrace();
+			System.exit(-1);
+		}
 	}
 
 	protected void createContents() {
 
 		shell = new Shell(display, SWT.SHELL_TRIM & ~SWT.RESIZE & ~SWT.MAX);
-		shell.setSize(740, 720);
 		Rectangle dispRect = display.getMonitors()[0].getBounds();
 		Rectangle shellRect = shell.getBounds();
 		shell.setLocation((dispRect.width - shellRect.width) / 2, (dispRect.height - shellRect.height) / 2);
@@ -259,6 +268,7 @@ public class AlybaGUI {
 		if(debugMode) {
 			console = new DebugConsole(display, SWT.SHELL_TRIM);
 			console.setLocation(0, 0);
+			console.setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
 			btn_console.setVisible(true);
 		} else {
 			btn_console.setVisible(false);
@@ -300,23 +310,28 @@ public class AlybaGUI {
 		btn_removeFiles = new Button(shell, SWT.NONE);
 		btn_removeFiles.setFont(Utility.getFont());
 		btn_removeFiles.setText("Remove Selected");
-		btn_removeFiles.setBounds(195, 227, 130, 23);
+		btn_removeFiles.setBounds(180, 227, 130, 23);
 
 		btn_removeAll = new Button(shell, SWT.NONE);
-		btn_removeAll.setBounds(195, 256, 130, 23);
+		btn_removeAll.setBounds(180, 256, 130, 23);
 		btn_removeAll.setFont(Utility.getFont());
 		btn_removeAll.setText("Remove All");
 
+		btn_tpmAnalyzer = new Button(shell, SWT.WRAP);
+		btn_tpmAnalyzer.setFont(Utility.getFont(SWT.BOLD));
+		btn_tpmAnalyzer.setText("TPM\nAnalyzer");
+		btn_tpmAnalyzer.setBounds(355, 227, 70, 52);
+		
+		btn_resultAnalyzer = new Button(shell, SWT.WRAP);
+		btn_resultAnalyzer.setFont(Utility.getFont(SWT.BOLD));
+		btn_resultAnalyzer.setText("Result\nAnalyzer");
+		btn_resultAnalyzer.setBounds(435, 227, 110, 52);
+		
 		btn_analyzing = new Button(shell, SWT.NONE);
 		btn_analyzing.setFont(Utility.getFont(SWT.BOLD));
 		btn_analyzing.setText("Start Analyzing");
 		btn_analyzing.setBounds(564, 227, 160, 52);
 		toggleAnalyzingButton(false);
-
-		btn_resultAnalyzer = new Button(shell, SWT.NONE);
-		btn_resultAnalyzer.setFont(Utility.getFont(SWT.BOLD));
-		btn_resultAnalyzer.setText("Result Analyzer");
-		btn_resultAnalyzer.setBounds(386, 227, 160, 52);
 
 		Label hline_middle = new Label(shell, SWT.SEPARATOR | SWT.HORIZONTAL);
 		hline_middle.setBounds(10, 285, 714, 10);
@@ -357,7 +372,10 @@ public class AlybaGUI {
 		heapstatus = new HeapStatus(shell, 500, false, ImageUtil.getImageDescriptorFromURL(Constant.IMAGE_PATH_TRASH));
 		heapstatus.setFont(Utility.getFont());
 		heapstatus.setBounds(570, 668, 150, 18);
-		
+
+		shell.pack();
+		shell.setSize(shell.getSize().x+10, shell.getSize().y+10);
+
 		resetSetting();
 	}
 
@@ -426,7 +444,7 @@ public class AlybaGUI {
 				if(cnt > 0) {
 					tbl_files.removeAll();
 					updatedFileList();
-					debug("Removed " + cnt + " item(s).\n");
+					Logger.debug("Removed " + cnt + " item(s).");
 					fieldMapping.reset();
 					fieldMapping.setEnabled(false);
 				}
@@ -463,7 +481,7 @@ public class AlybaGUI {
 									header = StringUtil.removePrefix(header, "format=");
 									String delimeter = StringUtil.replaceMetaCharacter(fieldMapping.getDelimeter(), false);
 									String[] bracelets = StringUtil.getArrayFromString(fieldMapping.getBracelet(), " ");
-									String[] fld_arr = ParserUtil.getTokenList(header, delimeter, bracelets).toArray(new String[0]);
+									String[] fld_arr = ParserUtil.getTokenList(header, delimeter, bracelets, optionSetting.checkStrictCheck()).toArray(new String[0]);
 									for(int idx = 0; idx < fld_arr.length; idx++) {
 										fld_arr[idx] = "Field-" + NumberUtil.getTwoDigitNumber(idx + 1) + " : " + fld_arr[idx];
 									}
@@ -515,15 +533,21 @@ public class AlybaGUI {
 			}
 		});
 
-		btn_analyzing.addSelectionListener(new SelectionAdapter() {
+		btn_tpmAnalyzer.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				executeAnalyze();
+				openTPMAnalyzer();				
 			}
 		});
 
 		btn_resultAnalyzer.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				openResultAnalyzer();
+			}
+		});
+		
+		btn_analyzing.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				executeAnalyze();
 			}
 		});
 
@@ -562,7 +586,21 @@ public class AlybaGUI {
 				if(sourceFileList.length > 1) {
 					MessageUtil.showErrorMessage(shell, "More than one file is not allowed.");					
 				} else {
-					loadSetting(new File(sourceFileList[0]));
+					if(sourceFileList[0].endsWith(".alb")) {
+						loadSetting(new File(sourceFileList[0]));
+					} else if(sourceFileList[0].endsWith(".adb")) {
+						openResultAnalyzer();
+						try {
+							resultAnalyzer.loadDBFile(sourceFileList[0]);
+						} catch(Exception e) {
+							Logger.debug("Failed to load the database : " + sourceFileList[0]);
+							Logger.error(e);
+							MessageUtil.showErrorMessage(shell, "Failed to load the database.");
+							resultAnalyzer.setVisible(false);
+						}
+					} else {
+						MessageUtil.showErrorMessage(shell, "Not Supported File type.");
+					}
 				}
 			}
 			public void dropAccept(DropTargetEvent event) {}
@@ -610,16 +648,6 @@ public class AlybaGUI {
 		tbf_setting.setSelection(0);
 	}
 
-	public void debug(String s) {
-		if(debugMode && console.isDisposed() == false) {
-			console.addDebugMessage(s);
-		}
-	}
-
-	public void debug(Throwable t) {
-		debug(LoggingUtil.getTraceString(t));
-	}
-
 	public void toggleDebugConsole() {
 		console.setVisible(!console.getVisible());
 		if(btn_console.getText().equals("Hide Console")) {
@@ -637,6 +665,15 @@ public class AlybaGUI {
 		} else {
 			btn_analyzing.setForeground(SWTResourceManager.getColor(SWT.COLOR_BLACK));
 		}
+	}
+
+	public void openTPMAnalyzer() {
+		if(tpmAnalyzer == null) {
+			tpmAnalyzer = new TPMAnalyzer(display, SWT.SHELL_TRIM);
+			tpmAnalyzer.setVisible(false);
+		}
+		tpmAnalyzer.setVisible(true);
+		tpmAnalyzer.forceActive();
 	}
 
 	public void openResultAnalyzer() {
@@ -667,7 +704,7 @@ public class AlybaGUI {
 				if(idx > -1) {
 					table.getItem(idx).setText(3, FileUtil.getFileSizeString(f));
 					table.getItem(idx).setData("file", f);
-					debug("Duplicated Item(size updated) : " + f.getCanonicalPath());
+					Logger.debug("Duplicated Item(size updated) : " + f.getCanonicalPath());
 				} else {
 					String fullpath = f.getCanonicalPath();
 					int lastidx = fullpath.lastIndexOf(File.separatorChar);
@@ -677,18 +714,20 @@ public class AlybaGUI {
 					item.setText(2, fullpath.substring(lastidx + 1));
 					item.setText(3, FileUtil.getFileSizeString(f));
 					item.setData("file", f);
-					debug("Added Item : " + f.getCanonicalPath());
+					Logger.debug("Added Item : " + f.getCanonicalPath());
 					cnt++;
 				}
 			} catch(Exception ex) {
-				debug(ex);
+				Logger.debug("Failed to add file item(s).");
+				Logger.error(ex);
 			}
 		}
 		if(cnt > 0) {
-			debug(cnt + " files are added successfully.\n");
+			Logger.debug(cnt + " files are added successfully.");
 			tblv_files.getTable().deselectAll();
 			tblv_files.getTable().select(from_idx, tbl_files.getItemCount() - 1);
 			tbl_files.showItem(tbl_files.getItem(tbl_files.getItemCount() - 1));
+			tbl_files.forceFocus();
 			updatedFileList();
 		}
 		
@@ -776,7 +815,7 @@ public class AlybaGUI {
 			} else {
 				tblv_files.getTable().deselectAll();
 			}
-			debug("Removed " + indices.length + " item(s).\n");
+			Logger.debug("Removed " + indices.length + " item(s).");
 		}
 		if(tbl_files.getItemCount() == 0) {
 			fieldMapping.reset();
@@ -816,7 +855,8 @@ public class AlybaGUI {
 				filterSetting.updateFromDate(from);
 				filterSetting.updateToDate(to);
 			} catch(Exception e) {
-				debug(e);
+				Logger.debug("Failed to update setting of from/to date.");
+				Logger.error(e);
 			}
 		} else {
 			filterSetting.updateFromDate(DateUtil.getFirstOfDay(new Date()));
@@ -912,167 +952,102 @@ public class AlybaGUI {
 				if(MessageUtil.showConfirmMessage(shell, msg)) {
 					try {
 						loadSetting(new FileInputStream(f));
-						debug("Load a setting : " + f.getAbsolutePath());
+						Logger.debug("Loaded a setting : " + f.getAbsolutePath());
 					} catch(Exception e) {
-						debug(e);
+						Logger.debug("Failed to read setting." + f.getAbsolutePath());
+						Logger.error(e);
 					}
 				}
 			}
 		}
 	}	
 
-	@SuppressWarnings("unchecked")
 	public void loadSetting(InputStream is) {
 		List<Object> readData = FileUtil.readObjectFile(is);
 		try {
 			boolean loadMappingData = false;
-			if(readData.size() > 31) {
-				if(tblv_files.getTable().getItemCount() > 0) {
-					loadMappingData = MessageUtil.showYesNoMessage(shell, "The setting file contains mapping data.\n\nDo you want to load mapping data as well?");
-				}
+			if(readData.size() != 2 || readData.get(0).getClass() != String.class || readData.get(1).getClass() != AlybaSetting.class || 
+			   ((String)readData.get(0)).equals(Constant.SETTING_FILE_HEADER) == false) {
+				throw new Exception("Invalid Setting File.");
 			}
-			if(readData.size() < 31 || (loadMappingData && readData.size() < 39)) {
-				throw new Exception("The number of items in the setting file is insufficient : size=" + readData.size());
-			}
-			int i = 0;
-			for(; i < 31; i++) {
-				Object obj = readData.get(i);
-				switch(i) {
-					case 0:
-						if(((String)obj).equals(Constant.SETTING_FILE_HEADER) == false) {
-							throw new Exception("Wrong header of the file.");
-						}
-						break;
-					case 1:
-						filterSetting.chk_allRange.setSelection((Boolean)obj);
-						filterSetting.dtp_fromDate.setEnabled(!(Boolean)obj);
-						filterSetting.dtp_toDate.setEnabled(!(Boolean)obj);
-						break;
-					case 2:
-						filterSetting.dtp_fromDate.setDate((Date)obj);
-						break;
-					case 3:
-						filterSetting.dtp_toDate.setDate((Date)obj);
-						break;
-					case 4:
-						filterSetting.chk_includeFilter.setSelection((Boolean)obj);
-						filterSetting.grp_inclueFilter.setEnabled((Boolean)obj);
-						break;
-					case 5:
-						filterSetting.btn_inc_chkAnd.setSelection((Boolean)obj);
-						filterSetting.btn_inc_chkOr.setSelection(!(Boolean)obj);
-						break;
-					case 6:
-						filterSetting.chk_inc_ignoreCase.setSelection((Boolean)obj);
-						break;
-					case 7:
-						HashMap<String, String> incFilterData = (HashMap<String, String>)obj;
-						filterSetting.txt_inc_uri.setText(StringUtil.NVL((String)(incFilterData.get("URI")), ""));
-						filterSetting.txt_inc_ext.setText(StringUtil.NVL((String)(incFilterData.get("EXT")), ""));
-						filterSetting.txt_inc_ip.setText(StringUtil.NVL((String)(incFilterData.get("IP")), ""));
-						filterSetting.txt_inc_method.setText(StringUtil.NVL((String)(incFilterData.get("METHOD")), ""));
-						filterSetting.txt_inc_version.setText(StringUtil.NVL((String)(incFilterData.get("VERSION")), ""));
-						filterSetting.txt_inc_code.setText(StringUtil.NVL((String)(incFilterData.get("CODE")), ""));
-						break;
-					case 8:
-						filterSetting.chk_excludeFilter.setSelection((Boolean)obj);
-						filterSetting.grp_exclueFilter.setEnabled((Boolean)obj);
-						break;
-					case 9:
-						filterSetting.btn_exc_chkAnd.setSelection((Boolean)obj);
-						filterSetting.btn_exc_chkOr.setSelection(!(Boolean)obj);
-						break;
-					case 10:
-						filterSetting.chk_exc_ignoreCase.setSelection((Boolean)obj);
-						break;
-					case 11:
-						HashMap<String, String> excFilterData = (HashMap<String, String>)obj;
-						filterSetting.txt_exc_uri.setText(StringUtil.NVL((String)(excFilterData.get("URI")), ""));
-						filterSetting.txt_exc_ext.setText(StringUtil.NVL((String)(excFilterData.get("EXT")), ""));
-						filterSetting.txt_exc_ip.setText(StringUtil.NVL((String)(excFilterData.get("IP")), ""));
-						filterSetting.txt_exc_method.setText(StringUtil.NVL((String)(excFilterData.get("METHOD")), ""));
-						filterSetting.txt_exc_version.setText(StringUtil.NVL((String)(excFilterData.get("VERSION")), ""));
-						filterSetting.txt_exc_code.setText(StringUtil.NVL((String)(excFilterData.get("CODE")), ""));
-						break;
-					case 12:
-						outputSetting.chk_excel.setSelection((Boolean)obj);
-						break;
-					case 13:
-						outputSetting.chk_html.setSelection((Boolean)obj);
-						break;
-					case 14:
-						outputSetting.chk_text.setSelection((Boolean)obj);
-						outputSetting.checkCheckBox();
-						break;
-					case 15:
-						outputSetting.txt_directory.setText(StringUtil.NVL((String)obj, ""));
-						break;
-					case 16:
-						outputSetting.btn_count.setSelection((Boolean)obj);
-						outputSetting.btn_name.setSelection(!(Boolean)obj);
-						break;
-					case 17:
-						optionSetting.chk_multiThread.setSelection((Boolean)obj);
-						break;
-					case 18:
-						optionSetting.chk_fixedFields.setSelection((Boolean)obj);
-						break;						
-					case 19:
-						optionSetting.chk_allowErrors.setSelection((Boolean)obj);
-						optionSetting.spn_allowErrors.setEnabled((Boolean)obj);
-						break;
-					case 20:
-						optionSetting.spn_allowErrors.setSelection(Integer.parseInt(StringUtil.NVL((String)obj, "5")));
-						break;
-					case 21:
-						optionSetting.chk_includeParams.setSelection((Boolean)obj);
-						break;
-					case 22:
-						optionSetting.chk_collectTPM.setSelection((Boolean)obj);
-						optionSetting.spn_tpmUnit.setEnabled((Boolean)obj);
-						break;
-					case 23:
-						optionSetting.spn_tpmUnit.setSelection(Integer.parseInt(StringUtil.NVL((String)obj, "1")));
-						break;
-					case 24:
-						optionSetting.chk_collectElapsed.setSelection((Boolean)obj);
-						optionSetting.spn_collectElapsed.setEnabled((Boolean)obj);
-						break;
-					case 25:
-						optionSetting.spn_collectElapsed.setSelection(Integer.parseInt(StringUtil.NVL((String)obj, "10000")));
-						break;
-					case 26:
-						optionSetting.chk_collectBytes.setSelection((Boolean)obj);
-						optionSetting.spn_collectBytes.setEnabled((Boolean)obj);
-						break;
-					case 27:
-						optionSetting.spn_collectBytes.setSelection(Integer.parseInt(StringUtil.NVL((String)obj, "1000")));
-						break;
-					case 28:
-						optionSetting.chk_collectErrors.setSelection((Boolean)obj);
-						break;
-					case 29:
-						optionSetting.chk_collectIP.setSelection((Boolean)obj);
-						break;
-					case 30:
-						optionSetting.chk_collectTPS.setSelection((Boolean)obj);
-						break;
-				}
+			AlybaSetting guiSetting = (AlybaSetting)readData.get(1);
+			if(guiSetting.getMappingData() != null) {
+				loadMappingData = MessageUtil.showYesNoMessage(shell, "The setting file contains mapping data.\n\nDo you want to load mapping data as well?");
 			}
 			
+			filterSetting.chk_allRange.setSelection(guiSetting.isFilterCheckAllRangeEnabled());
+			filterSetting.dtp_fromDate.setEnabled(!guiSetting.isFilterCheckAllRangeEnabled());
+			filterSetting.dtp_toDate.setEnabled(!guiSetting.isFilterCheckAllRangeEnabled());
+			if(guiSetting.getFilterRangeFromDate() != null) {
+				filterSetting.dtp_fromDate.setDate(guiSetting.getFilterRangeFromDate());
+			}
+			if(guiSetting.getFilterRangeToDate() != null) {
+				filterSetting.dtp_toDate.setDate(guiSetting.getFilterRangeToDate());
+			}
+			filterSetting.chk_includeFilter.setSelection(guiSetting.isFilterIncludeEnabled());
+			filterSetting.grp_inclueFilter.setEnabled(guiSetting.isFilterIncludeEnabled());
+			filterSetting.btn_inc_chkAnd.setSelection(guiSetting.isFilterIncludeAndChecked());
+			filterSetting.btn_inc_chkOr.setSelection(!guiSetting.isFilterIncludeAndChecked());
+			filterSetting.chk_inc_ignoreCase.setSelection(guiSetting.isFilterIncludeIgnoreCase());
+			HashMap<String, String> incFilterData = guiSetting.getFilterIncludeData();
+			filterSetting.txt_inc_uri.setText(StringUtil.NVL((String)(incFilterData.get("URI")), ""));
+			filterSetting.txt_inc_ext.setText(StringUtil.NVL((String)(incFilterData.get("EXT")), ""));
+			filterSetting.txt_inc_ip.setText(StringUtil.NVL((String)(incFilterData.get("IP")), ""));
+			filterSetting.txt_inc_method.setText(StringUtil.NVL((String)(incFilterData.get("METHOD")), ""));
+			filterSetting.txt_inc_version.setText(StringUtil.NVL((String)(incFilterData.get("VERSION")), ""));
+			filterSetting.txt_inc_code.setText(StringUtil.NVL((String)(incFilterData.get("CODE")), ""));
+			filterSetting.chk_excludeFilter.setSelection(guiSetting.isFilterExcludeEnabled());
+			filterSetting.grp_exclueFilter.setEnabled(guiSetting.isFilterExcludeEnabled());
+			filterSetting.btn_exc_chkAnd.setSelection(guiSetting.isFilterExcludeAndChecked());
+			filterSetting.btn_exc_chkOr.setSelection(!guiSetting.isFilterExcludeAndChecked());
+			filterSetting.chk_exc_ignoreCase.setSelection(guiSetting.isFilterExcludeIgnoreCase());
+			HashMap<String, String> excFilterData = guiSetting.getFilterExcludeData();
+			filterSetting.txt_exc_uri.setText(StringUtil.NVL((String)(excFilterData.get("URI")), ""));
+			filterSetting.txt_exc_ext.setText(StringUtil.NVL((String)(excFilterData.get("EXT")), ""));
+			filterSetting.txt_exc_ip.setText(StringUtil.NVL((String)(excFilterData.get("IP")), ""));
+			filterSetting.txt_exc_method.setText(StringUtil.NVL((String)(excFilterData.get("METHOD")), ""));
+			filterSetting.txt_exc_version.setText(StringUtil.NVL((String)(excFilterData.get("VERSION")), ""));
+			filterSetting.txt_exc_code.setText(StringUtil.NVL((String)(excFilterData.get("CODE")), ""));			
+			outputSetting.chk_excel.setSelection(guiSetting.isOutputExcelTypeChecked());
+			outputSetting.chk_html.setSelection(guiSetting.isOutputHtmlTypeChecked());
+			outputSetting.chk_text.setSelection(guiSetting.isOutputTextTypeChecked());
+			outputSetting.checkCheckBox();
+			outputSetting.txt_directory.setText(new File(StringUtil.NVL(guiSetting.getOutputDirectory(), Constant.OUTPUT_DEFAULT_DIRECTORY)).getCanonicalPath());
+			outputSetting.btn_count.setSelection(guiSetting.isOutputSortByCountChecked());
+			outputSetting.btn_name.setSelection(!guiSetting.isOutputSortByCountChecked());			
+			optionSetting.chk_multiThread.setSelection(guiSetting.isOptionMultiThreadChecked());
+			optionSetting.chk_fixedFields.setSelection(guiSetting.isOptionFixedFieldsChecked());
+			optionSetting.chk_strictCheck.setSelection(guiSetting.isOptionStrictCheckChecked());
+			optionSetting.chk_allowErrors.setSelection(guiSetting.isOptionAllowErrorsChecked());
+			optionSetting.spn_allowErrors.setEnabled(guiSetting.isOptionAllowErrorsChecked());
+			optionSetting.spn_allowErrors.setSelection(guiSetting.getOptionAllowErrorCount());
+			optionSetting.chk_includeParams.setSelection(guiSetting.isOptionURLIncludeParamsChecked());
+			optionSetting.chk_collectTPM.setSelection(guiSetting.isOptionCollectTPMChecked());
+			optionSetting.spn_tpmUnit.setEnabled(guiSetting.isOptionCollectTPMChecked());
+			optionSetting.spn_tpmUnit.setSelection(guiSetting.getOptionTPMUnitMinutes());
+			optionSetting.chk_collectElapsed.setSelection(guiSetting.isOptionCollectElapsedTimeChecked());
+			optionSetting.spn_collectElapsed.setEnabled(guiSetting.isOptionCollectElapsedTimeChecked());
+			optionSetting.spn_collectElapsed.setSelection(guiSetting.getOptionCollectElapsedTimeMS());
+			optionSetting.chk_collectBytes.setSelection(guiSetting.isOptionCollectResponseBytesChecked());
+			optionSetting.spn_collectBytes.setEnabled(guiSetting.isOptionCollectResponseBytesChecked());
+			optionSetting.spn_collectBytes.setSelection(guiSetting.getOptionCollectResponseBytesKB());
+			optionSetting.chk_collectErrors.setSelection(guiSetting.isOptionCollectErrorsChecked());
+			optionSetting.chk_collectIP.setSelection(guiSetting.isOptionCollectIPChecked());
+			optionSetting.chk_collectTPS.setSelection(guiSetting.isOptionCollectTPSChecked());			
 			if(loadMappingData) {
 				LogFieldMappingInfo mappingInfo = new LogFieldMappingInfo();
-				mappingInfo.setLogType((String)readData.get(i++));
-				mappingInfo.setFieldDelimeter((String)readData.get(i++));
-				mappingInfo.setFieldBracelet((String)readData.get(i++));
-				mappingInfo.setOffsetHour(Float.valueOf((String)readData.get(i++)));
-				mappingInfo.setTimeFormat((String)readData.get(i++));
-				mappingInfo.setTimeLocale((Locale)readData.get(i++));
-				mappingInfo.setElapsedUnit((String)readData.get(i++));
-				mappingInfo.setMappingInfo((HashMap<String, String>)readData.get(i++));				
-
+				mappingInfo.setLogType(guiSetting.getMappingLogType());
+				mappingInfo.setFieldDelimeter(guiSetting.getMappingDelimeter());
+				mappingInfo.setFieldBracelet(guiSetting.getMappingBracelet());
+				mappingInfo.setTimestampType(guiSetting.getMappingTimestampType());
+				mappingInfo.setOffsetHour(guiSetting.getMappingOffsetHour());
+				mappingInfo.setTimeFormat(guiSetting.getMappingTimeFormat());
+				mappingInfo.setTimeLocale(guiSetting.getMappingTimeLocale());
+				mappingInfo.setElapsedUnit(guiSetting.getMappingElapsedUnit());
+				mappingInfo.setMappingInfo(guiSetting.getMappingData());
 				fieldMapping.txt_delimeter.setText(mappingInfo.getFieldDelimeter());
 				fieldMapping.txt_bracelet.setText(mappingInfo.getFieldBracelet());
+				fieldMapping.cb_timestampType.setText(mappingInfo.getTimestampType());
 				fieldMapping.spn_offset.setSelection((int)(mappingInfo.getOffsetHour()*10));
 				fieldMapping.cb_timeFormat.setText(mappingInfo.getTimeFormat());
 				fieldMapping.setTimeLocale(mappingInfo.getTimeLocale());
@@ -1085,61 +1060,74 @@ public class AlybaGUI {
 				}
 			}
 		} catch(Exception e) {
-			debug(e);
+			Logger.debug("Failed to load setting from the file.");
+			Logger.error(e);
 			MessageUtil.showErrorMessage(shell, "Invalid Setting File.");
 		}
 	}
-
+	
 	public void saveSetting(File f) {
-		boolean saveMappingData = false;
-		if(btn_analyzing.isEnabled()) {
-			saveMappingData = MessageUtil.showYesNoMessage(shell, "Do you want to include the mapping data in the file?");
+		try {
+			boolean saveMappingData = false;
+			if(btn_analyzing.isEnabled()) {
+				saveMappingData = MessageUtil.showYesNoMessage(shell, "Do you want to include the mapping data in the file?");
+			}
+			
+			AlybaSetting guiSetting = new AlybaSetting();
+			guiSetting.setFilterCheckAllRangeEnabled(filterSetting.checkAllRangeEnable());
+			guiSetting.setFilterRangeFromDate(filterSetting.getRangeFromDate());
+			guiSetting.setFilterRangeToDate(filterSetting.getRangeToDate());
+			guiSetting.setFilterIncludeEnabled(filterSetting.getIncludeFilterEnable());
+			guiSetting.setFilterIncludeAndChecked(filterSetting.checkIncludeFilterAndCheck());
+			guiSetting.setFilterIncludeIgnoreCase(filterSetting.getIncludeFilterIgnoreCase());
+			guiSetting.setFilterIncludeData(filterSetting.getIncludeFilterData());
+			guiSetting.setFilterExcludeEnabled(filterSetting.getExcludeFilterEnable());
+			guiSetting.setFilterExcludeAndChecked(filterSetting.checkExcludeFilterAndCheck());
+			guiSetting.setFilterExcludeIgnoreCase(filterSetting.getExcludeFilterIgnoreCase());
+			guiSetting.setFilterExcludeData(filterSetting.getExcludeFilterData());
+			guiSetting.setOutputExcelTypeChecked(outputSetting.checkExcelType());
+			guiSetting.setOutputHtmlTypeChecked(outputSetting.checkHtmlType());
+			guiSetting.setOutputTextTypeChecked(outputSetting.checkTextType());
+			guiSetting.setOutputDirectory(outputSetting.getOutputDirectory());
+			guiSetting.setOutputSortByCountChecked(outputSetting.sortByCount());
+			guiSetting.setOptionMultiThreadChecked(optionSetting.checkMultiThread());
+			guiSetting.setOptionFixedFieldsChecked(optionSetting.checkFixedFields());
+			guiSetting.setOptionStrictCheckChecked(optionSetting.checkStrictCheck());
+			guiSetting.setOptionAllowErrorsChecked(optionSetting.checkAllowErrors());
+			guiSetting.setOptionAllowErrorCount(Integer.parseInt(StringUtil.NVL(optionSetting.getAllowErrorCount(), "5")));
+			guiSetting.setOptionURLIncludeParamsChecked(optionSetting.checkIncludeParams());
+			guiSetting.setOptionCollectTPMChecked(optionSetting.checkCollectTPM());
+			guiSetting.setOptionTPMUnitMinutes(Integer.parseInt(StringUtil.NVL(optionSetting.getTPMUnitMinutes(), "1")));
+			guiSetting.setOptionCollectElapsedTimeChecked(optionSetting.checkCollectElaspsedTime());
+			guiSetting.setOptionCollectElapsedTimeMS(Integer.parseInt(StringUtil.NVL(optionSetting.getCollectElapsedTimeMS(), "10000")));
+			guiSetting.setOptionCollectResponseBytesChecked(optionSetting.checkCollectResponseBytes());
+			guiSetting.setOptionCollectResponseBytesKB(Integer.parseInt(StringUtil.NVL(optionSetting.getCollectResponseBytesKB(), "1000")));
+			guiSetting.setOptionCollectErrorsChecked(optionSetting.checkCollectErrors());
+			guiSetting.setOptionCollectIPChecked(optionSetting.checkCollectIP());
+			guiSetting.setOptionCollectTPSChecked(optionSetting.checkCollectTPS());		
+			if(saveMappingData) {
+				guiSetting.setMappingLogType(fieldMapping.getLogType());
+				guiSetting.setMappingDelimeter(fieldMapping.getDelimeter());
+				guiSetting.setMappingBracelet(fieldMapping.getBracelet());
+				guiSetting.setMappingTimestampType(fieldMapping.getTimestampType());
+				guiSetting.setMappingOffsetHour(Float.parseFloat(StringUtil.NVL(fieldMapping.getOffsetHour(), "0.0")));
+				guiSetting.setMappingTimeFormat(fieldMapping.getTimeFormat());
+				guiSetting.setMappingTimeLocale(fieldMapping.getTimeLocale());
+				guiSetting.setMappingElapsedUnit(fieldMapping.getElapsedUnit());
+				guiSetting.setMappingData(fieldMapping.getMappingData());
+			}
+	
+			List<Object> writeData = new ArrayList<Object>();
+			writeData.add(Constant.SETTING_FILE_HEADER);
+			writeData.add(guiSetting);
+			
+			FileUtil.writeObjectFile(f, writeData, false);
+	
+			Logger.debug("Saved this setting : " + f.getAbsolutePath());
+		} catch(Exception e) {
+			Logger.debug("Failed to save setting to the file : " + f.getAbsolutePath());
+			Logger.error(e);
 		}
-		List<Object> writeData = new ArrayList<Object>();
-		writeData.add(Constant.SETTING_FILE_HEADER);
-		writeData.add(filterSetting.checkAllRangeEnable());
-		writeData.add(filterSetting.getRangeFromDate());
-		writeData.add(filterSetting.getRangeToDate());
-		writeData.add(filterSetting.getIncludeFilterEnable());
-		writeData.add(filterSetting.checkIncludeFilterAndCheck());
-		writeData.add(filterSetting.getIncludeFilterIgnoreCase());
-		writeData.add(filterSetting.getIncludeFilterData());
-		writeData.add(filterSetting.getExcludeFilterEnable());
-		writeData.add(filterSetting.checkExcludeFilterAndCheck());
-		writeData.add(filterSetting.getExcludeFilterIgnoreCase());
-		writeData.add(filterSetting.getExcludeFilterData());
-		writeData.add(outputSetting.checkExcelType());
-		writeData.add(outputSetting.checkHtmlType());
-		writeData.add(outputSetting.checkTextType());
-		writeData.add(outputSetting.getOutputDirectory());
-		writeData.add(outputSetting.sortByCount());
-		writeData.add(optionSetting.checkMultiThread());
-		writeData.add(optionSetting.checkFixedFields());
-		writeData.add(optionSetting.checkAllowErrors());
-		writeData.add(optionSetting.getAllowErrorCount());
-		writeData.add(optionSetting.checkIncludeParams());
-		writeData.add(optionSetting.checkCollectTPM());
-		writeData.add(optionSetting.getTPMUnitMinutes());
-		writeData.add(optionSetting.checkCollectElaspsedTime());
-		writeData.add(optionSetting.getCollectElapsedTimeMS());
-		writeData.add(optionSetting.checkCollectResponseBytes());
-		writeData.add(optionSetting.getCollectResponseBytesKB());
-		writeData.add(optionSetting.checkCollectErrors());
-		writeData.add(optionSetting.checkCollectIP());
-		writeData.add(optionSetting.checkCollectTPS());
-		if(saveMappingData) {
-			writeData.add(fieldMapping.getLogType());
-			writeData.add(fieldMapping.getDelimeter());
-			writeData.add(fieldMapping.getBracelet());
-			writeData.add(fieldMapping.getOffsetHour());
-			writeData.add(fieldMapping.getTimeFormat());
-			writeData.add(fieldMapping.getTimeLocale());
-			writeData.add(fieldMapping.getElapsedUnit());
-			writeData.add(fieldMapping.getMappingData());
-		}
-		FileUtil.writeObjectFile(f, writeData, false);
-
-		debug("Save this setting : " + f.getAbsolutePath());
 	}
 
 	public void resetSetting() {
@@ -1149,7 +1137,8 @@ public class AlybaGUI {
 			loadSetting(is);
 			outputSetting.txt_directory.setText(Constant.OUTPUT_DEFAULT_DIRECTORY);
 		} catch(IOException ioe) {
-			debug(ioe);
+			Logger.debug("Failed to reset setting from default values.");
+			Logger.error(ioe);
 		}
 	}
 
@@ -1181,13 +1170,13 @@ public class AlybaGUI {
 				encoding = "NULL";
 			} else if("WINDOWS-1252".equals(encoding)) {
 				String default_encoding = System.getProperty("file.encoding");
-				debug("Unknown file encoding : " + encoding + ". It will be set to default(" + default_encoding + ")");
+				Logger.debug("Unknown file encoding : " + encoding + ". It will be set to default(" + default_encoding + ")");
 				encoding = default_encoding;
 			}			
 			fileEncodings.put(f.getPath(), encoding);
 		}
 		encoding = "NULL".equals(encoding) ? null : encoding;
-		debug("File encoding : path='" + f.getPath() + "', encoding=" + encoding);
+		Logger.debug("File encoding : path='" + f.getPath() + "', encoding=" + encoding);
 		return encoding;		
 	}
 	
@@ -1209,7 +1198,7 @@ public class AlybaGUI {
 			long from = filterSetting.getRangeFromDate().getTime();
 			long to = filterSetting.getRangeToDate().getTime();
 			int unit_cnt = (int)((to - from) / 1000) / (60 * Integer.parseInt(optionSetting.getTPMUnitMinutes()));
-			debug(unit_cnt + " units of tx aggreation data will be created.");
+			Logger.debug(unit_cnt + " units of tx aggreation data will be created.");
 			if(unit_cnt > Constant.WARNING_TXUNIT_COUNT) {
 				if(!MessageUtil.showConfirmMessage(shell, "Too many("+unit_cnt+") tx aggreation data will be created by Time Range.\n"
 						+ "Increase tpm aggregation minute, or ALYBA could slow down or down abnormally.\n\nDo you want to continue?")) {
@@ -1217,7 +1206,8 @@ public class AlybaGUI {
 				}
 			}
 		} catch(Exception e) {
-			debug(e);
+			Logger.debug("Failed to update time range.");
+			Logger.error(e);
 		}
 		
 		filterSetting.resetDateUpdateCheck();
@@ -1225,7 +1215,7 @@ public class AlybaGUI {
 		LogAnalyzerSetting setting = getAnalyzerSetting();
 		setting.setAnalyzeDate(new Date());
 		LogAnalyzeOutput output = new LogAnalyzeOutput(setting);
-		debug(setting.toString());
+		Logger.debug(setting.toString());
 		
 		if(!MessageUtil.showConfirmMessage(shell, "Do you want to analyze the files with current setting?")) {
 			return;
@@ -1234,11 +1224,7 @@ public class AlybaGUI {
 		String dbfile_path = outputSetting.getOutputDirectory() + File.separatorChar + output.getFileName() + ".adb";
 		ObjectDBUtil db = new ObjectDBUtil(dbfile_path, true);
 		ObjectDBUtil.register(db);
-		try {
-			debug("Opened the database : dbfile=" + db.getDBFilePath());
-		} catch(Exception e) {
-			debug(e);
-		}
+		Logger.debug("Opened the database : dbfile=" + db.getDBFilePath());
 		
 		ProgressBarDialog progressBar = new ProgressBarDialog(shell, Utility.getFont());
 		progressBar.setTitle("Analyzer Progress");
@@ -1247,6 +1233,7 @@ public class AlybaGUI {
 		progressBar.setTask(task);
 		progressBar.open();
 		if(!task.isSuccessed()) {
+			task.doCancel();
 			String msg = task.getFailedMessage();
 			if(msg != null) {
 				MessageUtil.showWarningMessage(shell, msg);
@@ -1264,6 +1251,7 @@ public class AlybaGUI {
 			progressBar.setTask(post_task);
 			progressBar.open();
 			if(!post_task.isSuccessed()) {
+				post_task.doCancel();
 				String msg = post_task.getFailedMessage();
 				if(msg != null) {
 					MessageUtil.showWarningMessage(shell, msg);
@@ -1292,14 +1280,15 @@ public class AlybaGUI {
 		}
 		
 		try {
-			debug("Closing the database : dbfile=" + db.getDBFilePath());
+			Logger.debug("Closing the database : dbfile=" + db.getDBFilePath());
 			if(task.isSuccessed()) {
 				db.closeAll();
 			} else {
 				db.closeAndDeleteDB();
 			}
 		} catch(Exception e) {
-			debug(e);
+			Logger.debug("Failed to close the database.");
+			Logger.error(e);
 		}
 		
 		if(task.isSuccessed() && (output_task == null || output_task.isSuccessed())) {
@@ -1319,7 +1308,8 @@ public class AlybaGUI {
 						try {
 							resultAnalyzer.loadDBFile(db.getDBFilePath());
 						} catch(Exception e) {
-							debug(e);
+							Logger.debug("Failed to load the database : " + db.getDBFilePath());
+							Logger.error(e);
 							MessageUtil.showErrorMessage(shell, "Failed to load the database.");
 							resultAnalyzer.setVisible(false);
 						}
@@ -1350,9 +1340,12 @@ public class AlybaGUI {
 	private LogAnalyzerSetting getAnalyzerSetting() {
 		LogFieldMappingInfo fieldMappingInfo = new LogFieldMappingInfo();
 		fieldMappingInfo.setLogType(fieldMapping.getLogType());
+		fieldMappingInfo.setJsonMapType(fieldMapping.isJsonMapType());
 		fieldMappingInfo.setFieldDelimeter(StringUtil.replaceMetaCharacter(fieldMapping.getDelimeter(), false));
 		fieldMappingInfo.setFieldBracelet(fieldMapping.getBracelet());
 		fieldMappingInfo.setMappingInfo(fieldMapping.getMappingData());
+		fieldMappingInfo.setURIMappingPatterns(fieldMapping.uriMappingManager == null ? null : fieldMapping.uriMappingManager.getURIPatterns());
+		fieldMappingInfo.setTimestampType(fieldMapping.getTimestampType());
 		fieldMappingInfo.setOffsetHour(Float.parseFloat(fieldMapping.getOffsetHour()));
 		fieldMappingInfo.setTimeFormat(fieldMapping.getTimeFormat());
 		fieldMappingInfo.setTimeLocale(fieldMapping.getTimeLocale());
@@ -1383,6 +1376,8 @@ public class AlybaGUI {
 		setting.setOutputDirectory(outputSetting.getOutputDirectory());
 		setting.setOutputSortBy((outputSetting.sortByCount() ? "COUNT" : "NAME"));
 		setting.setMultiThreadParsing(optionSetting.checkMultiThread());
+		setting.setCheckFieldCount(optionSetting.checkFixedFields());
+		setting.setCheckStrict(optionSetting.checkStrictCheck());
 		setting.setAllowErrors(optionSetting.checkAllowErrors());
 		setting.setAllowErrorCount(Integer.parseInt(optionSetting.getAllowErrorCount()));
 		setting.setUriIncludeParams(optionSetting.checkIncludeParams());
@@ -1393,7 +1388,6 @@ public class AlybaGUI {
 		setting.setCollectResponseBytes(optionSetting.checkCollectResponseBytes());
 		setting.setCollectResponseBytesKB(Integer.parseInt(optionSetting.getCollectResponseBytesKB()));
 		setting.setCollectErrors(optionSetting.checkCollectErrors());
-		setting.setCheckFieldCount(optionSetting.checkFixedFields());
 		setting.setCollectIP(optionSetting.checkCollectIP());
 		setting.setCollectTPS(optionSetting.checkCollectTPS());
 		setting.setFieldMapping(fieldMappingInfo);

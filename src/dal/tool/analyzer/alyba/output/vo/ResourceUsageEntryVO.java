@@ -23,7 +23,7 @@ public class ResourceUsageEntryVO extends EntryVO {
 	protected double memory = -1D;
 	protected double disk = -1D;
 	protected double network = -1D;
-	protected int count = 0;
+	protected int item_count = 0;
 
 	public ResourceUsageEntryVO(Date dt) {
 		this.unit_date = dt;
@@ -43,7 +43,7 @@ public class ResourceUsageEntryVO extends EntryVO {
 		this.memory = memory;
 		this.disk = disk;
 		this.network = network;
-		this.count = 1;
+		this.item_count = 1;
 	}
 	
 	public Date getUnitDate() {
@@ -68,6 +68,10 @@ public class ResourceUsageEntryVO extends EntryVO {
 
 	public void setServerGroup(String group) {
 		this.group = group;
+	}
+
+	public String getNameTag() {
+		return group + ":" + name;
 	}
 
 	public double getCpuUsage() {
@@ -103,34 +107,34 @@ public class ResourceUsageEntryVO extends EntryVO {
 	}
 	
 	public int getDataCount() {
-		return count;
+		return item_count;
 	}
 	
 	public void setDataCount(int count) {
-		this.count = count;
+		this.item_count = count;
 	}
 
 	public void addData(ResourceUsageEntryVO vo) {
 		if(vo.getCpuUsage() != -1D) {
-			cpu = (cpu == -1D) ? vo.getCpuUsage() : ((cpu*count + vo.getCpuUsage()) / (count+1));
+			cpu = (cpu == -1D) ? vo.getCpuUsage() : ((cpu*item_count + vo.getCpuUsage()) / (item_count+1));
 		}
 		if(vo.getMemoryUsage() != -1D) {
-			memory = (memory == -1D) ? vo.getMemoryUsage() : ((memory*count + vo.getMemoryUsage()) / (count+1));
+			memory = (memory == -1D) ? vo.getMemoryUsage() : ((memory*item_count + vo.getMemoryUsage()) / (item_count+1));
 		}
 		if(vo.getDiskUsage() != -1D) {
-			disk = (disk == -1D) ? vo.getDiskUsage() : ((disk*count + vo.getDiskUsage()) / (count+1));
+			disk = (disk == -1D) ? vo.getDiskUsage() : ((disk*item_count + vo.getDiskUsage()) / (item_count+1));
 		}
 		if(vo.getNetworkUsage() != -1D) {
-			network = (network == -1D) ? vo.getNetworkUsage() : ((network*count + vo.getNetworkUsage()) / (count+1));
+			network = (network == -1D) ? vo.getNetworkUsage() : ((network*item_count + vo.getNetworkUsage()) / (item_count+1));
 		}
-		count++;
+		item_count++;
 	}
 
 	public ResourceUsageEntryVO merge(ResourceUsageEntryVO subVO) {
 		ResourceUsageEntryVO vo = new ResourceUsageEntryVO(getUnitDate(), getServerName(), getServerGroup());
 		if(subVO.getCpuUsage() != -1D) {
 			if(cpu != -1D) {
-				vo.setCpuUsage((cpu*count + subVO.getCpuUsage()*subVO.getDataCount()) / (count+subVO.getDataCount()));
+				vo.setCpuUsage((cpu*item_count + subVO.getCpuUsage()*subVO.getDataCount()) / (item_count+subVO.getDataCount()));
 			} else {
 				vo.setCpuUsage(subVO.getCpuUsage());
 			}
@@ -139,7 +143,7 @@ public class ResourceUsageEntryVO extends EntryVO {
 		}
 		if(subVO.getMemoryUsage() != -1D) {
 			if(memory != -1D) {
-				vo.setMemoryUsage((memory*count + subVO.getMemoryUsage()*subVO.getDataCount()) / (count+subVO.getDataCount()));
+				vo.setMemoryUsage((memory*item_count + subVO.getMemoryUsage()*subVO.getDataCount()) / (item_count+subVO.getDataCount()));
 			} else {
 				vo.setMemoryUsage(subVO.getMemoryUsage());
 			}
@@ -148,7 +152,7 @@ public class ResourceUsageEntryVO extends EntryVO {
 		}
 		if(subVO.getDiskUsage() != -1D) {
 			if(disk != -1D) {
-				vo.setDiskUsage((disk*count + subVO.getDiskUsage()*subVO.getDataCount()) / (count+subVO.getDataCount()));
+				vo.setDiskUsage((disk*item_count + subVO.getDiskUsage()*subVO.getDataCount()) / (item_count+subVO.getDataCount()));
 			} else {
 				vo.setDiskUsage(subVO.getDiskUsage());
 			}
@@ -157,14 +161,14 @@ public class ResourceUsageEntryVO extends EntryVO {
 		}
 		if(subVO.getNetworkUsage() != -1D) {
 			if(network != -1D) {
-				vo.setNetworkUsage((network*count + subVO.getNetworkUsage()*subVO.getDataCount()) / (count+subVO.getDataCount()));
+				vo.setNetworkUsage((network*item_count + subVO.getNetworkUsage()*subVO.getDataCount()) / (item_count+subVO.getDataCount()));
 			} else {
 				vo.setNetworkUsage(subVO.getNetworkUsage());
 			}
 		} else {
 			vo.setNetworkUsage(network);
 		}
-		vo.setDataCount(count+subVO.getDataCount());
+		vo.setDataCount(item_count+subVO.getDataCount());
 		return vo;
 	}
 	
@@ -176,7 +180,7 @@ public class ResourceUsageEntryVO extends EntryVO {
 		vo.memory = memory;
 		vo.disk = disk;
 		vo.network = network;
-		vo.count = count;
+		vo.item_count = item_count;
 		return vo;
 	}
 
@@ -191,7 +195,7 @@ public class ResourceUsageEntryVO extends EntryVO {
 		buffer.append("memory=").append(memory).append(", ");
 		buffer.append("disk=").append(disk).append(", ");
 		buffer.append("network=").append(network).append(", ");
-		buffer.append("count=").append(count);
+		buffer.append("count=").append(item_count);
 		buffer.append("]");
 		return buffer.toString();
 	}
@@ -202,8 +206,8 @@ public class ResourceUsageEntryVO extends EntryVO {
 		if(unit_date != null) {
 			buffer.append("  date : ").append(DateUtil.dateToString(unit_date, DateUtil.SDF_DATETIME)).append("\n");
 		}
-		if(count > 0) {
-			buffer.append("  count : ").append(count).append("\n");
+		if(item_count > 0) {
+			buffer.append("  count : ").append(item_count).append("\n");
 		}
 		buffer.append("  server : {").append("\n");
 		if(name != null) {
@@ -237,8 +241,8 @@ public class ResourceUsageEntryVO extends EntryVO {
 		if(unit_date != null) {
 			buffer.append("    date : ").append(DateUtil.dateToString(unit_date, DateUtil.SDF_DATETIME)).append("\n");
 		}
-		if(count > 0) {
-			buffer.append("    count : ").append(count).append("\n");
+		if(item_count > 0) {
+			buffer.append("    count : ").append(item_count).append("\n");
 		}
 		if(cpu != -1D) {
 			buffer.append("    cpu : ").append(cpu).append("\n");

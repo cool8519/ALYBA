@@ -51,6 +51,10 @@ public class ObjectDBUtil {
 		return emf.createEntityManager();
 	}
 	
+	public boolean isReady(EntityManager em) {
+		return (em != null && em.isOpen());
+	}
+	
 	public void checkReady(EntityManager em) throws Exception {
 		if(em == null || !em.isOpen()) {
 			throw new Exception("Database has been closed or wasn't initialized");

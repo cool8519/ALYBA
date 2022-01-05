@@ -25,6 +25,7 @@ import dal.tool.analyzer.alyba.ui.chart.Chart;
 import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart;
 import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.AggregationType;
 import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.RegressionType;
+import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.ResourceMergeType;
 import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.VariableX;
 import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.VariableY;
 import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
@@ -36,6 +37,7 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 
 	private Group grp_setting;
 	private Group grp_aggr;
+	private Group grp_merge;
 	private Label lb_aggr;
 	private Label lb_var_x;	
 	private Label lb_var_y;
@@ -43,6 +45,8 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 	private Button btn_aggr_byname;
 	private Button btn_aggr_bygroup;
 	private Button btn_aggr_allinone;
+	private Button btn_merge_avg;
+	private Button btn_merge_sum;
 	private Combo cb_var_x;
 	private Combo cb_var_y;
 	private Combo cb_reg_type;
@@ -75,6 +79,7 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 		lb_aggr.setText("Aggregation");
 		
 		FormData fd_grp_aggr = new FormData();
+		fd_grp_aggr.right = new FormAttachment(80);
 		fd_grp_aggr.top = new FormAttachment(lb_aggr, 0);
 		fd_grp_aggr.left = new FormAttachment(lb_aggr, 20, SWT.LEFT);
 		grp_aggr = new Group(grp_setting, SWT.NONE);
@@ -93,9 +98,30 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 		btn_aggr_bygroup.setText("by Group");
 		btn_aggr_allinone = new Button(grp_aggr, SWT.RADIO);
 		btn_aggr_allinone.setText("All-In-One");
-		
+
+		FormData fd_grp_merge = new FormData();
+		fd_grp_merge.left = new FormAttachment(grp_aggr, 0, SWT.LEFT);
+		fd_grp_merge.right = new FormAttachment(80);
+		fd_grp_merge.top = new FormAttachment(grp_aggr, 0);
+		grp_merge = new Group(grp_setting, SWT.NONE);
+		grp_merge.setLayoutData(fd_grp_merge);
+		FillLayout gl_merge = new FillLayout();
+		gl_merge.spacing = 5;
+		gl_merge.marginWidth = 5;
+		gl_merge.marginHeight = 0;
+		grp_merge.setLayout(gl_merge);
+		grp_merge.setEnabled(false);
+
+		btn_merge_avg = new Button(grp_merge, SWT.RADIO);
+		btn_merge_avg.setText("Avg");
+		btn_merge_avg.setSelection(true);
+		btn_merge_avg.setEnabled(false);
+		btn_merge_sum = new Button(grp_merge, SWT.RADIO);
+		btn_merge_sum.setText("Sum");
+		btn_merge_sum.setEnabled(false);
+
 		FormData fd_lb_var_x = new FormData();
-		fd_lb_var_x.top = new FormAttachment(grp_aggr, 30);
+		fd_lb_var_x.top = new FormAttachment(grp_merge, 30);
 		fd_lb_var_x.left = new FormAttachment(lb_aggr, 0, SWT.LEFT);
 		lb_var_x = new Label(grp_setting, SWT.CENTER);
 		lb_var_x.setLayoutData(fd_lb_var_x);
@@ -178,7 +204,7 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 		btn_apply.setText("Apply");
 		btn_apply.setLayoutData(fd_btn_apply);
 		
-		grp_setting.setTabList(new Control[]{ grp_aggr, cb_var_x, cb_var_y, cb_reg_type, chk_reg_line, chk_reg_equation, chk_max_y_to_100, btn_apply });
+		grp_setting.setTabList(new Control[]{ grp_aggr, grp_merge, cb_var_x, cb_var_y, cb_reg_type, chk_reg_line, chk_reg_equation, chk_max_y_to_100, btn_apply });
 
 	}
 
@@ -192,6 +218,30 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 				btn_aggr_bygroup.setEnabled(usage_selected);
 				btn_aggr_allinone.setEnabled(usage_selected);
 				chk_max_y_to_100.setEnabled(usage_selected);
+			}
+		});
+		
+		btn_aggr_byname.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				grp_merge.setEnabled(false);
+				btn_merge_avg.setEnabled(false);
+				btn_merge_sum.setEnabled(false);
+			}
+		});
+
+		btn_aggr_bygroup.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				grp_merge.setEnabled(true);
+				btn_merge_avg.setEnabled(true);
+				btn_merge_sum.setEnabled(true);
+			}
+		});
+		
+		btn_aggr_allinone.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				grp_merge.setEnabled(true);
+				btn_merge_avg.setEnabled(true);
+				btn_merge_sum.setEnabled(true);
 			}
 		});
 		
@@ -229,6 +279,7 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 			ip_flag = ResultAnalyzer.hasMappingInfo("IP");
 			elapsed_flag = ResultAnalyzer.hasMappingInfo("ELAPSED");
 		} catch(Exception e) {
+			Logger.debug("Failed to select count from ResourceUsageEntryVO.");
 			Logger.error(e);
 		} finally {
 			if(db != null) {
@@ -239,7 +290,11 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 		grp_aggr.setEnabled(resource_flag);
 		btn_aggr_byname.setEnabled(resource_flag);
 		btn_aggr_bygroup.setEnabled(resource_flag);
-		btn_aggr_allinone.setEnabled(resource_flag);			
+		btn_aggr_allinone.setEnabled(resource_flag);
+		
+		grp_merge.setEnabled(false);
+		btn_merge_avg.setEnabled(false);
+		btn_merge_sum.setEnabled(false);
 
 		cb_var_x.removeAll();
 		cb_var_y.removeAll();
@@ -275,6 +330,8 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 		cb_var_x.select(0);
 		cb_var_y.select(0);
 		cb_reg_type.select(0);			
+		btn_aggr_byname.setSelection(true);
+		btn_merge_avg.setSelection(true);
 		chk_reg_line.setSelection(true);
 		chk_reg_equation.setSelection(true);
 		chk_reg_equation.setEnabled(true);
@@ -289,6 +346,11 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 			regression_chart.setAggregationType(AggregationType.GROUP);
 		} else if(btn_aggr_allinone.getSelection()) {
 			regression_chart.setAggregationType(AggregationType.ALL);
+		}
+		if(btn_merge_avg.getSelection()) {
+			regression_chart.setResourceMergeType(ResourceMergeType.AVG);
+		} else if(btn_merge_sum.getSelection()) {
+			regression_chart.setResourceMergeType(ResourceMergeType.SUM);
 		}
 		regression_chart.setVariableX(getVariableX(cb_var_x.getText()));
 		regression_chart.setVariableY(getVariableY(cb_var_y.getText()));

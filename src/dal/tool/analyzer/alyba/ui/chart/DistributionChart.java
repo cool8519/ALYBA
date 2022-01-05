@@ -56,7 +56,7 @@ import org.jfree.ui.RectangleInsets;
 import org.jfree.ui.TextAnchor;
 
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
-import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
+import dal.tool.analyzer.alyba.output.vo.TransactionEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SettingEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.ui.Logger;
@@ -70,7 +70,7 @@ import dal.util.db.ObjectDBUtil;
 
 public abstract class DistributionChart extends KeyValueChart {
 
-	protected static final Class<?> DATA_CLASS = ResponseEntryVO.class;
+	protected static final Class<?> DATA_CLASS = TransactionEntryVO.class;
 	protected static final ShapeSize DEFAULT_SHAPE_SIZE = ShapeSize.Large;
 
 	protected String label_x = "X";
@@ -217,9 +217,6 @@ public abstract class DistributionChart extends KeyValueChart {
 				numberAxis.setVerticalTickLabels(true);
 				xyPlot.setDomainAxis(numberAxis);
 			}
-			NumberAxis rangeAxis = (NumberAxis)xyPlot.getRangeAxis();
-			NumberFormat formatter = NumberFormat.getIntegerInstance();
-			rangeAxis.setNumberFormatOverride(formatter);			
 			XYItemRenderer renderer = xyPlot.getRenderer();
 			int size = shape_size.ordinal() + 1;
 			Shape shape = new Ellipse2D.Double(-size, -size, size, size);
@@ -244,12 +241,12 @@ public abstract class DistributionChart extends KeyValueChart {
 					double eq_x = (start+end) / 2;
 					double eq_y = regression.predict(eq_x);
 					StringBuffer eq = new StringBuffer();				
-					eq.append(" Y = ¥áX + ¥â  (");
-					eq.append("¥á = ").append(String.format("%.5e", regression.getSlope()));
+					eq.append(" Y = Î±X + Î²  (");
+					eq.append("Î± = ").append(String.format("%.5e", regression.getSlope()));
 					if(regression.hasIntercept()) {
-						eq.append(", ¥â = ").append(String.format("%.5e", regression.getIntercept()));
+						eq.append(", Î² = ").append(String.format("%.5e", regression.getIntercept()));
 					}
-					eq.append(", R©÷ = ").append(String.format("%1.5e", regression.getRSquare())).append(") ");
+					eq.append(", RÂ² = ").append(String.format("%1.5e", regression.getRSquare())).append(") ");
 				    XYPointerAnnotation annotation = new XYPointerAnnotation(eq.toString(), eq_x, eq_y, Math.toRadians(270));
 				    annotation.setLabelOffset(4.0D);
 				    annotation.setTextAnchor(TextAnchor.BOTTOM_CENTER);
@@ -342,6 +339,7 @@ public abstract class DistributionChart extends KeyValueChart {
 			}
 		    dateAxis.setRange(from.getTime(), to.getTime());
 		} catch(Exception e) {
+			Logger.debug("Failed to set time range from DB.");
 			Logger.error(e);
 		} finally {
 			if(db != null && em != null) {

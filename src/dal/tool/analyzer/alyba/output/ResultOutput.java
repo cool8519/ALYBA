@@ -6,7 +6,7 @@ import java.util.List;
 
 import javax.persistence.EntityManager;
 
-import dal.tool.analyzer.alyba.output.vo.BadResponseEntryVO;
+import dal.tool.analyzer.alyba.output.vo.BadTransactionEntryVO;
 import dal.tool.analyzer.alyba.output.vo.DateEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
@@ -56,7 +56,7 @@ public abstract class ResultOutput {
 				sortColumn = "key";
 			}
 			condition = "WHERE vo.type = '" + type + "' ";
-		} else if(clazz == BadResponseEntryVO.class) {
+		} else if(clazz == BadTransactionEntryVO.class) {
 			if("TIME".equals(type)) {
 				sortColumn = "response_time";
 				desc = true;
@@ -70,7 +70,7 @@ public abstract class ResultOutput {
 		} else {
 			throw new Exception("Not Supported Class type.");
 		}
-		return db.selectList(em, "SELECT vo FROM " + clazz.getSimpleName() + " AS vo " + condition + "ORDER BY " + sortColumn + (desc?" DESC":""), clazz, null);
+		return db.selectList(em, "SELECT vo FROM " + clazz.getSimpleName() + " AS vo " + condition + "ORDER BY vo." + sortColumn + (desc?" DESC":""), clazz, null);
 	}
 	
 	public abstract void generate() throws Exception;

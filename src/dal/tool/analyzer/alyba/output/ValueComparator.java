@@ -6,7 +6,7 @@ import java.util.Date;
 import dal.tool.analyzer.alyba.output.vo.DateEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
-import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
+import dal.tool.analyzer.alyba.output.vo.TransactionEntryVO;
 
 public class ValueComparator implements Comparator<EntryVO> {
 
@@ -48,7 +48,7 @@ public class ValueComparator implements Comparator<EntryVO> {
 		} else if(o1 instanceof KeyEntryVO && o2 instanceof KeyEntryVO) {
 			KeyEntryVO vo1 = (KeyEntryVO)((m_sortASC) ? o2 : o1);
 			KeyEntryVO vo2 = (KeyEntryVO)((m_sortASC) ? o1 : o2);
-			if(m_sortField.equals("KEY")) {
+			if(m_sortField.equals("NAME")) {
 				return vo2.getKey().compareTo(vo1.getKey());
 			} else if(m_sortField.equals("COUNT")) {
 				int cnt1 = vo1.getRequestCount();
@@ -62,9 +62,9 @@ public class ValueComparator implements Comparator<EntryVO> {
 				}
 			}
 			return 0;
-		} else if(o1 instanceof ResponseEntryVO && o2 instanceof ResponseEntryVO) {
-			ResponseEntryVO vo1 = (ResponseEntryVO)((m_sortASC) ? o2 : o1);
-			ResponseEntryVO vo2 = (ResponseEntryVO)((m_sortASC) ? o1 : o2);
+		} else if(o1 instanceof TransactionEntryVO && o2 instanceof TransactionEntryVO) {
+			TransactionEntryVO vo1 = (TransactionEntryVO)((m_sortASC) ? o2 : o1);
+			TransactionEntryVO vo2 = (TransactionEntryVO)((m_sortASC) ? o1 : o2);
 			if(m_sortField.equals("RES_TIME")) {
 				double v1 = vo1.getResponseTime();
 				double v2 = vo2.getResponseTime();
@@ -85,9 +85,9 @@ public class ValueComparator implements Comparator<EntryVO> {
 				} else {
 					return 0;
 				}
-			} else if(m_sortField.equals("RES_DATE")) {
-				Date dt1 = vo1.getResponseDate();
-				Date dt2 = vo2.getResponseDate();
+			} else if(m_sortField.equals("DATE")) {
+				Date dt1 = vo1.getDate();
+				Date dt2 = vo2.getDate();
 				if(dt1 == null || dt2 == null) {
 					return 0;
 				} else {

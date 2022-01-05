@@ -28,7 +28,9 @@ public class DebugConsole extends Shell {
 	}
 
 	public void addDebugMessage(String s) {
-		txt_debugConsole.append(s + "\n");
+		if(!isDisposed()) {
+			txt_debugConsole.append(s + "\n");
+		}
 	}
 
 	protected void createContents() {

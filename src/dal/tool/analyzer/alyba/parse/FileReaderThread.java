@@ -19,6 +19,7 @@ public class FileReaderThread extends Task {
 	private FileLineParser parser;
 	private int maxErrorCnt = -1;
 	private boolean checkErrorCnt = false;
+	private boolean nextFile = true;
 
 	public FileReaderThread(int id) {
 		super(id);
@@ -64,9 +65,10 @@ public class FileReaderThread extends Task {
 
 		for(int i = 0; i < files.size(); i++) {
 			FileInfo fileInfo = files.get(i);
-			caller.setDetailStatus(i, ProgressBarTask.STATUS_PROCESSING);
+			int fileIdx = (files.size() > 1) ? i : id-1;
+			caller.setDetailStatus(fileIdx, ProgressBarTask.STATUS_PROCESSING);
 			if(files.size() > 1) {
-				caller.setDetailMessage("Parsing a file #" + (i + 1));
+				caller.setDetailMessage("Parsing a file #" + (fileIdx + 1));
 			}
 
 			try {
@@ -93,45 +95,59 @@ public class FileReaderThread extends Task {
 					try {
 						parser.parseLine(line, fileInfo);
 						caller.addCurrent(lineBytes);
-						caller.setTasksPercent(i, (int)((double)currentBytes / totalBytes * 100));
+						caller.setTasksPercent(fileIdx, (int)((double)currentBytes / totalBytes * 100));
+						caller.setTasksDetail(fileIdx, parser.getTaskDetailMessage());
 						if(stopFlag) {
 							throw new InterruptedException();
 						}
 					} catch(InterruptedException ie) {
-						Logger.logln("Interrupted thread - " + getName());
+						Logger.debug("The thread has received interrupt : " + getName());
 						break;
 					} catch(Exception e) {
-						Logger.logln("Fail to parse line " + lineCnt + " (" + fileInfo.getFilePath() + ") : " + e.getMessage());
+						Logger.debug("Failed to parse line " + lineCnt + " (" + fileInfo.getFilePath() + ") : " + e.getMessage());
 						Logger.debug(e);
 						errCnt++;
-						if(checkErrorCnt && maxErrorCnt > 0 && errCnt > maxErrorCnt) {
+						if(!parser.isDatabaseReady() || checkErrorCnt && maxErrorCnt > -1 && errCnt > maxErrorCnt) {
 							break;
 						}
 					}
 				}
 
 				if(!isInterrupted()) {
-					if(checkErrorCnt && maxErrorCnt > 0 && errCnt > maxErrorCnt) {
+					if(!parser.isDatabaseReady()) {
+						setError();
+						parser.setFailed();
+						addErrorMessage("Closed the database");
+						caller.setDetailStatus(fileIdx, ProgressBarTask.STATUS_ERROR);
+						caller.setDetailMessage("Stopped parsing file #" + (fileIdx + 1));
+						Logger.debug("The database has been already closed. It will stop immediately for file : " + fileInfo.getFile().getName());
+						nextFile = false;
+					} else if(checkErrorCnt && maxErrorCnt > -1 && errCnt > maxErrorCnt) {
 						setError();
 						parser.setFailed();
 						addErrorMessage("Exceed allowed errors");
-						caller.setDetailStatus(i, ProgressBarTask.STATUS_ERROR);
-						caller.setDetailMessage("Stopped parsing file #" + (i + 1));
-						Logger.logln("Exceed allowed errors per file(" + maxErrorCnt + "). Check if file format is valid : " + fileInfo.getFile().getName());
+						caller.setDetailStatus(fileIdx, ProgressBarTask.STATUS_ERROR);
+						caller.setDetailMessage("Stopped parsing file #" + (fileIdx + 1));
+						Logger.debug("Exceed allowed errors per file(" + maxErrorCnt + "). Check if file format is valid : " + fileInfo.getFile().getName());
+						nextFile = false;
 					} else {
-						caller.setDetailStatus(i, ProgressBarTask.STATUS_COMPLETE);
+						caller.setDetailStatus(fileIdx, ProgressBarTask.STATUS_COMPLETE);
 						if(files.size() > 1) {
-							caller.setDetailMessage("Complete parsing file #" + (i + 1));
+							caller.setDetailMessage("Complete parsing file #" + (fileIdx + 1));
 						}
 					}
+				}
+				
+				if(!nextFile) {
+					break;
 				}
 
 			} catch(Exception e) {
 				setError();
 				addErrorMessage(e.toString());
-				caller.setDetailStatus(i, ProgressBarTask.STATUS_ERROR);
-				Logger.logln("Fail to read file : " + fileInfo.getFile().getName());
-				Logger.debug(e);
+				caller.setDetailStatus(fileIdx, ProgressBarTask.STATUS_ERROR);
+				Logger.debug("Failed to read file : " + fileInfo.getFile().getName());
+				Logger.error(e);
 			} finally {
 				if(br != null) {
 					try {

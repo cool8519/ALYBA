@@ -36,10 +36,10 @@ import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.RegressionEntryVO;
 import dal.tool.analyzer.alyba.output.vo.ResourceUsageEntryVO;
-import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.ui.chart.Chart;
 import dal.tool.analyzer.alyba.ui.chart.Chart.Type;
+import dal.tool.analyzer.alyba.ui.chart.DistributionChart;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.CodeChart;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.ExtChart;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.IpChart;
@@ -477,7 +477,9 @@ public class ResultChart extends Composite {
 				existsResourceData = count > 0;
 			}
 			if(show && count > 0) {
-				cb_data.add(name);
+				if(!"Regression Analysis".equals(name) || existsResourceData) {
+					cb_data.add(name);
+				}
 			}
 		}
 		chart_setting_ts.init();
@@ -550,6 +552,7 @@ public class ResultChart extends Composite {
 				}
 			}
 		} catch(Exception e) {
+			Logger.debug("Failed to reset settings of the chart : " + name);
 			Logger.error(e);
 		}		
 	}
@@ -574,11 +577,18 @@ public class ResultChart extends Composite {
 			String query;
 			String condition = (dataType!=null) ? ("WHERE t.type = '"+dataType+"' ") : "";
 			if(KeyEntryVO.class.isAssignableFrom(dataClass)) {
-				query = "SELECT t FROM " + dataClass.getSimpleName() + " AS t " + condition + "ORDER BY req_count DESC";
+				query = "SELECT t FROM " + dataClass.getSimpleName() + " AS t " + condition + "ORDER BY t.req_count DESC";
 				dataList = db.selectList(em, query, dataClass, null);
 			} else {
 				query = "SELECT t FROM " + dataClass.getSimpleName() + " AS t " + condition;
 				dataList = db.selectList(em, query, dataClass, null);
+			}
+			if(chart instanceof DistributionChart) {
+				if(((DistributionChart)chart).getShowRegressionLine() && dataList.size() < 2) {
+					MessageUtil.showErrorMessage(getShell(), "Need more data for regression line.");
+					((ScatterPlotChartSetting)chartSetting).toggleRegressionLinear();
+					return;
+				}
 			}
 			chart.draw(dataList);
 			ChartPanel chartPanel = chart.getChartPanel();
@@ -589,11 +599,12 @@ public class ResultChart extends Composite {
 			comp_chart.setFocus();
 			current_data_name = name;
 		} catch(Exception e) {
+			Logger.debug("Failed to draw the chart : " + name + "(" + chartType.name() + ")");
 			Logger.error(e);
 			frame_chart.removeAll();
 			comp_chart.setVisible(false);
 			tb_charttype.setEnabled(false);
-			MessageUtil.showErrorMessage(getShell(), e.getMessage());
+			MessageUtil.showErrorMessage(getShell(), "Failed to draw the chart.");
 		}
 	}
 
@@ -625,11 +636,12 @@ public class ResultChart extends Composite {
 			comp_chart.setFocus();
 			current_data_name = name;
 		} catch(Exception e) {
+			Logger.debug("Failed to draw the chart : " + name + "(" + chartType.name() + ")");
 			Logger.error(e);
 			frame_chart.removeAll();
 			comp_chart.setVisible(false);
 			tb_restype.setEnabled(false);
-			MessageUtil.showErrorMessage(getShell(), e.getMessage());
+			MessageUtil.showErrorMessage(getShell(), "Failed to draw the chart.");
 		}
 	}
 
@@ -649,46 +661,40 @@ public class ResultChart extends Composite {
 			}			
 			List<RegressionEntryVO> dataList = null;
 			StringBuffer query = new StringBuffer();
-			boolean ignoreResourceData = false;
 			if(existsResourceData) {
-				query.append("SELECT t.unit_date, r.name, r.group, t.req_count, t.request_ip_count, t.avg_response_time, t.err_count, r.cpu, r.memory, r.disk, r.network ");
+				query.append("SELECT t.unit_date, r.name, r.group, t.req_count, t.request_ip_count, t.avg_response_time, t.err_count, r.cpu, r.memory, r.disk, r.network, r.item_count ");
 				query.append("FROM TPMEntryVO as t, ResourceUsageEntryVO as r "); 
-				query.append("WHERE t.unit_date = r.unit_date"); 
+				query.append("WHERE t.unit_date = r.unit_date "); 
+				query.append("ORDER BY r.group, r.name, t.unit_date");
 				List<Object[]> tempList = db.selectList(em, query.toString(), Object[].class, null);
 				dataList = new ArrayList<RegressionEntryVO>(tempList.size());
+				RegressionEntryVO vo = null;
+				int sumTxCount = 0;
 				for(Object[] row : tempList) {
-					RegressionEntryVO vo = new RegressionEntryVO((Date)row[0], (String)row[1], (String)row[2]);
-					vo.setRequestTxCount((Integer)row[3]);
-					vo.setRequestIpCount((Integer)row[4]);
-					vo.setAverageResponseTimeMS((Double)row[5]);
-					vo.setErrorCount((Integer)row[6]);
-					vo.setCpuUsage((Double)row[7]);
-					vo.setMemoryUsage((Double)row[8]);
-					vo.setDiskUsage((Double)row[9]);
-					vo.setNetworkUsage((Double)row[10]);
-					dataList.add(vo);
-				}
-				if(dataList.size() < 1) {
-					ignoreResourceData = MessageUtil.showConfirmMessage(getShell(), "The time of the transaction and resource data do not match. Do you want analyze for regression without resource?");
-					if(!ignoreResourceData) {
-						return;
+					String nameTag = (String)row[2] + ":" + (String)row[1];
+					if(vo != null && !vo.getNameTag().equals(nameTag)) {
+						// changed data set. reset sum data.
+						sumTxCount = 0;
+					}						
+					if((Integer)row[11] == 0) {
+						// previous data
+						sumTxCount += (Integer)row[3];
+					} else {
+						vo = new RegressionEntryVO((Date)row[0], (String)row[1], (String)row[2]);
+						vo.setRequestTxCount(sumTxCount + (Integer)row[3]);
+						vo.setRequestIpCount((Integer)row[4]);
+						vo.setAverageResponseTimeMS((Double)row[5]);
+						vo.setErrorCount((Integer)row[6]);
+						vo.setCpuUsage((Double)row[7]);
+						vo.setMemoryUsage((Double)row[8]);
+						vo.setDiskUsage((Double)row[9]);
+						vo.setNetworkUsage((Double)row[10]);
+						dataList.add(vo);
+						sumTxCount = 0;						
 					}
 				}
 			}
-			if(!existsResourceData || ignoreResourceData) {
-				query.append("SELECT t FROM TPMEntryVO as t"); 
-				List<TPMEntryVO> tempList = db.selectList(em, query.toString(), TPMEntryVO.class, null);
-				dataList = new ArrayList<RegressionEntryVO>(tempList.size());
-				for(TPMEntryVO row : tempList) {
-					RegressionEntryVO vo = new RegressionEntryVO(row.getUnitDate());
-					vo.setRequestTxCount(row.getRequestCount());
-					vo.setRequestIpCount(row.getRequestIPCount());
-					vo.setAverageResponseTimeMS(row.getAverageResponseTime());
-					vo.setErrorCount(row.getErrorCount());
-					dataList.add(vo);
-				}
-			}
-			if(dataList.size() < 1) {
+			if(dataList == null || dataList.size() < 1) {
 				throw new Exception("No data to analyze for regression.");
 			}
 			chart.initCharts();
@@ -705,11 +711,12 @@ public class ResultChart extends Composite {
 			comp_regression.setFocus();
 			current_data_name = name;			
 		} catch(Exception e) {
+			Logger.debug("Failed to draw the chart : " + name);
 			Logger.error(e);
 			frame_regression_top.removeAll();		
 			frame_regression_bottom.removeAll();
 			comp_regression.setVisible(false);
-			MessageUtil.showErrorMessage(getShell(), e.getMessage());
+			MessageUtil.showErrorMessage(getShell(), "Failed to draw the chart.");
 		}
 	}
 
@@ -755,6 +762,7 @@ public class ResultChart extends Composite {
 				}
 			}
 		} catch(Exception e) {
+			Logger.debug("Failed to get class of the chart : " + chart_class);
 			Logger.error(e);
 		}
 		return null;
@@ -794,6 +802,7 @@ public class ResultChart extends Composite {
 			String count_query = "SELECT COUNT(o) FROM ResourceUsageEntryVO AS o WHERE " + type.name().toLowerCase() + " > -1";			
 			return db.select(em, count_query, Long.class, null);
 		} catch(Exception e) {
+			Logger.debug("Failed to select count of type from ResourceUsageEntryVO : " + type.name());
 			Logger.error(e);
 			return -1L;
 		}

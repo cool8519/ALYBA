@@ -8,7 +8,7 @@ import java.util.Set;
 
 import dal.tool.analyzer.alyba.output.vo.DateEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
-import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
+import dal.tool.analyzer.alyba.output.vo.TransactionEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPSEntryVO;
 import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
@@ -31,7 +31,11 @@ public class PostParser extends LogLineParser {
 		this.to = DateUtil.getLastOfDay(dt);
 	}
 	
-	protected void aggregate(ResponseEntryVO vo) throws Exception {
+	public String getTaskDetailMessage() {
+		return null;
+	}
+
+	protected void aggregate(TransactionEntryVO vo) throws Exception {
 		addAggregationTPS(vo);
 	}
 
@@ -54,16 +58,16 @@ public class PostParser extends LogLineParser {
 		return em.createQuery("SELECT vo.peak_daily_time FROM SummaryEntryVO AS vo", Date.class).getSingleResult();
 	}
 	
-	private void addAggregationTPS(ResponseEntryVO vo) throws Exception {
+	private void addAggregationTPS(TransactionEntryVO vo) throws Exception {
 		if(vo == null || !setting.collectTPS) {
 			return;
 		}
 		
 		if(unit_second == null) {
-			unit_second = DateUtil.getFirstOfDay(vo.getResponseDate());
+			unit_second = DateUtil.getFirstOfDay(vo.getDate());
 		}
 		
-		Date unit_dt = checkAggregationTPSUnit(vo.getResponseDate());
+		Date unit_dt = checkAggregationTPSUnit(vo.getDate());
 		List<EntryVO> aggr_tps = (List<EntryVO>)aggr_data.get("TPS");
 		if(aggr_tps == null) {
 			aggr_tps = new ArrayList<EntryVO>();

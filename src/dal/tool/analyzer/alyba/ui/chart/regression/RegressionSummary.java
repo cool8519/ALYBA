@@ -39,7 +39,8 @@ import dal.util.StringUtil;
 
 public class RegressionSummary extends Composite {
 
-	private static final DecimalFormat DF = new DecimalFormat("###,###");
+	private static final DecimalFormat DF_INT = new DecimalFormat("###,###");
+	private static final DecimalFormat DF_FLOAT = new DecimalFormat("#,##0.#");
 
     private ScrolledComposite sc_summary;
     private Composite comp_contents;
@@ -97,7 +98,7 @@ public class RegressionSummary extends Composite {
 		
 		lb_title_1 = new Label(comp_contents, SWT.NONE);
 		lb_title_1.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		lb_title_1.setText("¡ß Regression Coefficient");
+		lb_title_1.setText("â–  Regression Coefficient");
 		lb_title_1.setFont(Utility.getFont(SWT.BOLD));		
 		
 	    GridData gd_tbl_coefficient = new GridData(SWT.FILL, SWT.FILL, true, true);
@@ -125,7 +126,7 @@ public class RegressionSummary extends Composite {
 
 		lb_title_2 = new Label(comp_contents, SWT.NONE);
 		lb_title_2.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		lb_title_2.setText("¡ß Regression Equation");
+		lb_title_2.setText("â–  Regression Equation");
 		lb_title_2.setFont(Utility.getFont(SWT.BOLD));
 		
 		grp_equation = new Group(comp_contents, SWT.NONE);
@@ -155,7 +156,7 @@ public class RegressionSummary extends Composite {
 
 		lb_title_3 = new Label(comp_contents, SWT.NONE);
 		lb_title_3.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		lb_title_3.setText("¡ß Prediction");
+		lb_title_3.setText("â–  Prediction");
 		lb_title_3.setFont(Utility.getFont(SWT.BOLD));		
 		
 	    GridData gd_tbl_predict = new GridData(SWT.FILL, SWT.FILL, true, true);
@@ -199,7 +200,7 @@ public class RegressionSummary extends Composite {
 					eq.append(" + ").append(String.format("%f", regression.getIntercept()));
 				}
 				StringBuffer r2 = new StringBuffer();
-				r2.append("R©÷ = ").append(String.format("%f", regression.getRSquare()));
+				r2.append("RÂ² = ").append(String.format("%f", regression.getRSquare()));
 				lb_equation.setText(eq.toString());
 				lb_rsquare.setText(r2.toString());
 				resetPredictValueTable();
@@ -262,7 +263,7 @@ public class RegressionSummary extends Composite {
 
 				Control oldEditor = tbl_predict_editor.getEditor();
 				final Text newEditor = new Text(tbl_predict, SWT.RIGHT);
-				newEditor.setText(selectedItem.getData()==null ? "" : ((EditorEntry)selectedItem.getData()).getIntString(columnIdx));
+				newEditor.setText(selectedItem.getData()==null ? "" : DF_FLOAT.format(((EditorEntry)selectedItem.getData()).get(columnIdx)));
 				newEditor.setFont(tbl_predict.getFont());
 				newEditor.selectAll();
 				newEditor.setFocus();
@@ -424,9 +425,9 @@ public class RegressionSummary extends Composite {
 			double ratio = val * 100;
 			double x = max_x * val;
 			double y = regression.predict(x);
-			item.setText(1, getIntString(ratio)+"%");
-			item.setText(2, getIntString(x));
-			item.setText(3, getIntString(y));
+			item.setText(1, DF_INT.format((long)ratio)+"%");
+			item.setText(2, DF_INT.format((long)x));
+			item.setText(3, DF_FLOAT.format(y));
 			item.setData(new EditorEntry(new double[]{ 0.0d, ratio, x, y }));
 		}
 		TableItem item = new TableItem(tbl_predict, SWT.NONE);
@@ -453,9 +454,9 @@ public class RegressionSummary extends Composite {
 		tbl_predict.removeAll();
 		for(EditorEntry value : values) {
 			TableItem item = new TableItem(tbl_predict, SWT.NONE);
-			item.setText(1, value.getIntString(1)+"%");
-			item.setText(2, value.getIntString(2));
-			item.setText(3, value.getIntString(3));
+			item.setText(1, DF_INT.format((long)value.get(1))+"%");
+			item.setText(2, DF_INT.format((long)value.get(2)));
+			item.setText(3, DF_FLOAT.format(value.get(3)));
 			item.setData(value);
 		}
 		TableItem item = new TableItem(tbl_predict, SWT.NONE);
@@ -490,9 +491,9 @@ public class RegressionSummary extends Composite {
 					x = (y - regression.getIntercept()) / regression.getSlope();
 					ratio = x / max_x * 100;
 				}
-				item.setText(1, getIntString(ratio)+"%");
-				item.setText(2, getIntString(x));
-				item.setText(3, getIntString(y));
+				item.setText(1, DF_INT.format(ratio)+"%");
+				item.setText(2, DF_INT.format(x));
+				item.setText(3, DF_FLOAT.format(y));
 				item.setData(new EditorEntry(new double[]{ 0.0d, ratio, x, y }));
 				TableItem blankItem = new TableItem(tbl_predict, SWT.NONE);
 				blankItem.setText(new String[] {"", "", "", ""});
@@ -500,12 +501,6 @@ public class RegressionSummary extends Composite {
 			}
 		}
 	}
-	
-	private String getIntString(double d) {
-		Long longValue = (long)d;
-		return DF.format(longValue);
-	}
-	
 
 	
     class ValueTableItemComparator implements Comparator<TableItem> {
@@ -535,10 +530,6 @@ public class RegressionSummary extends Composite {
     	}
     	public double get(int i) {
     		return data[i];
-    	}
-    	public String getIntString(int i) {
-			Long longValue = (long)data[i];
-			return DF.format(longValue);
     	}
     }
 

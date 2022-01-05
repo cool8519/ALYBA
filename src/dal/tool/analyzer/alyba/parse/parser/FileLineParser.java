@@ -43,7 +43,11 @@ public abstract class FileLineParser {
 	public Date getParsedTime() {
 		return parsed_time;
 	}
+	
+	public abstract boolean isDatabaseReady();
 
+	public abstract String getTaskDetailMessage();
+	
 	public abstract void parseLine(String line, FileInfo fileInfo) throws Exception;
 	
 }

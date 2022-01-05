@@ -60,34 +60,34 @@ public class FilterSetting extends Composite {
 
 	public HashMap<String, String> getIncludeFilterData() {
 		includeFilterData.clear();
-		if(txt_inc_uri.getText().length() > 0)
+		if(txt_inc_uri.getEnabled() && txt_inc_uri.getText().length() > 0)
 			includeFilterData.put("URI", txt_inc_uri.getText());
-		if(txt_inc_ext.getText().length() > 0)
+		if(txt_inc_ext.getEnabled() && txt_inc_ext.getText().length() > 0)
 			includeFilterData.put("EXT", txt_inc_ext.getText());
-		if(txt_inc_ip.getText().length() > 0)
+		if(txt_inc_ip.getEnabled() && txt_inc_ip.getText().length() > 0)
 			includeFilterData.put("IP", txt_inc_ip.getText());
-		if(txt_inc_method.getText().length() > 0)
+		if(txt_inc_method.getEnabled() && txt_inc_method.getText().length() > 0)
 			includeFilterData.put("METHOD", txt_inc_method.getText());
-		if(txt_inc_version.getText().length() > 0)
+		if(txt_inc_version.getEnabled() && txt_inc_version.getText().length() > 0)
 			includeFilterData.put("VERSION", txt_inc_version.getText());
-		if(txt_inc_code.getText().length() > 0)
+		if(txt_inc_code.getEnabled() && txt_inc_code.getText().length() > 0)
 			includeFilterData.put("CODE", txt_inc_code.getText());
 		return includeFilterData;
 	}
 
 	public HashMap<String, String> getExcludeFilterData() {
 		excludeFilterData.clear();
-		if(txt_exc_uri.getText().length() > 0)
+		if(txt_exc_uri.getEnabled() && txt_exc_uri.getText().length() > 0)
 			excludeFilterData.put("URI", txt_exc_uri.getText());
-		if(txt_exc_ext.getText().length() > 0)
+		if(txt_exc_ext.getEnabled() && txt_exc_ext.getText().length() > 0)
 			excludeFilterData.put("EXT", txt_exc_ext.getText());
-		if(txt_exc_ip.getText().length() > 0)
+		if(txt_exc_ip.getEnabled() && txt_exc_ip.getText().length() > 0)
 			excludeFilterData.put("IP", txt_exc_ip.getText());
-		if(txt_exc_method.getText().length() > 0)
+		if(txt_exc_method.getEnabled() && txt_exc_method.getText().length() > 0)
 			excludeFilterData.put("METHOD", txt_exc_method.getText());
-		if(txt_exc_version.getText().length() > 0)
+		if(txt_exc_version.getEnabled() && txt_exc_version.getText().length() > 0)
 			excludeFilterData.put("VERSION", txt_exc_version.getText());
-		if(txt_exc_code.getText().length() > 0)
+		if(txt_exc_code.getEnabled() && txt_exc_code.getText().length() > 0)
 			excludeFilterData.put("CODE", txt_exc_code.getText());
 		return excludeFilterData;
 	}
@@ -143,6 +143,7 @@ public class FilterSetting extends Composite {
 
 		dtp_fromDate = new DateTimePicker(this, SWT.NONE, Utility.getFont());
 		dtp_fromDate.setBounds(184, 13, 240, 26);
+		dtp_fromDate.setTimeToFirstOfDay();
 
 		Label lb_fromto = new Label(this, SWT.NONE);
 		lb_fromto.setFont(Utility.getFont(SWT.BOLD));
@@ -152,6 +153,7 @@ public class FilterSetting extends Composite {
 
 		dtp_toDate = new DateTimePicker(this, SWT.NONE, Utility.getFont());
 		dtp_toDate.setBounds(446, 13, 240, 26);
+		dtp_toDate.setTimeToLastOfDay();
 
 		chk_includeFilter = new Button(this, SWT.CHECK);
 		chk_includeFilter.setFont(Utility.getFont());

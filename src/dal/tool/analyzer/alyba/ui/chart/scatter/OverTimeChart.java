@@ -8,15 +8,15 @@ import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
-import dal.tool.analyzer.alyba.output.vo.BadResponseEntryVO;
+import dal.tool.analyzer.alyba.output.vo.BadTransactionEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.ui.chart.DistributionChart;
-import dal.tool.analyzer.alyba.ui.chart.extension.ResponseXYDataItem;
+import dal.tool.analyzer.alyba.ui.chart.extension.TransactionXYDataItem;
 import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
 
 public class OverTimeChart extends DistributionChart {
 
-	protected static final Class<?> DATA_CLASS = BadResponseEntryVO.class;
+	protected static final Class<?> DATA_CLASS = BadTransactionEntryVO.class;
 	
 	public OverTimeChart() {
 		super(Type.ScatterPlot, "Over-Time Transaction", "Response Time (ms)", "Transactions", "Time", "Response Time (ms)");
@@ -36,10 +36,10 @@ public class OverTimeChart extends DistributionChart {
 	    		regression = new SimpleRegression();
 	    	}
 	    	for(EntryVO data : dataList) {
-	    		BadResponseEntryVO vo = (BadResponseEntryVO) data;
-	    		long x = new Second(vo.getResponseDate()).getMiddleMillisecond();
+	    		BadTransactionEntryVO vo = (BadTransactionEntryVO) data;
+	    		long x = new Second(vo.getDate()).getMiddleMillisecond();
 	    		long y = vo.getResponseTime();
-				xy.add(new ResponseXYDataItem(x, y, vo));
+				xy.add(new TransactionXYDataItem(x, y, vo));
 		    	if(show_regression_line) {
 		    		regression.addData(x, y);
 		    	}
@@ -53,7 +53,7 @@ public class OverTimeChart extends DistributionChart {
 	}
 	
 	public String getAnnotationText(XYDataItem item) {
-		return ((ResponseXYDataItem)item).getResponse().toPrettyString();
+		return ((TransactionXYDataItem)item).getTransaction().toPrettyString();
 	}
 
 	public Double[] getDefaultBoundaryValues() {
@@ -61,7 +61,7 @@ public class OverTimeChart extends DistributionChart {
 	}
 	
 	public double getDistributionValue(EntryVO vo) {
-		return ((BadResponseEntryVO)vo).getResponseTime();
+		return ((BadTransactionEntryVO)vo).getResponseTime();
 	}
 
 }

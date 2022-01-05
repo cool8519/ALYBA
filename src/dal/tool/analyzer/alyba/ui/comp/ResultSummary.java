@@ -19,6 +19,7 @@ import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.DateUtil;
 import dal.util.NumberUtil;
+import dal.util.StringUtil;
 import dal.util.db.ObjectDBUtil;
 
 public class ResultSummary extends Composite {
@@ -72,7 +73,7 @@ public class ResultSummary extends Composite {
 		lb_title.setBounds(478, 20, 300, 32);
 				
 		lb_time = new Label(this, SWT.NONE);
-		lb_time.setText("¡ß Time");
+		lb_time.setText("â—† Time");
 		lb_time.setFont(Utility.getFont(SWT.BOLD));
 		lb_time.setBounds(278, 65, 300, 18);
 		tbl_time = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.NO_SCROLL);
@@ -88,7 +89,7 @@ public class ResultSummary extends Composite {
 		tblc_time_data.setWidth(520);
 		
 		lb_filter = new Label(this, SWT.NONE);
-		lb_filter.setText("¡ß Filter");
+		lb_filter.setText("â—† Filter");
 		lb_filter.setFont(Utility.getFont(SWT.BOLD));
 		lb_filter.setBounds(278, 145, 300, 18);
 		tbl_filter = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.NO_SCROLL);
@@ -104,7 +105,7 @@ public class ResultSummary extends Composite {
 		tbl_filter_data.setWidth(520);
 
 		lb_aggr = new Label(this, SWT.NONE);
-		lb_aggr.setText("¡ß Aggregation");
+		lb_aggr.setText("â—† Aggregation");
 		lb_aggr.setFont(Utility.getFont(SWT.BOLD));
 		lb_aggr.setBounds(278, 245, 300, 18);
 		tbl_aggr = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.NO_SCROLL);
@@ -120,7 +121,7 @@ public class ResultSummary extends Composite {
 		tbl_aggr_data.setWidth(520);
 
 		lb_peak = new Label(this, SWT.NONE);
-		lb_peak.setText("¡ß Peak");
+		lb_peak.setText("â—† Peak");
 		lb_peak.setFont(Utility.getFont(SWT.BOLD));
 		lb_peak.setBounds(278, 415, 300, 18);
 		tbl_peak = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.NO_SCROLL);
@@ -132,7 +133,7 @@ public class ResultSummary extends Composite {
 		tbl_peak_null.setWidth(0);
 		TableColumn tbl_peak_index = new TableColumn(tbl_peak, SWT.CENTER);
 		tbl_peak_index.setWidth(180);
-		tbl_peak_index.setText("¡¬");
+		tbl_peak_index.setText("ï¼¼");
 		TableColumn tbl_peak_time = new TableColumn(tbl_peak, SWT.LEFT);
 		tbl_peak_time.setWidth(260);
 		tbl_peak_time.setText("Peak Time");
@@ -141,7 +142,7 @@ public class ResultSummary extends Composite {
 		tbl_peak_count.setText("Requests");
 
 		lb_bad = new Label(this, SWT.NONE);
-		lb_bad.setText("¡ß Bad Requests");
+		lb_bad.setText("â—† Bad Requests");
 		lb_bad.setFont(Utility.getFont(SWT.BOLD));
 		lb_bad.setBounds(278, 555, 300, 18);
 		tbl_bad = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.NO_SCROLL);
@@ -153,7 +154,7 @@ public class ResultSummary extends Composite {
 		tbl_bad_null.setWidth(0);
 		TableColumn tbl_bad_index = new TableColumn(tbl_bad, SWT.CENTER);
 		tbl_bad_index.setWidth(180);
-		tbl_bad_index.setText("¡¬");
+		tbl_bad_index.setText("ï¼¼");
 		TableColumn tbl_bad_time = new TableColumn(tbl_bad, SWT.LEFT);
 		tbl_bad_time.setWidth(260);
 		tbl_bad_time.setText("Condition");
@@ -182,7 +183,7 @@ public class ResultSummary extends Composite {
 		item.setText(2, DateUtil.dateToString(summaryVo.getCreatedTime(), local_tz_sdf));
 		
 		String range_filter = "N/A";
-		if(settingVo.isDateFilterEnable()) {
+		if(settingVo != null && settingVo.isDateFilterEnable()) {
 			range_filter = DateUtil.dateToString(settingVo.getDateFilterFromRange(), DateUtil.SDF_DATETIME) + " ~ " + DateUtil.dateToString(settingVo.getDateFilterToRange(), DateUtil.SDF_DATETIME); 
 		}
 		item = new TableItem(tbl_filter, SWT.NONE);
@@ -192,11 +193,11 @@ public class ResultSummary extends Composite {
 		item = new TableItem(tbl_filter, SWT.NONE);
 		item.setText(1, "Include Filter");
 		item.setFont(1, Utility.getFont(SWT.BOLD));
-		item.setText(2, summaryVo.getFilterIncludeInfo());
+		item.setText(2, StringUtil.NVL(summaryVo.getFilterIncludeInfo(), "N/A"));
 		item = new TableItem(tbl_filter, SWT.NONE);
 		item.setText(1, "Exclude Filter");
 		item.setFont(1, Utility.getFont(SWT.BOLD));
-		item.setText(2, summaryVo.getFilterExcludeInfo());
+		item.setText(2, StringUtil.NVL(summaryVo.getFilterExcludeInfo(), "N/A"));
 
 		double pct_req = (double)summaryVo.getFilteredRequestCount() / summaryVo.getTotalRequestCount() * 100;
 		String pct_req_str = " (" + (Double.isNaN(pct_req) ? 0 : DF_Percent.format(pct_req)) + "%)";
@@ -231,33 +232,33 @@ public class ResultSummary extends Composite {
 
 		item = new TableItem(tbl_peak, SWT.NONE);
 		item.setText(1, "Daily Peak");
-		item.setText(2, DateUtil.dateToString(summaryVo.getDailyPeakTime(), DateUtil.SDF_DATE));
+		item.setText(2, StringUtil.NVL(DateUtil.dateToString(summaryVo.getDailyPeakTime(), DateUtil.SDF_DATE), "N/A"));
 		item.setFont(2, Utility.getFont());
 		item.setText(3, NumberUtil.numberToString(summaryVo.getDailyPeakCount()));
 		item.setFont(3, Utility.getFont());
 		item = new TableItem(tbl_peak, SWT.NONE);
 		item.setText(1, "Houly Peak");
-		item.setText(2, DateUtil.dateToString(summaryVo.getHourlyPeakTime(), DateUtil.SDF_TIME_NOSEC));
+		item.setText(2, StringUtil.NVL(DateUtil.dateToString(summaryVo.getHourlyPeakTime(), DateUtil.SDF_TIME_NOSEC), "N/A"));
 		item.setFont(2, Utility.getFont());
 		item.setText(3, NumberUtil.numberToString(summaryVo.getHourlyPeakCount()));
 		item.setFont(3, Utility.getFont());
 		item = new TableItem(tbl_peak, SWT.NONE);
 		item.setText(1, "Milutely Peak");
-		item.setText(2, DateUtil.dateToString(summaryVo.getMinutelyPeakTime(), DateUtil.SDF_DATETIME_NOSEC));
+		item.setText(2, StringUtil.NVL(DateUtil.dateToString(summaryVo.getMinutelyPeakTime(), DateUtil.SDF_DATETIME_NOSEC), "N/A"));
 		item.setFont(2, Utility.getFont());
 		item.setText(3, NumberUtil.numberToString(summaryVo.getMinutelyPeakCount()));
 		item.setFont(3, Utility.getFont());
 		item = new TableItem(tbl_peak, SWT.NONE);
 		item.setText(1, "Secondly Peak");
 		if(summaryVo.getSecondlyPeakTime() != null) {
-			item.setText(2, DateUtil.dateToString(summaryVo.getSecondlyPeakTime(), DateUtil.SDF_DATETIME));
+			item.setText(2, StringUtil.NVL(DateUtil.dateToString(summaryVo.getSecondlyPeakTime(), DateUtil.SDF_DATETIME), "N/A"));
 			item.setFont(2, Utility.getFont());
 			item.setText(3, NumberUtil.numberToString(summaryVo.getSecondlyPeakCount()));
 			item.setFont(3, Utility.getFont());
 		} else {
 			item.setText(2, "N/A");
 			item.setFont(2, Utility.getFont());
-			item.setText(3, "N/A");
+			item.setText(3, "0");
 			item.setFont(3, Utility.getFont());
 		}
 
@@ -269,13 +270,13 @@ public class ResultSummary extends Composite {
 		String pct_error_str = " (" + (Double.isNaN(pct_error) ? 0 : DF_Percent.format(pct_error)) + "%)";
 		item = new TableItem(tbl_bad, SWT.NONE);
 		item.setText(1, "Over Time");
-		item.setText(2, ">= " + NumberUtil.numberToString(settingVo.getCollectElapsedTimeMS()) + "ms");
+		item.setText(2, (settingVo==null ? "N/A" : (">= " + NumberUtil.numberToString(settingVo.getCollectElapsedTimeMS()) + "ms")));
 		item.setFont(2, Utility.getFont());
 		item.setText(3, NumberUtil.numberToString(summaryVo.getBadElapsedCount()) + pct_time_str);
 		item.setFont(3, Utility.getFont());
 		item = new TableItem(tbl_bad, SWT.NONE);
 		item.setText(1, "Over Size");
-		item.setText(2, ">= " + NumberUtil.numberToString(settingVo.getCollectResponseBytesKB()) + "KB");
+		item.setText(2, (settingVo==null ? "N/A" : (">= " + NumberUtil.numberToString(settingVo.getCollectResponseBytesKB()) + "KB")));
 		item.setFont(2, Utility.getFont());
 		item.setText(3, NumberUtil.numberToString(summaryVo.getBadByteCount()) + pct_size_str);
 		item.setFont(3, Utility.getFont());

@@ -19,15 +19,15 @@ public class Distribution {
 			if(boundary == Boundary.Equal) {
 				symbol = "=";
 			} else if(boundary == Boundary.NotEqual) {
-				symbol = "¡Á";
+				symbol = "â‰ ";
 			} else if(boundary == Boundary.Less) {
 				symbol = "<";
 			} else if(boundary == Boundary.LessOrEqual) {
-				symbol = "¡Â";
+				symbol = "â‰¤";
 			} else if(boundary == Boundary.Greater) {
 				symbol = ">";
 			} else if(boundary == Boundary.GreaterOrEqual) {
-				symbol = "¡Ã";
+				symbol = "â‰¥";
 			}
 			String value_str = (Math.abs(this.value)-Math.abs((long)this.value) > 0.0D) ? String.valueOf(this.value) : String.valueOf((long)this.value);
 			return leftSymbol ? (symbol+value_str) : (value_str+symbol);

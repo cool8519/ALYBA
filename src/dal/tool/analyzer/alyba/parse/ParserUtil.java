@@ -47,26 +47,45 @@ public class ParserUtil {
 		return Double.parseDouble(str);
 	}
 
-	public static List<String> getTokenList(String s, String fs, String[] bracelets) {
+	public static List<String> getTokenList(String s, String delimeter, String[] bracelets) {
+		return getTokenList(s, delimeter, bracelets, false);
+	}
+	
+	public static List<String> getTokenList(String s, String delimeter, String[] bracelets, boolean strictDelimeter) {
 		if(s == null)
 			return null;
 		if(bracelets == null)
 			bracelets = new String[0];
 		int idx = 0;
 		StringTokenizer st;
-		if(fs == null || fs.equals("") || fs.equals(" ")) {
-			st = new StringTokenizer(s);
+		if(delimeter == null || delimeter.equals("") || delimeter.equals(" ")) {
+			st = new StringTokenizer(s, " \t\n\r\f", strictDelimeter);
 		} else {
-			st = new StringTokenizer(s, fs);
+			st = new StringTokenizer(s, delimeter, strictDelimeter);
 		}
 		List<String> l = new ArrayList<String>();
 		String token;
 		StringBuffer buffer = null;
 		String joinStr;
 		char endChar = Character.UNASSIGNED;
+		boolean prevDelim = true;
 		try {
-			while(st.hasMoreElements()) {
+			while(st.hasMoreTokens()) {
 				token = st.nextToken();
+				if(strictDelimeter) {
+					if(endChar == Character.UNASSIGNED && token.length()==1 && delimeter.indexOf(token.charAt(0)) > -1) {
+						if(prevDelim) {
+							l.add(" ");
+						}
+						prevDelim = true;
+						if(!st.hasMoreTokens()) {
+							l.add(" ");
+						}
+						continue;
+					} else {
+						prevDelim = false;
+					}
+				}
 				joinStr = null;
 				if(endChar == Character.UNASSIGNED) {
 					boolean match = false;
@@ -113,7 +132,7 @@ public class ParserUtil {
 		for(String format : formats) {
 			if(format.equals(Constant.UNIX_TIME_STR)) {
 				try {
-					if(time_str.matches("^\\d{10}(\\.(\\d){1,6})?$")) {
+					if(time_str.matches("^\\d{10}(\\.\\d{1,6}|\\d{1,6})?$")) {
 						return new Object[] { Constant.TIME_LOCALES[0], format };
 					}
 				} catch(Exception e) {
@@ -142,7 +161,7 @@ public class ParserUtil {
 
 	public static boolean isMatchedUnixTimeFormat(String time_str) {
 		try {
-			return time_str.matches("^\\d{10}(\\.(\\d){1,6})?$");
+			return time_str.matches("^\\d{10}(\\.\\d{1,6}|\\d{1,6})?$");
 		} catch(Exception e) {
 			return false;
 		}

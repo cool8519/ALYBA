@@ -26,19 +26,19 @@ public class KeyEntryVO extends EntryVO {
 	private String type;
 
 	private String description = null;
-	private int req_total = 0;
-	private int filter_req_total = 0;
+	private long req_total = 0;
+	private long filter_req_total = 0;
 	private int req_count = 0;
 	private float req_ratio = 0F;
 	private float filter_req_ratio = 0F;
 	private double avg_response_time = 0D;
 	@OneToOne(cascade=CascadeType.ALL)
-	private ResponseEntryVO max_response_time = null;
+	private TransactionEntryVO max_response_time = null;
 	private double avg_response_byte = 0D;
 	@OneToOne(cascade=CascadeType.ALL)
-	private ResponseEntryVO max_response_byte = null;
+	private TransactionEntryVO max_response_byte = null;
 	@OneToOne(cascade=CascadeType.ALL)
-	private ResponseEntryVO last_error = null;
+	private TransactionEntryVO last_error = null;
 	private int err_count = 0;
 	private float filter_err_ratio = 0F;
 	private float entry_err_ratio = 0F;
@@ -67,7 +67,7 @@ public class KeyEntryVO extends EntryVO {
 		req_count++;
 	}
 
-	public void addData(ResponseEntryVO vo, LogAnalyzerSetting setting) {
+	public void addData(TransactionEntryVO vo, LogAnalyzerSetting setting) {
 		req_count++;
 		if(setting.fieldMapping.isMappedIP()) {
 			if(vo.getRequestIP() != null) {
@@ -95,7 +95,7 @@ public class KeyEntryVO extends EntryVO {
 		}
 		if(setting.fieldMapping.isMappedCode()) {
 			if(vo.getResponseCode() != null && (vo.getResponseCode().startsWith("4") || vo.getResponseCode().startsWith("5"))) {
-				if(last_error == null || vo.getResponseDate().compareTo(last_error.getResponseDate()) > 0) {
+				if(last_error == null || vo.getDate().compareTo(last_error.getDate()) > 0) {
 					last_error = vo;
 				}
 				err_count++;
@@ -108,7 +108,7 @@ public class KeyEntryVO extends EntryVO {
 		entry_err_ratio = ((float)err_count / req_count) * 100;
 	}
 
-	public void setTotal(int total) {
+	public void setTotal(long total) {
 		req_total = total;
 		req_ratio = ((float)req_count / total) * 100;
 	}
@@ -123,11 +123,11 @@ public class KeyEntryVO extends EntryVO {
 		return description;
 	}
 	
-	public int getTotal() {
+	public long getTotal() {
 		return req_total;
 	}
 
-	public int getFilteredTotal() {
+	public long getFilteredTotal() {
 		return filter_req_total;
 	}
 
@@ -147,16 +147,16 @@ public class KeyEntryVO extends EntryVO {
 		return avg_response_time;
 	}
 
-	public ResponseEntryVO getMaxResponseTime() {
-		return (max_response_time == null) ? new ResponseEntryVO() : max_response_time;
+	public TransactionEntryVO getMaxResponseTime() {
+		return (max_response_time == null) ? new TransactionEntryVO() : max_response_time;
 	}
 
 	public double getAverageResponseBytes() {
 		return avg_response_byte;
 	}
 
-	public ResponseEntryVO getMaxResponseBytes() {
-		return (max_response_byte == null) ? new ResponseEntryVO() : max_response_byte;
+	public TransactionEntryVO getMaxResponseBytes() {
+		return (max_response_byte == null) ? new TransactionEntryVO() : max_response_byte;
 	}
 
 	public int getErrorCount() {
@@ -171,8 +171,8 @@ public class KeyEntryVO extends EntryVO {
 		return DF_RATIO.format(entry_err_ratio);
 	}
 
-	public ResponseEntryVO getLastError() {
-		return (last_error == null) ? new ResponseEntryVO() : last_error;
+	public TransactionEntryVO getLastError() {
+		return (last_error == null) ? new TransactionEntryVO() : last_error;
 	}
 
 	public void setDescription(String desc) {
@@ -187,7 +187,7 @@ public class KeyEntryVO extends EntryVO {
 		avg_response_time = response;
 	}
 
-	public void setMaxResponseTime(ResponseEntryVO vo) {
+	public void setMaxResponseTime(TransactionEntryVO vo) {
 		max_response_time = vo;
 	}
 
@@ -195,7 +195,7 @@ public class KeyEntryVO extends EntryVO {
 		avg_response_byte = response;
 	}
 
-	public void setMaxResponseBytes(ResponseEntryVO vo) {
+	public void setMaxResponseBytes(TransactionEntryVO vo) {
 		max_response_byte = vo;
 	}
 
@@ -204,7 +204,7 @@ public class KeyEntryVO extends EntryVO {
 		entry_err_ratio = (req_count < 1) ? 0F : (((float)err_count / req_count) * 100);
 	}
 
-	public void setLastError(ResponseEntryVO vo) {
+	public void setLastError(TransactionEntryVO vo) {
 		last_error = vo;
 	}
 
@@ -236,23 +236,23 @@ public class KeyEntryVO extends EntryVO {
 		if(getDescription() != null) {
 			vo.setDescription(subVO.getDescription());
 		}
-		if(getLastError().getResponseDate() == null) {
+		if(getLastError().getDate() == null) {
 			vo.setLastError(subVO.getLastError());
-		} else if(subVO.getLastError().getResponseDate() == null) {
+		} else if(subVO.getLastError().getDate() == null) {
 			vo.setLastError(getLastError());
 		} else {
-			vo.setLastError((getLastError().getResponseDate().compareTo(subVO.getLastError().getResponseDate()) > 0) ? getLastError() : subVO.getLastError());
+			vo.setLastError((getLastError().getDate().compareTo(subVO.getLastError().getDate()) > 0) ? getLastError() : subVO.getLastError());
 		}
-		if(getMaxResponseTime().getResponseDate() == null) {
+		if(getMaxResponseTime().getDate() == null) {
 			vo.setMaxResponseTime(subVO.getMaxResponseTime());
-		} else if(subVO.getMaxResponseTime().getResponseDate() == null) {
+		} else if(subVO.getMaxResponseTime().getDate() == null) {
 			vo.setMaxResponseTime(getMaxResponseTime());
 		} else {
 			vo.setMaxResponseTime((getMaxResponseTime().getResponseTime() > subVO.getMaxResponseTime().getResponseTime()) ? getMaxResponseTime() : subVO.getMaxResponseTime());
 		}
-		if(getMaxResponseBytes().getResponseDate() == null) {
+		if(getMaxResponseBytes().getDate() == null) {
 			vo.setMaxResponseBytes(subVO.getMaxResponseBytes());
-		} else if(subVO.getMaxResponseBytes().getResponseDate() == null) {
+		} else if(subVO.getMaxResponseBytes().getDate() == null) {
 			vo.setMaxResponseBytes(getMaxResponseBytes());
 		} else {
 			vo.setMaxResponseBytes((getMaxResponseBytes().getResponseBytes() > subVO.getMaxResponseBytes().getResponseBytes()) ? getMaxResponseBytes() : subVO.getMaxResponseBytes());

@@ -9,14 +9,14 @@ import java.util.List;
 import javax.persistence.EntityManager;
 
 import dal.tool.analyzer.alyba.Constant;
-import dal.tool.analyzer.alyba.output.vo.BadResponseEntryVO;
+import dal.tool.analyzer.alyba.output.vo.BadTransactionEntryVO;
 import dal.tool.analyzer.alyba.output.vo.DateEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
-import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TimeAggregationEntryVO;
+import dal.tool.analyzer.alyba.output.vo.TransactionEntryVO;
 import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
 import dal.util.DateUtil;
 import dal.util.db.ObjectDBUtil;
@@ -34,7 +34,7 @@ public class ExcelOutput extends ResultOutput {
 
 	public void generate() throws Exception {
 		try {
-			dal.tool.analyzer.alyba.ui.Logger.logln("Writing to the excel file : " + filename);
+			dal.tool.analyzer.alyba.ui.Logger.debug("Writing to the excel file : " + filename);
 			exportToExcel(filename);
 		} catch(Exception e) {
 			try {
@@ -44,7 +44,7 @@ public class ExcelOutput extends ResultOutput {
 				}
 			} catch(Exception e2) {
 			}
-			dal.tool.analyzer.alyba.ui.Logger.logln("Failed to create excel file : " + filename);
+			dal.tool.analyzer.alyba.ui.Logger.debug("Failed to create excel file : " + filename);
 			throw e;
 		}
 	}
@@ -70,27 +70,27 @@ public class ExcelOutput extends ResultOutput {
 			int long_resp = summaryVo.getBadElapsedCount();
 			if(long_resp > 0) {
 				if(long_resp > ExcelWriter.MAX_ROWS-5) {
-					dal.tool.analyzer.alyba.ui.Logger.logln("Too many long transaction : count=" + long_resp);
+					dal.tool.analyzer.alyba.ui.Logger.debug("Too many long transaction : count=" + long_resp);
 				} else {
-					createResponseSheet(getEntryList(BadResponseEntryVO.class, "TIME"), Type.BAD_TIME);
+					createResponseSheet(getEntryList(BadTransactionEntryVO.class, "TIME"), Type.BAD_TIME);
 				}
 			}
 
 			int large_resp = summaryVo.getBadByteCount();
 			if(large_resp > 0) {
 				if(large_resp > ExcelWriter.MAX_ROWS-5) {
-					dal.tool.analyzer.alyba.ui.Logger.logln("Too many large response : count=" + large_resp);
+					dal.tool.analyzer.alyba.ui.Logger.debug("Too many large response : count=" + large_resp);
 				} else {
-					createResponseSheet(getEntryList(BadResponseEntryVO.class, "SIZE"), Type.BAD_BYTE);
+					createResponseSheet(getEntryList(BadTransactionEntryVO.class, "SIZE"), Type.BAD_BYTE);
 				}
 			}
 
 			int total_err = summaryVo.getBadCodeCount();
 			if(total_err > 0) {
 				if(total_err > ExcelWriter.MAX_ROWS-5) {
-					dal.tool.analyzer.alyba.ui.Logger.logln("Too many error response : count=" + total_err);
+					dal.tool.analyzer.alyba.ui.Logger.debug("Too many error response : count=" + total_err);
 				} else {
-					createResponseSheet(getEntryList(BadResponseEntryVO.class, "CODE"), Type.BAD_CODE);
+					createResponseSheet(getEntryList(BadTransactionEntryVO.class, "CODE"), Type.BAD_CODE);
 				}
 			}
 
@@ -102,8 +102,8 @@ public class ExcelOutput extends ResultOutput {
 	}
 	
 	private void createSummarySheet(SummaryEntryVO vo) throws Exception {
-		int total_req = vo.getTotalRequestCount();
-		int filtered_req = vo.getFilteredRequestCount();
+		long total_req = vo.getTotalRequestCount();
+		long filtered_req = vo.getFilteredRequestCount();
 		int total_err = vo.getTotalErrorCount();
 		int filtered_err = vo.getFilteredErrorCount();
 		double filtered_req_pct = (double)filtered_req / total_req * 100;
@@ -143,12 +143,12 @@ public class ExcelOutput extends ResultOutput {
 		list.add(rowData);
 		rowData = new ArrayList<Object>();
 		rowData.add("Total Requests");
-		rowData.add(new Integer(total_req));
+		rowData.add(new Long(total_req));
 		list.add(rowData);
 		if(setting.fieldMapping.isMappedCode()) {
 			rowData = new ArrayList<Object>();
 			rowData.add("Total Errors");
-			rowData.add(new Integer(total_err));
+			rowData.add(new Long(total_err));
 			list.add(rowData);
 		}
 		rowData = new ArrayList<Object>();
@@ -293,7 +293,7 @@ public class ExcelOutput extends ResultOutput {
 		writer.addSheet(sheet);
 	}
 
-	private <E extends ResponseEntryVO> void createResponseSheet(List<E> resData, Type type) throws Exception {
+	private <E extends TransactionEntryVO> void createResponseSheet(List<E> resData, Type type) throws Exception {
 		if(resData == null || resData.size() < 1) {
 			return;
 		}
@@ -376,10 +376,12 @@ public class ExcelOutput extends ResultOutput {
 				vo.addColumn("LAST ERROR TIME", ExcelColumn.CENTER_ALIGN, 25);
 			}
 		} else if(type == Type.BAD_TIME || type == Type.BAD_BYTE || type == Type.BAD_CODE) {
-			if(setting.fieldMapping.isMappedElapsed()) {
+			if(!setting.fieldMapping.isDateResponse() || setting.fieldMapping.isMappedElapsed()) {
 				vo.addColumn("REQ TIME", ExcelColumn.CENTER_ALIGN, 25);
 			}
-			vo.addColumn("TIME", ExcelColumn.CENTER_ALIGN, 25);
+			if(setting.fieldMapping.isDateResponse() || setting.fieldMapping.isMappedElapsed()) {
+				vo.addColumn("RES TIME", ExcelColumn.CENTER_ALIGN, 25);
+			}
 			if(setting.fieldMapping.isMappedIP()) {
 				vo.addColumn("IP", ExcelColumn.LEFT_ALIGN, 25);
 			}
@@ -407,12 +409,14 @@ public class ExcelOutput extends ResultOutput {
 		for(int i = 0; i < size; i++) {
 			row = new ArrayList<Object>();
 			if(type == Type.BAD_TIME || type == Type.BAD_BYTE || type == Type.BAD_CODE) {
-				ResponseEntryVO entryVO = (ResponseEntryVO)data.get(i);
-				entryVO = (ResponseEntryVO)data.get(i);
-				if(setting.fieldMapping.isMappedElapsed()) {
+				TransactionEntryVO entryVO = (TransactionEntryVO)data.get(i);
+				entryVO = (TransactionEntryVO)data.get(i);
+				if(!setting.fieldMapping.isDateResponse() || setting.fieldMapping.isMappedElapsed()) {
 					row.add(entryVO.getRequestDate());
 				}
-				row.add(entryVO.getResponseDate());
+				if(setting.fieldMapping.isDateResponse() || setting.fieldMapping.isMappedElapsed()) {
+					row.add(entryVO.getResponseDate());
+				}
 				if(setting.fieldMapping.isMappedIP()) {
 					row.add(entryVO.getRequestIP());
 				}
@@ -444,18 +448,18 @@ public class ExcelOutput extends ResultOutput {
 				if(setting.fieldMapping.isMappedElapsed()) {
 					row.add(entryVO.getAverageResponseTime());
 					row.add(entryVO.getMaxResponseTime().getResponseTime());
-					row.add(entryVO.getMaxResponseTime().getResponseDate());
+					row.add(entryVO.getMaxResponseTime().getDate());
 				}
 				if(setting.fieldMapping.isMappedBytes()) {
 					row.add(entryVO.getAverageResponseBytes());
 					row.add(entryVO.getMaxResponseBytes().getResponseBytes());
-					row.add(entryVO.getMaxResponseBytes().getResponseDate());
+					row.add(entryVO.getMaxResponseBytes().getDate());
 				}
 				if(setting.fieldMapping.isMappedCode()) {
 					row.add(entryVO.getErrorCount());
 					row.add(entryVO.getEntryErrorRatio());
 					row.add(entryVO.getLastError().getResponseCode());
-					row.add(entryVO.getLastError().getResponseDate());
+					row.add(entryVO.getLastError().getDate());
 				}
 			} else {
 				KeyEntryVO entryVO = (KeyEntryVO)data.get(i);
@@ -468,18 +472,18 @@ public class ExcelOutput extends ResultOutput {
 				if(setting.fieldMapping.isMappedElapsed()) {
 					row.add(entryVO.getAverageResponseTime());
 					row.add(entryVO.getMaxResponseTime().getResponseTime());
-					row.add(entryVO.getMaxResponseTime().getResponseDate());
+					row.add(entryVO.getMaxResponseTime().getDate());
 				}
 				if(setting.fieldMapping.isMappedBytes()) {
 					row.add(entryVO.getAverageResponseBytes());
 					row.add(entryVO.getMaxResponseBytes().getResponseBytes());
-					row.add(entryVO.getMaxResponseBytes().getResponseDate());
+					row.add(entryVO.getMaxResponseBytes().getDate());
 				}
 				if(setting.fieldMapping.isMappedCode()) {
 					row.add(entryVO.getErrorCount());
 					row.add(entryVO.getEntryErrorRatio());
 					row.add(entryVO.getLastError().getResponseCode());
-					row.add(entryVO.getLastError().getResponseDate());
+					row.add(entryVO.getLastError().getDate());
 				}
 			}
 			list.add(row);

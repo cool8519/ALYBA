@@ -77,7 +77,7 @@ public class ThreadManager {
 			this.notify();
 			return;
 		}
-		Logger.log(this.getClass(), Logger.INFO, "The Thread(" + task.getName() + ") has been completed. Total : " + completeCount);
+		Logger.log(this.getClass(), Logger.INFO, "The Thread(" + task.getName() + ") has been completed. Complete task count : " + completeCount);
 		if(completeCount == taskCnt) {
 			Logger.log(this.getClass(), Logger.DEBUG, "All threads has been completed. The main-thread will be notified.");
 			for(int i = 0; i < taskCnt; i++) {
@@ -117,8 +117,10 @@ public class ThreadManager {
 
 	public synchronized void startAndWait() throws Exception {
 		start();
+		Logger.log(this.getClass(), Logger.INFO, "The tasks have been started. Total task count : " + taskCnt);
 		try {
 			this.wait();
+			Logger.log(this.getClass(), Logger.INFO, "All tasks have been finished. Total elapsed time : " + elapsedTime);
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -165,7 +167,7 @@ public class ThreadManager {
 			Task task = (Task)completedJobs.get(i);
 			s = task.getErrorMessage();
 			if(s != null) {
-				sb.append("\n[" + task.getName() + "]" + s);
+				sb.append("\n[" + task.getName() + "] " + s);
 			}
 		}
 		return sb.toString();

@@ -3,6 +3,7 @@ package dal.tool.analyzer.alyba.output;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -35,6 +36,11 @@ public class LogAnalyzeOutput {
 		return Constant.OUTPUT_FILENAME_PREFIX + "_" + setting.getTitle() + "_" + DateUtil.dateToString(setting.getAnalyzeDate(), SDF_OutputFile);
 	}
 	
+	public static String getFileName(String title) {
+		SDF_OutputFile.setTimeZone(Constant.TIMEZONE_DEFAULT);
+		return Constant.OUTPUT_FILENAME_PREFIX + "_" + title + "_" + DateUtil.dateToString(new Date(), SDF_OutputFile);		
+	}
+	
 	public void initDatabase() {
 		if(db != null) {
 			db.close(em);
@@ -55,8 +61,8 @@ public class LogAnalyzeOutput {
 		File dir = new File(s_dir);
 		if(!dir.isDirectory()) {
 			if(!dir.mkdir()) {
-				dal.tool.analyzer.alyba.ui.Logger.logln("Cannot create directory : " + dir.getCanonicalFile());
-				dal.tool.analyzer.alyba.ui.Logger.logln("Create directory is changed : " + Constant.OUTPUT_TEMPORARY_DIRECTORY);
+				dal.tool.analyzer.alyba.ui.Logger.debug("Cannot create directory : " + dir.getCanonicalFile());
+				dal.tool.analyzer.alyba.ui.Logger.debug("Create directory is changed : " + Constant.OUTPUT_TEMPORARY_DIRECTORY);
 				setting.outputDirectory = Constant.OUTPUT_TEMPORARY_DIRECTORY;
 			}
 		}

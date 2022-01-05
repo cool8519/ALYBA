@@ -10,28 +10,36 @@ public class MessageUtil {
 	public static void showInfoMessage(Shell shell, String msg) {
 		MessageBox msgBox = new MessageBox(shell, SWT.ICON_INFORMATION | SWT.OK);
 		msgBox.setText("Information");
-		msgBox.setMessage(msg);
+		if(msg != null) {
+			msgBox.setMessage(msg);
+		}
 		msgBox.open();
 	}
 
 	public static void showWarningMessage(Shell shell, String msg) {
 		MessageBox msgBox = new MessageBox(shell, SWT.ICON_WARNING | SWT.OK);
 		msgBox.setText("Warning");
-		msgBox.setMessage(msg);
+		if(msg != null) {
+			msgBox.setMessage(msg);
+		}
 		msgBox.open();
 	}
 
 	public static void showErrorMessage(Shell shell, String msg) {
 		MessageBox msgBox = new MessageBox(shell, SWT.ICON_ERROR | SWT.OK);
 		msgBox.setText("Error");
-		msgBox.setMessage(msg);
+		if(msg != null) {
+			msgBox.setMessage(msg);
+		}
 		msgBox.open();
 	}
 
 	public static boolean showYesNoMessage(Shell shell, String msg) {
 		MessageBox msgBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES | SWT.NO);
 		msgBox.setText("Question");
-		msgBox.setMessage(msg);
+		if(msg != null) {
+			msgBox.setMessage(msg);
+		}
 		int result = msgBox.open();
 		return (result == SWT.YES);
 	}
@@ -39,7 +47,9 @@ public class MessageUtil {
 	public static boolean showConfirmMessage(Shell shell, String msg) {
 		MessageBox msgBox = new MessageBox(shell, SWT.ICON_QUESTION | SWT.OK | SWT.CANCEL);
 		msgBox.setText("Confirm");
-		msgBox.setMessage(msg);
+		if(msg != null) {
+			msgBox.setMessage(msg);
+		}
 		int result = msgBox.open();
 		return (result == SWT.OK);
 	}

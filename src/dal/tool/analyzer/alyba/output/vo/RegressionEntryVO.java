@@ -4,6 +4,8 @@ import java.util.Date;
 
 import javax.persistence.Entity;
 
+import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.ResourceMergeType;
+
 @Entity
 public class RegressionEntryVO extends ResourceUsageEntryVO {
 
@@ -17,12 +19,12 @@ public class RegressionEntryVO extends ResourceUsageEntryVO {
 
 	public RegressionEntryVO(Date dt) {
 		super(dt);
-		this.count = 1;
+		this.item_count = 1;
 	}
 
 	public RegressionEntryVO(Date dt, String name, String group) {
 		super(dt, name, group);
-		this.count = 1;
+		this.item_count = 1;
 	}
 
 	public int getRequestTxCount() {
@@ -57,7 +59,7 @@ public class RegressionEntryVO extends ResourceUsageEntryVO {
 		this.err_count = err_count;
 	}
 
-	public RegressionEntryVO merge(RegressionEntryVO subVO) {
+	public RegressionEntryVO merge(RegressionEntryVO subVO, ResourceMergeType resourceMergeType) {
 		RegressionEntryVO vo = new RegressionEntryVO(getUnitDate(), (subVO.getServerName().equals(getServerName())?getServerName():null), (subVO.getServerGroup().equals(getServerGroup())?getServerGroup():null));
 		vo.setRequestTxCount(request_tx_count);
 		vo.setRequestIpCount(request_ip_count);
@@ -65,7 +67,11 @@ public class RegressionEntryVO extends ResourceUsageEntryVO {
 		vo.setErrorCount(err_count);
 		if(subVO.getCpuUsage() != -1D) {
 			if(cpu != -1D) {
-				vo.setCpuUsage((cpu*count + subVO.getCpuUsage()*subVO.getDataCount()) / (count+subVO.getDataCount()));
+				if(resourceMergeType == ResourceMergeType.AVG) {
+					vo.setCpuUsage((cpu*item_count + subVO.getCpuUsage()*subVO.getDataCount()) / (item_count+subVO.getDataCount()));
+				} else {
+					vo.setCpuUsage(cpu*item_count + subVO.getCpuUsage()*subVO.getDataCount());
+				}
 			} else {
 				vo.setCpuUsage(subVO.getCpuUsage());
 			}
@@ -74,7 +80,11 @@ public class RegressionEntryVO extends ResourceUsageEntryVO {
 		}
 		if(subVO.getMemoryUsage() != -1D) {
 			if(memory != -1D) {
-				vo.setMemoryUsage((memory*count + subVO.getMemoryUsage()*subVO.getDataCount()) / (count+subVO.getDataCount()));
+				if(resourceMergeType == ResourceMergeType.AVG) {
+					vo.setMemoryUsage((memory*item_count + subVO.getMemoryUsage()*subVO.getDataCount()) / (item_count+subVO.getDataCount()));
+				} else {
+					vo.setMemoryUsage(memory*item_count + subVO.getMemoryUsage()*subVO.getDataCount());
+				}
 			} else {
 				vo.setMemoryUsage(subVO.getMemoryUsage());
 			}
@@ -83,7 +93,11 @@ public class RegressionEntryVO extends ResourceUsageEntryVO {
 		}
 		if(subVO.getDiskUsage() != -1D) {
 			if(disk != -1D) {
-				vo.setDiskUsage((disk*count + subVO.getDiskUsage()*subVO.getDataCount()) / (count+subVO.getDataCount()));
+				if(resourceMergeType == ResourceMergeType.AVG) {
+					vo.setDiskUsage((disk*item_count + subVO.getDiskUsage()*subVO.getDataCount()) / (item_count+subVO.getDataCount()));
+				} else {
+					vo.setDiskUsage(disk*item_count + subVO.getDiskUsage()*subVO.getDataCount());
+				}
 			} else {
 				vo.setDiskUsage(subVO.getDiskUsage());
 			}
@@ -92,14 +106,18 @@ public class RegressionEntryVO extends ResourceUsageEntryVO {
 		}
 		if(subVO.getNetworkUsage() != -1D) {
 			if(network != -1D) {
-				vo.setNetworkUsage((network*count + subVO.getNetworkUsage()*subVO.getDataCount()) / (count+subVO.getDataCount()));
+				if(resourceMergeType == ResourceMergeType.AVG) {
+					vo.setNetworkUsage((network*item_count + subVO.getNetworkUsage()*subVO.getDataCount()) / (item_count+subVO.getDataCount()));
+				} else {
+					vo.setNetworkUsage(network*item_count + subVO.getNetworkUsage()*subVO.getDataCount());
+				}
 			} else {
 				vo.setNetworkUsage(subVO.getNetworkUsage());
 			}
 		} else {
 			vo.setNetworkUsage(network);
 		}
-		vo.setDataCount(count+subVO.getDataCount());
+		vo.setDataCount(item_count+subVO.getDataCount());
 		return vo;
 	}
 	

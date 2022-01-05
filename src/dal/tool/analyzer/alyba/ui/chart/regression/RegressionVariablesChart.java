@@ -5,7 +5,6 @@ import java.awt.Color;
 import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
@@ -39,6 +38,7 @@ import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.RegressionEntryVO;
 import dal.tool.analyzer.alyba.ui.chart.TimeSeriesChart;
 import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.AggregationType;
+import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.ResourceMergeType;
 import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.VariableX;
 import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.VariableY;
 
@@ -50,11 +50,12 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 	protected static final ShapeSize BOLD_SHAPE_SIZE = ShapeSize.Large;
 	
 	protected AggregationType aggregation_type = AggregationType.NAME;
+	protected ResourceMergeType resource_merge_type = ResourceMergeType.AVG;
 	protected boolean resource_axis_to_100 = false;
 
 	protected ShapeSize[] shape_sizes;
 
-	public RegressionVariablesChart(String title, VariableX varX, VariableY varY, AggregationType aggregationType, boolean axisYto100) {
+	public RegressionVariablesChart(String title, VariableX varX, VariableY varY, AggregationType aggregationType, ResourceMergeType resourceMergeType, boolean axisYto100) {
 		super(title);
 	    setUnitString("minute(s)");
 	    setDateFormat("yyyy.MM.dd HH:mm");
@@ -63,6 +64,7 @@ public class RegressionVariablesChart extends TimeSeriesChart {
     	setLabelY(varX.name());
     	setLabelYSecondary(varY.name());
     	this.aggregation_type = aggregationType;
+    	this.resource_merge_type = resourceMergeType;
     	this.resource_axis_to_100 = axisYto100;
 	}
 
@@ -120,7 +122,7 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		    		if(dt_prev == null) {
 		    			mergedVO = vo;
 		    		} else if(dt_prev.equals(dt)) {
-	    				mergedVO = mergedVO.merge(vo);
+	    				mergedVO = mergedVO.merge(vo, resource_merge_type);
 		    		} else {
 			    		ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), RegressionChart.getVariableData(mergedVO, label_y));
 			    		ts_var2.add(new Minute(mergedVO.getUnitDate()), RegressionChart.getVariableData(mergedVO, label_y2));
@@ -141,7 +143,7 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		    		if(dt_prev == null) {
 		    			mergedVO = vo;
 		    		} else if(dt_prev.equals(dt)) {
-	    				mergedVO = mergedVO.merge(vo);
+	    				mergedVO = mergedVO.merge(vo, resource_merge_type);
 		    		} else {
 			    		ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), RegressionChart.getVariableData(mergedVO, label_y));
 			    		ts_var2.add(new Minute(mergedVO.getUnitDate()), RegressionChart.getVariableData(mergedVO, label_y2));
@@ -183,12 +185,10 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		dateAxis.setRange(dataset.getXValue(0, 0), dataset.getXValue(0, dataset.getItemCount(0)-1));
 
 		NumberAxis primaryAxis = (NumberAxis)xyPlot.getRangeAxis();
-		primaryAxis.setNumberFormatOverride(NumberFormat.getIntegerInstance());		
 		primaryAxis.setRangeType(RangeType.POSITIVE);
 		primaryAxis.setAutoRangeMinimumSize(10.0D);
 		
 	    NumberAxis secondaryAxis = new NumberAxis(label_y2);
-		secondaryAxis.setNumberFormatOverride(NumberFormat.getIntegerInstance());		
 	    secondaryAxis.setLabelFont(xyPlot.getRangeAxis(0).getLabelFont());
 	    secondaryAxis.setTickLabelFont(xyPlot.getRangeAxis(0).getTickLabelFont());
 	    secondaryAxis.setRangeType(RangeType.POSITIVE);

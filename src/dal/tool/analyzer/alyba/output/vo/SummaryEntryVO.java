@@ -18,9 +18,9 @@ public class SummaryEntryVO extends EntryVO {
 	private Date created_time = null;
 	private Date first_request_time = null;
 	private Date last_request_time = null;
-	private int total_request_count = 0;
+	private long total_request_count = 0;
 	private int total_error_count = 0;
-	private int filtered_request_count = 0;
+	private long filtered_request_count = 0;
 	private int filtered_error_count = 0;
 	private int filtered_uri_count = 0;
 	private int filtered_ip_count = 0;
@@ -94,11 +94,11 @@ public class SummaryEntryVO extends EntryVO {
 		this.last_request_time = last_request_time;
 	}
 
-	public int getTotalRequestCount() {
+	public long getTotalRequestCount() {
 		return total_request_count;
 	}
 
-	public void setTotalRequestCount(int total_request_count) {
+	public void setTotalRequestCount(long total_request_count) {
 		this.total_request_count = total_request_count;
 	}
 
@@ -110,11 +110,11 @@ public class SummaryEntryVO extends EntryVO {
 		this.total_error_count = total_error_count;
 	}
 
-	public int getFilteredRequestCount() {
+	public long getFilteredRequestCount() {
 		return filtered_request_count;
 	}
 
-	public void setFilteredRequestCount(int filtered_request_count) {
+	public void setFilteredRequestCount(long filtered_request_count) {
 		this.filtered_request_count = filtered_request_count;
 	}
 

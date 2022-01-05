@@ -19,6 +19,7 @@ public class FileEncodingCheckTask extends ProgressBarTask {
 		this.fileEncodingMap = fileEncodings;
 		status = new int[files.size()];
 		tasksPercent = new int[files.size()];
+		tasksDetail = new String[files.size()];
 		for(int i = 0; i < status.length; i++) {
 			String encoding = fileEncodingMap.get(fileList.get(i).getPath());
 			if(encoding == null) {
@@ -38,13 +39,13 @@ public class FileEncodingCheckTask extends ProgressBarTask {
 	}
 	
 	public void doCancel() {
-		Logger.logln("CANCEL called");
+		Logger.debug("CANCEL called");
 		stopFlag = true;
 	}
 
 	public void doTask() throws Exception {
 		if(getFileCount() < 1) {
-			Logger.logln("Nothing to do");
+			Logger.debug("Nothing to do");
 			return;
 		}
 		for(int i = 0; i < fileList.size(); i++) {

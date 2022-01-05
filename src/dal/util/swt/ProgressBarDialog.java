@@ -180,7 +180,7 @@ public class ProgressBarDialog extends Dialog {
 		for(int i = 0; i < detailViewCount; i++) {
 			lb_detailView[i] = new Label(comp_detailview, SWT.NONE);
 			lb_detailView[i].setFont(TEXT_FONT);
-			lb_detailView[i].setText("¡á");
+			lb_detailView[i].setText("â– ");
 			lb_detailView[i].setAlignment(SWT.CENTER);
 			lb_detailView[i].setForeground(SWTResourceManager.getColor(SWT.COLOR_GREEN));
 			lb_detailView[i].setLayoutData(gd_lb_detailView);
@@ -245,6 +245,7 @@ public class ProgressBarDialog extends Dialog {
 	protected void updateDetailView() {
 		int[] status = task.getDetailStatus();
 		int[] percents = task.getTasksPercent();
+		String[] details = task.getTasksDetail();
 		if(status == null || status.length != detailViewCount) {
 			return;
 		}
@@ -253,17 +254,17 @@ public class ProgressBarDialog extends Dialog {
 			switch(status[i]) {
 				case ProgressBarTask.STATUS_READY:
 					rgbColor = SWTResourceManager.getColor(SWT.COLOR_GRAY);
-					lb_detailView[i].setToolTipText("Wating");
+					lb_detailView[i].setToolTipText("Waiting");
 					break;
 				case ProgressBarTask.STATUS_PROCESSING:
 					int green = (int)(255 * (1 - (double)percents[i]/100));
 					int blue = (int)(255 * ((double)percents[i]/100));
 					rgbColor = new Color(display, 0, green, blue);
-					lb_detailView[i].setToolTipText(percents[i] + " %");
+					lb_detailView[i].setToolTipText(percents[i] + "%" + (details[i]==null?"":(" ["+details[i]+"]")));
 					break;
 				case ProgressBarTask.STATUS_COMPLETE:
 					rgbColor = SWTResourceManager.getColor(SWT.COLOR_BLUE);
-					lb_detailView[i].setToolTipText("Complete");
+					lb_detailView[i].setToolTipText("Complete" + (details[i]==null?"":(" ["+details[i]+"]")));
 					break;
 				case ProgressBarTask.STATUS_ERROR:
 					rgbColor = SWTResourceManager.getColor(SWT.COLOR_RED);

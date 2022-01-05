@@ -9,7 +9,7 @@ import org.eclipse.swt.dnd.Transfer;
 
 public class Constant {
 
-	public static final String PROGRAM_VERSION = "1.7.0";
+	public static final String PROGRAM_VERSION = "1.8.0";
 
 	public static String DEFAULT_FONT_NAME = "Arial";
 	public static int DEFAULT_FONT_SIZE = 9;
@@ -31,24 +31,28 @@ public class Constant {
 	public static final String OUTPUT_TEMPORARY_DIRECTORY = System.getProperty("java.io.tmpdir");
 	public static final String OUTPUT_FILENAME_PREFIX = "ALYBA";
 
-	public static final String IMAGE_PATH_LOGO = "dal/tool/analyzer/alyba/resource/image/logo.jpg";
-	public static final String IMAGE_PATH_TRAYICON = "dal/tool/analyzer/alyba/resource/image/app_icon.png";
-	public static final String IMAGE_PATH_PROGRESS = "dal/tool/analyzer/alyba/resource/image/progress.gif";
-	public static final String IMAGE_PATH_TRASH = "dal/tool/analyzer/alyba/resource/image/trash.gif";
-	public static final String IMAGE_PATH_CHART_LINE = "dal/tool/analyzer/alyba/resource/image/chart_line.png";
-	public static final String IMAGE_PATH_CHART_HBAR = "dal/tool/analyzer/alyba/resource/image/chart_hbar.png";
-	public static final String IMAGE_PATH_CHART_VBAR = "dal/tool/analyzer/alyba/resource/image/chart_vbar.png";
-	public static final String IMAGE_PATH_CHART_PIE = "dal/tool/analyzer/alyba/resource/image/chart_pie.png";
-	public static final String IMAGE_PATH_CHART_SCATTER = "dal/tool/analyzer/alyba/resource/image/chart_scatter.png";
-	public static final String IMAGE_PATH_CHART_ALL = "dal/tool/analyzer/alyba/resource/image/chart_all.png";
-	public static final String IMAGE_PATH_CHART_CPU = "dal/tool/analyzer/alyba/resource/image/chart_cpu.png";
-	public static final String IMAGE_PATH_CHART_MEMORY = "dal/tool/analyzer/alyba/resource/image/chart_memory.png";
-	public static final String IMAGE_PATH_CHART_DISK = "dal/tool/analyzer/alyba/resource/image/chart_disk.png";
-	public static final String IMAGE_PATH_CHART_NETWORK = "dal/tool/analyzer/alyba/resource/image/chart_network.png";
+	public static final String BASE_PATH = "dal/tool/analyzer/alyba/";
+	public static final String RESOURCE_PATH = BASE_PATH + "resource/";
+	public static final String IMAGE_PATH = RESOURCE_PATH + "image/";
 	
-	public static final String FILE_PATH_HTMLTEMPLATE = "dal/tool/analyzer/alyba/resource/template/HtmlTemplate.html";
-	public static final String FILE_PATH_DEFAULTSETTING = "dal/tool/analyzer/alyba/resource/setting/default.alb";
-	public static final String FILE_PATH_GEOIP = "dal/tool/analyzer/alyba/resource/geoip/GeoIP.dat";
+	public static final String IMAGE_PATH_LOGO = IMAGE_PATH + "logo.jpg";
+	public static final String IMAGE_PATH_TRAYICON = IMAGE_PATH + "app_icon.png";
+	public static final String IMAGE_PATH_PROGRESS = IMAGE_PATH + "progress.gif";
+	public static final String IMAGE_PATH_TRASH = IMAGE_PATH + "trash.gif";
+	public static final String IMAGE_PATH_CHART_LINE = IMAGE_PATH + "chart_line.png";
+	public static final String IMAGE_PATH_CHART_HBAR = IMAGE_PATH + "chart_hbar.png";
+	public static final String IMAGE_PATH_CHART_VBAR = IMAGE_PATH + "chart_vbar.png";
+	public static final String IMAGE_PATH_CHART_PIE = IMAGE_PATH + "chart_pie.png";
+	public static final String IMAGE_PATH_CHART_SCATTER = IMAGE_PATH + "chart_scatter.png";
+	public static final String IMAGE_PATH_CHART_ALL = IMAGE_PATH + "chart_all.png";
+	public static final String IMAGE_PATH_CHART_CPU = IMAGE_PATH + "chart_cpu.png";
+	public static final String IMAGE_PATH_CHART_MEMORY = IMAGE_PATH + "chart_memory.png";
+	public static final String IMAGE_PATH_CHART_DISK = IMAGE_PATH + "chart_disk.png";
+	public static final String IMAGE_PATH_CHART_NETWORK = IMAGE_PATH + "chart_network.png";
+	
+	public static final String FILE_PATH_HTMLTEMPLATE = RESOURCE_PATH + "template/HtmlTemplate.html";
+	public static final String FILE_PATH_DEFAULTSETTING = RESOURCE_PATH + "setting/default.alb";
+	public static final String FILE_PATH_GEOIP = RESOURCE_PATH + "geoip/GeoIP.dat";
 
 	public static final String DIALOG_INIT_PATH = ".";
 
@@ -70,10 +74,10 @@ public class Constant {
 	public static final String[] CSV_FILTER_EXTS = { "*.csv" };
 	public static final String[] DB_FILTER_NAMES = { "ALYBA DB Files (*.adb)" };
 	public static final String[] DB_FILTER_EXTS = { "*.adb" };
-	public static final String[] FILE_FILTER_NAMES = { "All Files (*.*)" };
-	public static final String[] FILE_FILTER_EXTS = { "*.*" };
+	public static final String[] ALLFILES_FILTER_NAMES = { "All Files (*.*)" };
+	public static final String[] ALLFILES_FILTER_EXTS = { "*.*" };
 
-	public static final String[] LOG_TYPES = { "Customize", "Apache", "Tomcat", "WebtoB", "Nginx", "JEUS", "IIS" };
+	public static final String[] LOG_TYPES = { "Customize", "Apache", "Tomcat", "WebtoB", "Nginx", "JEUS", "IIS", "JSON" };
 	public static final String[] FILE_TYPES = { "Customize", "vmstat", "sar" };
 
 	public static final String[] ELAPSED_TIME_UNITS = { "milliseconds", "seconds", "microseconds" };
@@ -84,4 +88,5 @@ public class Constant {
 	public static final String UNIX_TIME_STR = "UnixTime";
 	
 	public static final int ANALYZER_DATA_PAGESIZE = 50;
+	
 }

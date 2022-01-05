@@ -6,7 +6,6 @@ import java.awt.Font;
 import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -47,6 +46,7 @@ import dal.tool.analyzer.alyba.output.vo.RegressionEntryVO;
 import dal.tool.analyzer.alyba.ui.chart.DistributionChart;
 import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.AggregationType;
 import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.RegressionType;
+import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.ResourceMergeType;
 import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.VariableX;
 import dal.tool.analyzer.alyba.ui.chart.regression.RegressionChart.VariableY;
 
@@ -60,6 +60,7 @@ public class RegressionAnalysisChart extends DistributionChart {
 	protected static final float BOLD_LINE_WIDTH = 4.0F;
 	
 	protected AggregationType aggregation_type = AggregationType.NAME;
+	protected ResourceMergeType resource_merge_type = ResourceMergeType.AVG;
 	protected RegressionType regression_type = RegressionType.LINEAR;
 	protected boolean resource_axis_to_100 = false;
 
@@ -67,12 +68,13 @@ public class RegressionAnalysisChart extends DistributionChart {
 	protected ShapeSize[] shape_sizes;
 	protected XYPointerAnnotation[] equation_annotations;
 
-	public RegressionAnalysisChart(String title, VariableX varX, VariableY varY, AggregationType aggregationType, RegressionType regressionType, boolean showRegressionLine, boolean showRegressionEquation, boolean axisYto100) {
+	public RegressionAnalysisChart(String title, VariableX varX, VariableY varY, AggregationType aggregationType, ResourceMergeType resourceMergeType, RegressionType regressionType, boolean showRegressionLine, boolean showRegressionEquation, boolean axisYto100) {
 		super(Type.ScatterPlot, title);
     	setLabelX(varX.name());
     	setLabelY(varY.name());
 	    setDateFormat("yyyy.MM.dd HH:mm");
 	    this.aggregation_type = aggregationType;
+	    this.resource_merge_type = resourceMergeType;
 	    this.regression_type = regressionType;
 	    this.show_regression_line = showRegressionLine;
 	    this.show_regression_equation = showRegressionEquation;
@@ -85,6 +87,14 @@ public class RegressionAnalysisChart extends DistributionChart {
 	
 	public void setAggregationType(AggregationType type) {
 		this.aggregation_type = type;
+	}
+	
+	public ResourceMergeType getResourceMergeType() {
+		return resource_merge_type;
+	}
+	
+	public void setResourceMergeType(ResourceMergeType type) {
+		this.resource_merge_type = type;
 	}
 	
 	public RegressionType getRegressionType() {
@@ -177,7 +187,7 @@ public class RegressionAnalysisChart extends DistributionChart {
 		    		if(dt_prev == null) {
 		    			mergedVO = vo;
 		    		} else if(dt_prev.equals(dt)) {
-	    				mergedVO = mergedVO.merge(vo);
+	    				mergedVO = mergedVO.merge(vo, resource_merge_type);
 		    		} else {
 					    x = RegressionChart.getVariableData(mergedVO, label_x);
 					    y = RegressionChart.getVariableData(mergedVO, label_y);
@@ -207,7 +217,7 @@ public class RegressionAnalysisChart extends DistributionChart {
 		    		if(dt_prev == null) {
 		    			mergedVO = vo;
 		    		} else if(dt_prev.equals(dt)) {
-	    				mergedVO = mergedVO.merge(vo);
+	    				mergedVO = mergedVO.merge(vo, resource_merge_type);
 		    		} else {
 		    			x = RegressionChart.getVariableData(mergedVO, label_x);
 		    			y = RegressionChart.getVariableData(mergedVO, label_y);
@@ -251,8 +261,6 @@ public class RegressionAnalysisChart extends DistributionChart {
 		xyPlot.setDomainAxis(numberAxis);
 
 		NumberAxis rangeAxis = (NumberAxis)xyPlot.getRangeAxis();
-		NumberFormat formatter = NumberFormat.getIntegerInstance();
-		rangeAxis.setNumberFormatOverride(formatter);			
 		rangeAxis.setRangeType(RangeType.POSITIVE);
 		rangeAxis.setAutoRangeMinimumSize(10.0D);
 	    if(resource_axis_to_100 && RegressionChart.isVariableResource(label_y)) {
@@ -290,8 +298,8 @@ public class RegressionAnalysisChart extends DistributionChart {
 						if(regression.hasIntercept()) {
 							eq.append(" + ").append(String.format("%.3f", regression.getIntercept()));
 						}
-						eq.append(", R©÷ = ").append(String.format("%1.3f", regression.getRSquare()));
-						XYPointerAnnotation annotation = new XYPointerAnnotation(eq.toString(), eq_x, eq_y-0.5, Math.toRadians(225));
+						eq.append(", RÂ² = ").append(String.format("%1.3f", regression.getRSquare()));
+						XYPointerAnnotation annotation = new XYPointerAnnotation(eq.toString(), eq_x, eq_y, Math.toRadians(225));
 					    annotation.setLabelOffset(1.0D);					    
 					    annotation.setTextAnchor(TextAnchor.BOTTOM_RIGHT);
 					    Color color = (Color)regRenderer.getSeriesPaint(series);

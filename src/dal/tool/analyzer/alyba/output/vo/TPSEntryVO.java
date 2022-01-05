@@ -13,6 +13,11 @@ public class TPSEntryVO extends DateEntryVO {
 		super(unit_date);
 	}
 
+	public TPSEntryVO(Date unit_date, int count) {
+		super(unit_date);		
+		setData(count);
+	}
+
 	@SuppressWarnings("unchecked")
 	public <E extends DateEntryVO> E createEntryVO() {
 		return (E)(new TPSEntryVO(getUnitDate()));

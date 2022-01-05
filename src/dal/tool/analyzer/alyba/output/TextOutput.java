@@ -9,14 +9,14 @@ import java.util.List;
 import javax.persistence.EntityManager;
 
 import dal.tool.analyzer.alyba.Constant;
-import dal.tool.analyzer.alyba.output.vo.BadResponseEntryVO;
+import dal.tool.analyzer.alyba.output.vo.BadTransactionEntryVO;
 import dal.tool.analyzer.alyba.output.vo.DateEntryVO;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
-import dal.tool.analyzer.alyba.output.vo.ResponseEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TPMEntryVO;
 import dal.tool.analyzer.alyba.output.vo.TimeAggregationEntryVO;
+import dal.tool.analyzer.alyba.output.vo.TransactionEntryVO;
 import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
 import dal.tool.analyzer.alyba.util.Logger;
 import dal.util.DateUtil;
@@ -33,7 +33,7 @@ public class TextOutput extends ResultOutput {
 
 	public void generate() throws Exception {
 		try {
-			dal.tool.analyzer.alyba.ui.Logger.logln("Writing to the text file : " + filename);
+			dal.tool.analyzer.alyba.ui.Logger.debug("Writing to the text file : " + filename);
 			exportToText(filename);
 		} catch(Exception e) {
 			try {
@@ -43,7 +43,7 @@ public class TextOutput extends ResultOutput {
 				}
 			} catch(Exception e2) {
 			}
-			dal.tool.analyzer.alyba.ui.Logger.logln("Failed to create text file : " + filename);
+			dal.tool.analyzer.alyba.ui.Logger.debug("Failed to create text file : " + filename);
 			throw e;
 		}
 	}
@@ -73,23 +73,23 @@ public class TextOutput extends ResultOutput {
 
 			int long_resp = summaryVo.getBadElapsedCount();
 			if(long_resp > 1000) {
-				dal.tool.analyzer.alyba.ui.Logger.logln("Too many long transaction : count=" + long_resp);
+				dal.tool.analyzer.alyba.ui.Logger.debug("Too many long transaction : count=" + long_resp);
 			} else {
-				printResponse(getEntryList(BadResponseEntryVO.class, "TIME"), Type.BAD_TIME);
+				printResponse(getEntryList(BadTransactionEntryVO.class, "TIME"), Type.BAD_TIME);
 			}
 
 			int large_resp = summaryVo.getBadByteCount();
 			if(large_resp > 1000) {
-				dal.tool.analyzer.alyba.ui.Logger.logln("Too many large response : count=" + large_resp);
+				dal.tool.analyzer.alyba.ui.Logger.debug("Too many large response : count=" + large_resp);
 			} else {
-				printResponse(getEntryList(BadResponseEntryVO.class, "SIZE"), Type.BAD_BYTE);
+				printResponse(getEntryList(BadTransactionEntryVO.class, "SIZE"), Type.BAD_BYTE);
 			}
 
 			int total_err = summaryVo.getBadCodeCount();
 			if(total_err > 1000) {
-				dal.tool.analyzer.alyba.ui.Logger.logln("Too many error response : count=" + total_err);
+				dal.tool.analyzer.alyba.ui.Logger.debug("Too many error response : count=" + total_err);
 			} else {
-				printResponse(getEntryList(BadResponseEntryVO.class, "CODE"), Type.BAD_CODE);
+				printResponse(getEntryList(BadTransactionEntryVO.class, "CODE"), Type.BAD_CODE);
 			}
 		} catch(Exception e) {
 			dal.tool.analyzer.alyba.ui.Logger.debug(e);
@@ -101,8 +101,8 @@ public class TextOutput extends ResultOutput {
 	}
 	
 	private void printSummary(SummaryEntryVO vo) throws Exception {
-		int total_req = vo.getTotalRequestCount();
-		int filtered_req = vo.getFilteredRequestCount();
+		long total_req = vo.getTotalRequestCount();
+		long filtered_req = vo.getFilteredRequestCount();
 		int total_err = vo.getTotalErrorCount();
 		int filtered_err = vo.getFilteredErrorCount();
 		double filtered_req_pct = (double)filtered_req / total_req * 100;
@@ -221,7 +221,7 @@ public class TextOutput extends ResultOutput {
 		Logger.logln();
 	}
 
-	private <E extends ResponseEntryVO> void printResponse(List<E> resData, Type type) throws Exception {
+	private <E extends TransactionEntryVO> void printResponse(List<E> resData, Type type) throws Exception {
 		if(resData == null || resData.size() < 1) {
 			return;
 		}
@@ -295,16 +295,14 @@ public class TextOutput extends ResultOutput {
 			}
 		} else if(type == Type.BAD_TIME || type == Type.BAD_BYTE || type == Type.BAD_CODE) {
 			resultTable.addColumn("No.", Column.RIGHT_ALIGN);
-			if(setting.fieldMapping.isMappedElapsed()) {
-				resultTable.addColumn("REQ TIME", Column.LEFT_ALIGN);
-			}
-			resultTable.addColumn("TIME", Column.LEFT_ALIGN);
+			resultTable.addColumn("REQ TIME", Column.LEFT_ALIGN);
+			resultTable.addColumn("RES TIME", Column.LEFT_ALIGN);
 			if(setting.fieldMapping.isMappedIP()) {
 				resultTable.addColumn("IP", Column.LEFT_ALIGN);
 			}
 			resultTable.addColumn("URI", Column.LEFT_ALIGN);
 			if(setting.fieldMapping.isMappedElapsed()) {
-				resultTable.addColumn("RESP TIME", Column.RIGHT_ALIGN);
+				resultTable.addColumn("ELAPSED TIME(ms)", Column.RIGHT_ALIGN);
 			}
 			if(setting.fieldMapping.isMappedBytes()) {
 				resultTable.addColumn("RESP BYTE", Column.RIGHT_ALIGN);
@@ -324,11 +322,9 @@ public class TextOutput extends ResultOutput {
 		for(int i = 0; i < size; i++) {
 			Fields fields = new Fields(resultTable.getSizeOfColumns());
 			if(type == Type.BAD_TIME || type == Type.BAD_BYTE || type == Type.BAD_CODE) {
-				ResponseEntryVO vo = (ResponseEntryVO)data.get(i);
+				TransactionEntryVO vo = (TransactionEntryVO)data.get(i);
 				fields.addField(i + 1);
-				if(setting.fieldMapping.isMappedElapsed()) {
-					fields.addField(DateUtil.dateToString(vo.getRequestDate(), SDF_DateSecond));
-				}
+				fields.addField(DateUtil.dateToString(vo.getRequestDate(), SDF_DateSecond));
 				fields.addField(DateUtil.dateToString(vo.getResponseDate(), SDF_DateSecond));
 				if(setting.fieldMapping.isMappedIP()) {
 					fields.addField(vo.getRequestIP());
@@ -367,18 +363,18 @@ public class TextOutput extends ResultOutput {
 				if(setting.fieldMapping.isMappedElapsed()) {
 					fields.addField(DF_FloatPoint.format(vo.getAverageResponseTime()));
 					fields.addField(vo.getMaxResponseTime().getResponseTime());
-					fields.addField(DateUtil.dateToString(vo.getMaxResponseTime().getResponseDate(), SDF_DateSecond));
+					fields.addField(DateUtil.dateToString(vo.getMaxResponseTime().getDate(), SDF_DateSecond));
 				}
 				if(setting.fieldMapping.isMappedBytes()) {
 					fields.addField(DF_FloatPoint.format(vo.getAverageResponseBytes()));
 					fields.addField(vo.getMaxResponseBytes().getResponseBytes());
-					fields.addField(DateUtil.dateToString(vo.getMaxResponseBytes().getResponseDate(), SDF_DateSecond));
+					fields.addField(DateUtil.dateToString(vo.getMaxResponseBytes().getDate(), SDF_DateSecond));
 				}
 				if(setting.fieldMapping.isMappedCode()) {
 					fields.addField(vo.getErrorCount());
 					fields.addField(vo.getEntryErrorRatio());
 					fields.addField(vo.getLastError().getResponseCode());
-					fields.addField(DateUtil.dateToString(vo.getLastError().getResponseDate(), SDF_DateSecond));
+					fields.addField(DateUtil.dateToString(vo.getLastError().getDate(), SDF_DateSecond));
 				}
 			} else {
 				KeyEntryVO vo = (KeyEntryVO)data.get(i);
@@ -392,18 +388,18 @@ public class TextOutput extends ResultOutput {
 				if(setting.fieldMapping.isMappedElapsed()) {
 					fields.addField(DF_FloatPoint.format(vo.getAverageResponseTime()));
 					fields.addField(vo.getMaxResponseTime().getResponseTime());
-					fields.addField(DateUtil.dateToString(vo.getMaxResponseTime().getResponseDate(), SDF_DateSecond));
+					fields.addField(DateUtil.dateToString(vo.getMaxResponseTime().getDate(), SDF_DateSecond));
 				}
 				if(setting.fieldMapping.isMappedBytes()) {
 					fields.addField(DF_FloatPoint.format(vo.getAverageResponseBytes()));
 					fields.addField(vo.getMaxResponseBytes().getResponseBytes());
-					fields.addField(DateUtil.dateToString(vo.getMaxResponseBytes().getResponseDate(), SDF_DateSecond));
+					fields.addField(DateUtil.dateToString(vo.getMaxResponseBytes().getDate(), SDF_DateSecond));
 				}
 				if(setting.fieldMapping.isMappedCode()) {
 					fields.addField(vo.getErrorCount());
 					fields.addField(vo.getEntryErrorRatio());
 					fields.addField(vo.getLastError().getResponseCode());
-					fields.addField(DateUtil.dateToString(vo.getLastError().getResponseDate(), SDF_DateSecond));
+					fields.addField(DateUtil.dateToString(vo.getLastError().getDate(), SDF_DateSecond));
 				}
 			}
 			resultTable.addFields(fields);

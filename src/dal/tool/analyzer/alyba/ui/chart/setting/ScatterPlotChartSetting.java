@@ -114,6 +114,11 @@ public class ScatterPlotChartSetting extends ChartSetting {
 	public void init() {
 	}
 	
+	public void toggleRegressionLinear() {
+		chk_reg_linear.setSelection(!chk_reg_linear.getSelection());
+		chk_reg_equation.setEnabled(chk_reg_linear.getSelection());
+	}
+	
 	public void reset(Chart chart) {
 		if(chart != null) {
 			if(chart instanceof ScatterPlotChart) {

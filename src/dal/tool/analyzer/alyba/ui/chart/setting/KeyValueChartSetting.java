@@ -246,7 +246,7 @@ public class KeyValueChartSetting extends ChartSetting {
 								setBoundaryValueTable(getBoundaryValues());
 							} else if(e.detail == SWT.TRAVERSE_ESCAPE) {
 								TableItem item = tbl_editor.getItem();
-								item.setText(1, String.valueOf((Double)item.getData()));
+								item.setText(1, (item.getData()==null ? "" : String.valueOf((Double)item.getData())));
 								newEditor.dispose();
 								e.doit = false;
 							}

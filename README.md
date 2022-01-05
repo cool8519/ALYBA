@@ -1,4 +1,4 @@
-ALYBA (AccessLog & Your Bad Applications)
+﻿ALYBA (AccessLog & Your Bad Applications)
 =============================
 일반적인 미들웨어의 경우, 기본적으로 Accesslog를 이용하여 클라이언트 요청 정보를 기록한다. 여기에는 모든 요청에 대한 처리결과가 기록되어 있으므로, 이것을 이용하여 시스템의 성능을 분석할 수 있다. 가령, PeakTime은 언제인지, 최대 몇 TPS를 처리하는지, 응답시간 지연이 얼마나 발생하며 어떤 요청이 주로 지연되는지, 오류비율은 얼마나 되는지 등을 Accesslog를 통해 분석이 가능하다. ALYBA는 Accesslog를 분석하여 시스템의 현황을 점검하고 더 나아가 악성 어플리케이션을 식별하기 위한 목적으로 개발되었다.
 
@@ -10,13 +10,13 @@ Requirements
 Getting Started
 ---------------
 아래의 두개 버전 중 하나를 다운로드 한다.
-* Windows Executable : [ALYBA_v1.7.0.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.7.0.exe)
-* Java Archive File : [ALYBA_v1.7.0.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.7.0.jar) [ALYBA_v1.7.0_32bit.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.7.0_32bit.jar)
+* Windows Executable : [ALYBA_v1.7.1.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.7.1.exe)
+* Java Archive File : [ALYBA_v1.7.1.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.7.1.jar)
 
 ALYBA 실행파일을 클릭하거나, 커맨드 창에서 실행시키면 된다.
 `C:\> ALYBA.exe`
 
-Excutable Binary 파일(exe)은 CPU 비트수에 따라 수행이 안될 수 있다. 이 경우는 JAVA Archive 파일(jar)을 아래와 같이 수행한다.
+Excutable Binary 파일(exe)은 Windows 환경에 따라 수행이 안될 수 있다. 이 경우는 JAVA Archive 파일(jar)을 아래와 같이 수행할 수 있다.
 
 `C:\> java -jar ALYBA.jar`
 
@@ -72,6 +72,7 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
  - . 좌측의 필드 데이터에 공백으로 구분된 Delimeter가 있을 경우, 선택적으로 매핑이 가능하다.
  - . <kbd>Del</kbd>키로 매핑된 필드를 취소할 수 있다.
  - . 시간은 기본적으로 UTC+0 기준으로 입력되므로, 로그가 기록된 서버의 TimeZone이 있는 경우는 Hour 단위로 Offset 설정을 한다. (예: IST=5.5시간)
+ - . 로그의 요청 URI가 RESTful URL 형식인 경우, URI Mapping에 패턴을 등록하면 매칭되는 패턴은 하나의 URI로 집계된다. (예: /user/myId123/get -> /user/{userId}/get) 
 
 ![Screenhot](screenshots/03.jpg)
 
@@ -218,11 +219,33 @@ Release Note
 - 자원사용률 로그 파싱 및 그래프 추가
 - 회귀분석 기능 추가
 
+##### v1.8.0
+- 버그 수정
+- (Bug) 자원사용률 수집파일이 sar 형식일때 날짜가 바뀌는 문제 수정
+- (Bug) ResultAnalyzer 자동 리로딩시 파일명이 바뀌지 않는 문제 수정
+- (Bug) ResultAnalyzer 회귀분석 그래프 확대시 회귀식 화살표 위치 맞지 않는 문제 수정
+- (Bug) ResultAnalyzer 오류 발생시 메시지가 null로 입력되어 MessageBox가 화면에 표시되지 않는 문제 수정
+- (Bug) UnixTime을 req로 설정시 오류 문제 수정
+- ResultAnalyzer DATA 탭에서 condition/sort 쿼리 입력 분리
+- 파일별 파싱 데이터 Merge 병렬 처리
+- 설정파일 데이터 구조 변경
+- 리턴코드가 숫자가 아닌 경우도 지원되도록 변경
+- 자원사용률 로그 파싱시 같은 시점의 데이터가 존재하는 경우 기존 데이터와 병합하도록 개선
+- 집계된 TPS/TPM 로그를 파싱하여 데이터베이스 생성 기능 추가
+- JSON 형식의 로그 파싱 기능 추가
+- 시간 데이터의 기준을 요청/응답으로 선택 가능
+- 파싱시 Error 허용 로직 변경
+- 파싱시 Thread별 진행상태 툴팁에 수집된 Entry 갯수 확인 가능 
+- 회귀분석 자원사용률 그룹핑시 Merge 방식을 Avg/Sum으로 선택 가능
+- 구분자가 연속으로 나올경우 필드에서 제외되는 문제가 있어, strict check 기능 추가
+- LogType이 Customize가 아닌 경우도 필드 매핑 수정이 가능하도록 변경
+- RESTful URL 지원. URI Mapping 패턴을 등록하면 URI 패턴별 집계가 가능하도록 기능 추가  
+- 사용자 편의를 위해 주요 컨트롤 툴팁에 설명 추가
+
 To-do
 --------------
 What ALYBA will implement in the future:
 * Analysis History Management
 * Non-linear Regression Analysis
 * Customized Visualization
-* Symentic URL support
 

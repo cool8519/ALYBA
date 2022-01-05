@@ -1,6 +1,7 @@
 package dal.tool.analyzer.alyba.setting;
 
 import java.util.HashMap;
+import java.util.List;
 
 import dal.util.StringUtil;
 
@@ -9,6 +10,7 @@ public class FieldMappingInfo {
 	public String fieldDelimeter;
 	public String fieldBracelet;
 	public HashMap<String, String> mappingInfo = new HashMap<String, String>();
+	public List<String> uriMappingPatterns;
 	public int fieldCount;
 
 	public FieldMappingInfo() {
@@ -54,6 +56,14 @@ public class FieldMappingInfo {
 
 	public void setMappingInfo(HashMap<String, String> mapping_info) {
 		this.mappingInfo = mapping_info;
+	}
+	
+	public List<String> getURIMappingPatterns() {
+		return uriMappingPatterns;
+	}
+	
+	public void setURIMappingPatterns(List<String> patterns) {
+		this.uriMappingPatterns = patterns;
 	}
 	
 	public void setMappingInfo(String[] field_idx_arr) {

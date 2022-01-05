@@ -24,6 +24,7 @@ public class ResourceAnalyzeTask extends ProgressBarTask {
 		this.parserClass = parser_clazz;
 		status = new int[setting.getFileInfoList().size()];
 		tasksPercent = new int[setting.getFileInfoList().size()];
+		tasksDetail = new String[setting.getFileInfoList().size()];
 		for(int i = 0; i < status.length; i++) {
 			status[i] = STATUS_READY;
 			tasksPercent[i] = 0;
@@ -37,10 +38,10 @@ public class ResourceAnalyzeTask extends ProgressBarTask {
 		}
 		if(parser != null) {
 			parser.cancel();
-			Logger.logln("CANCEL called");
+			Logger.debug("CANCEL called");
 			parser = null;
 		} else {
-			Logger.logln("Nothing to cancel");
+			Logger.debug("Nothing to cancel");
 		}
 	}
 
@@ -116,7 +117,7 @@ public class ResourceAnalyzeTask extends ProgressBarTask {
 			} else {
 				isSuccessed = false;
 				setFailedMessage("No data to parse.");
-				Logger.logln("No data to parse : count=" + parser.getTotalCount());
+				Logger.debug("No data to parse : count=" + parser.getTotalCount());
 			}
 
 			setDetailMessage("Clearing memory", "removing parsers");
@@ -125,7 +126,8 @@ public class ResourceAnalyzeTask extends ProgressBarTask {
 
 			setDetailMessage("Analyzer task is completed");
 		} catch(Exception e) {
-			Logger.debug(e);
+			Logger.debug("Failed to make up result for the parsers.");
+			Logger.error(e);
 		}
 	}
 

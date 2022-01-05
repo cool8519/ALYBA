@@ -57,7 +57,7 @@ import dal.tool.analyzer.alyba.parse.parser.ResourceParser;
 import dal.tool.analyzer.alyba.parse.task.ResourceAnalyzeTask;
 import dal.tool.analyzer.alyba.setting.ResourceAnalyzerSetting;
 import dal.tool.analyzer.alyba.setting.ResourceFieldMappingInfo;
-import dal.tool.analyzer.alyba.ui.AlybaGUI;
+import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.FileUtil;
 import dal.util.StringUtil;
@@ -430,7 +430,7 @@ public class ResultResource extends Composite {
 
 		btn_file_open.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				List<File> files = FileDialogUtil.openReadDialogFiles(getShell(), Constant.FILE_FILTER_NAMES, Constant.FILE_FILTER_EXTS, Constant.DIALOG_INIT_PATH);
+				List<File> files = FileDialogUtil.openReadDialogFiles(getShell(), Constant.ALLFILES_FILTER_NAMES, Constant.ALLFILES_FILTER_EXTS, Constant.DIALOG_INIT_PATH);
 				if(files != null && files.size() > 0) {
 					addTableItems(tbl_files, files);
 				}
@@ -448,7 +448,7 @@ public class ResultResource extends Composite {
 				int cnt = tbl_files.getItemCount();
 				if(cnt > 0) {
 					tbl_files.removeAll();
-					debug("Removed " + cnt + " item(s).\n");
+					Logger.debug("Removed " + cnt + " item(s).");
 					fieldMapping.reset();
 					fieldMapping.setEnabled(false);
 				}
@@ -544,18 +544,6 @@ public class ResultResource extends Composite {
 
 	}
 
-	protected void debug(String s) {
-		if(AlybaGUI.instance != null) {
-			AlybaGUI.getInstance().debug(s);
-		}
-	}
-
-	protected void debug(Throwable t) {
-		if(AlybaGUI.instance != null) {
-			AlybaGUI.getInstance().debug(t);
-		}
-	}
-
 	public void load() throws Exception {
 		initDatabase();
 		loadTables();
@@ -574,7 +562,8 @@ public class ResultResource extends Composite {
 				}
 			}
 		} catch(Exception e) {
-			debug(e.getMessage());
+			Logger.debug("Failed to get list of resource name/group.");
+			Logger.error(e);
 		}
 	}
 	
@@ -583,16 +572,16 @@ public class ResultResource extends Composite {
 			SummaryEntryVO summaryVo = db.select(em, SummaryEntryVO.class);
 			Date insertDate = summaryVo.getLastResourceInsertTime();
 			
-			String countQuery = "SELECT COUNT(o) FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group";
+			String countQuery = "SELECT COUNT(o) FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group AND o.count > 0";
 			Map<String,Object> params = new HashMap<String,Object>(2);
 			params.put("name", name);
 			params.put("group", group);
 			long totalRows = db.select(em, countQuery, Long.class, params);
 
-			String fromQuery = "SELECT MIN(o.unit_date) FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group";
+			String fromQuery = "SELECT MIN(o.unit_date) FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group AND o.count > 0";
 			Date fromDate = db.select(em, fromQuery, Date.class, params);
 
-			String toQuery = "SELECT MAX(o.unit_date) FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group";
+			String toQuery = "SELECT MAX(o.unit_date) FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group AND o.count > 0";
 			Date toDate = db.select(em, toQuery, Date.class, params);
 
 			lb_insert_date_value.setText(sdf_datetime.format(insertDate));
@@ -601,7 +590,8 @@ public class ResultResource extends Composite {
 			lb_to_date_value.setText(sdf_datetime.format(toDate));
 			toggleSummaryVisible(true);
 		} catch(Exception e) {
-			debug(e);
+			Logger.debug("Failed to select resource data : name=" + name + ", group=" + group); 
+			Logger.error(e);
 			toggleSummaryVisible(false);
 		}
 	}
@@ -660,7 +650,7 @@ public class ResultResource extends Composite {
 					table.getItem(idx).setText(4, name);
 					table.getItem(idx).setText(5, group);				
 					table.getItem(idx).setData("file", f);
-					debug("Duplicated Item(size/name/gropu updated) : " + f.getCanonicalPath());
+					Logger.debug("Duplicated Item(size/name/group updated) : " + f.getCanonicalPath());
 				} else {
 					String fullpath = f.getCanonicalPath();
 					int lastidx = fullpath.lastIndexOf(File.separatorChar);
@@ -672,15 +662,16 @@ public class ResultResource extends Composite {
 					item.setText(4, name);
 					item.setText(5, group);
 					item.setData("file", f);
-					debug("Added Item : " + f.getCanonicalPath());
+					Logger.debug("Added Item : " + f.getCanonicalPath());
 					cnt++;
 				}
 			} catch(Exception ex) {
-				debug(ex);
+				Logger.debug("Failed to add file item(s).");
+				Logger.error(ex);
 			}
 		}
 		if(cnt > 0) {
-			debug(cnt + " files are added successfully.\n");
+			Logger.debug(cnt + " files are added successfully.");
 			tblv_files.getTable().deselectAll();
 			tblv_files.getTable().select(from_idx, tbl_files.getItemCount() - 1);
 			tbl_files.showItem(tbl_files.getItem(tbl_files.getItemCount() - 1));
@@ -724,11 +715,12 @@ public class ResultResource extends Composite {
 				params.put("group", group);
 				int count = db.deleteWithTransaction(em, delete_query, params, true);
 				if(count > 0) {
-					debug("Removed server(" + name + ":" + group + ") resource data : " + count + " row(s).\n");				
+					Logger.debug("Removed server(" + name + ":" + group + ") resource data : " + count + " row(s).");				
 				}
 				tbl_list.remove(idx);
 			} catch(Exception e) {
-				debug(e.getMessage());
+				Logger.debug("Failed to remove resource data for the server : name=" + name + ", group=" + group);
+				Logger.error(e);
 			}
 		}
 		checkExistServerData();
@@ -744,11 +736,12 @@ public class ResultResource extends Composite {
 			Map<String,Object> params = null;
 			int count = db.deleteWithTransaction(em, delete_query, params, true);
 			if(count > 0) {
-				debug("Removed all resource data : " + count + " row(s).\n");				
+				Logger.debug("Removed all resource data : " + count + " row(s).");				
 			}
 			tbl_list.removeAll();
 		} catch(Exception e) {
-			debug(e.getMessage());
+			Logger.debug("Failed to remove all resource data.");
+			Logger.error(e);
 		}
 		checkExistServerData();
 		toggleSummaryVisible(false);
@@ -760,11 +753,12 @@ public class ResultResource extends Composite {
 			if(count < 1) {
 				SummaryEntryVO summaryVo = db.select(em, SummaryEntryVO.class);
 				summaryVo.setLastResourceInsertTime(null);
-				debug("Updating Summary Data to DB.");
+				Logger.debug("Updating Summary Data to DB.");
 				db.insertWithTransaction(em, summaryVo, true);
 			}
 		} catch(Exception e) {
-			debug(e);
+			Logger.debug("Failed to update summary data.");
+			Logger.error(e);
 		}		
 	}
 
@@ -799,7 +793,7 @@ public class ResultResource extends Composite {
 			} else {
 				tblv_files.getTable().deselectAll();
 			}
-			debug("Removed " + indices.length + " item(s).\n");
+			Logger.debug("Removed " + indices.length + " item(s).");
 		}
 		if(tbl_files.getItemCount() == 0) {
 			fieldMapping.reset();
@@ -886,7 +880,7 @@ public class ResultResource extends Composite {
 			for(int j = 0; j < i; j++) {
 				value2 = ((File)items[j].getData("file")).length();
 				if((isAsc && (value1 < value2)) || (!isAsc && (value1 > value2))) {
-					String[] values = { items[i].getText(0), items[i].getText(1), items[i].getText(2), items[i].getText(3) };
+					String[] values = { items[i].getText(0), items[i].getText(1), items[i].getText(2), items[i].getText(3), items[i].getText(4), items[i].getText(5) };
 					File f = (File)items[i].getData("file");
 					items[i].dispose();
 					TableItem item = new TableItem(tbl_files, SWT.NULL, j);
@@ -924,7 +918,7 @@ public class ResultResource extends Composite {
 
 		ResourceAnalyzerSetting setting = getAnalyzerSetting();
 		setting.setAnalyzeDate(new Date());
-		debug(setting.toString());
+		Logger.debug(setting.toString());
 		
 		if(!MessageUtil.showConfirmMessage(getShell(), "Do you want to analyze the files with current mapping?")) {
 			return;
@@ -949,7 +943,8 @@ public class ResultResource extends Composite {
 				}
 			}
 		} catch(Exception e) {
-			debug(e);
+			Logger.debug("Failed to check if data exist.");
+			Logger.error(e);
 		}
 		
 		ProgressBarDialog progressBar = new ProgressBarDialog(getShell(), Utility.getFont());
@@ -979,7 +974,8 @@ public class ResultResource extends Composite {
 				loadTables();
 			}
 		} catch(Exception e) {
-			debug(e);
+			Logger.debug("Failed to reload data.");
+			Logger.error(e);
 		}
 
 		task = null;
