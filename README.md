@@ -10,8 +10,8 @@ Requirements
 Getting Started
 ---------------
 아래의 두개 버전 중 하나를 다운로드 한다.
-* Windows Executable : [ALYBA_v1.7.1.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.7.1.exe)
-* Java Archive File : [ALYBA_v1.7.1.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.7.1.jar)
+* Windows Executable : [ALYBA_v1.8.0.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.8.0.exe)
+* Java Archive File : [ALYBA_v1.8.0.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.8.0.jar)
 
 ALYBA 실행파일을 클릭하거나, 커맨드 창에서 실행시키면 된다.
 `C:\> ALYBA.exe`
