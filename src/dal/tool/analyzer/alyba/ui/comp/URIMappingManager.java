@@ -1,12 +1,16 @@
 package dal.tool.analyzer.alyba.ui.comp;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.Reader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
@@ -26,27 +30,35 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
+import org.yaml.snakeyaml.Yaml;
 
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
+import dal.util.StringUtil;
 import dal.util.swt.FileDialogUtil;
+import dal.util.swt.MessageUtil;
 
 public class URIMappingManager extends Shell {
 
 	public URIMappingManager instance;
+	private Group grp_ftype;
 	private Button btn_openFiles;
+	private Button btn_ftype_text;
+	private Button btn_ftype_yaml;
 	private Button btn_removeSelected;
 	private Button btn_removeAll;
 	private Table tbl_uri_mapping;
@@ -71,14 +83,14 @@ public class URIMappingManager extends Shell {
 	    forml_grp_setting.marginHeight = 10;
 	    forml_grp_setting.marginWidth = 10;
 	    setLayout(forml_grp_setting);
-		setSize(360, 500);
+		setSize(400, 500);
 		setText("URI Mapping Manager");
 
 		FormData fd_btn_openFiles = new FormData();
 		fd_btn_openFiles.left = new FormAttachment(this, 0, SWT.LEFT);
-		fd_btn_openFiles.top = new FormAttachment(this, 0);
-		fd_btn_openFiles.width = 120;
-		fd_btn_openFiles.height = 50;
+		fd_btn_openFiles.top = new FormAttachment(this, 5);
+		fd_btn_openFiles.width = 100;
+		fd_btn_openFiles.height = 55;
 		btn_openFiles = new Button(this, SWT.NONE);
 		btn_openFiles.setLayoutData(fd_btn_openFiles);
 		btn_openFiles.setFont(Utility.getFont());
@@ -88,7 +100,7 @@ public class URIMappingManager extends Shell {
 		fd_btn_removeSelected.right = new FormAttachment(100);
 		fd_btn_removeSelected.top = new FormAttachment(btn_openFiles, 0, SWT.TOP);
 		fd_btn_removeSelected.width = 120;
-		fd_btn_removeSelected.height = 23;
+		fd_btn_removeSelected.height = 25;
 		btn_removeSelected = new Button(this, SWT.NONE);
 		btn_removeSelected.setLayoutData(fd_btn_removeSelected);
 		btn_removeSelected.setFont(Utility.getFont());
@@ -98,11 +110,36 @@ public class URIMappingManager extends Shell {
 		fd_btn_removeAll.right = new FormAttachment(btn_removeSelected, 0, SWT.RIGHT);
 		fd_btn_removeAll.bottom = new FormAttachment(btn_openFiles, 0, SWT.BOTTOM);
 		fd_btn_removeAll.width = 120;
-		fd_btn_removeAll.height = 23;
+		fd_btn_removeAll.height = 25;
 		btn_removeAll = new Button(this, SWT.NONE);
 		btn_removeAll.setLayoutData(fd_btn_removeAll);
 		btn_removeAll.setFont(Utility.getFont());
 		btn_removeAll.setText("Remove All");
+		
+	    FormData fd_grp_ftype = new FormData();
+	    fd_grp_ftype.left = new FormAttachment(btn_openFiles, 5, SWT.RIGHT);
+	    fd_grp_ftype.right = new FormAttachment(btn_removeSelected, -15, SWT.LEFT);
+	    fd_grp_ftype.top = new FormAttachment(btn_openFiles, -5, SWT.TOP);
+	    fd_grp_ftype.bottom = new FormAttachment(btn_openFiles, 0, SWT.BOTTOM);
+	    RowLayout forml_grp_ftype = new RowLayout();
+	    forml_grp_ftype.marginHeight = 2;
+	    forml_grp_ftype.marginWidth = 5;
+	    grp_ftype = new Group(this, SWT.NONE);
+	    grp_ftype.setLayoutData(fd_grp_ftype);
+	    grp_ftype.setLayout(forml_grp_ftype);
+	    grp_ftype.setFont(Utility.getFont());
+	    grp_ftype.setText(" File Type ");
+	    
+		btn_ftype_text = new Button(grp_ftype, SWT.RADIO);
+		btn_ftype_text.setFont(Utility.getFont());
+		btn_ftype_text.setText("Text");
+		btn_ftype_text.setToolTipText("Plain text list of URI Patterns on each line.\n\nEx)\n/shop/product/{productId}\n/shop/book/{category}/list\n/shop/book/{bookId}/detail");
+		btn_ftype_text.setSelection(true);
+
+		btn_ftype_yaml = new Button(grp_ftype, SWT.RADIO);
+		btn_ftype_yaml.setFont(Utility.getFont());
+		btn_ftype_yaml.setText("OpenAPI Spec");
+		btn_ftype_yaml.setToolTipText("OpenAPI Specification YAML.\n\nEx)\nopenapi: 3.0.0\ninfo:\n  title: Sample API\n  ...\nservers:\n  - url: /samples\\n    ...\npaths:\n  /user/{userId}:\n    get:\n      ...\n");
 		
 		FormData fd_tbl_uri_mapping = new FormData();
 		fd_tbl_uri_mapping.left = new FormAttachment(0);
@@ -119,7 +156,7 @@ public class URIMappingManager extends Shell {
 		tblc_index.setText("No.");
 		tblc_index.setWidth(35);
 		tblc_uri_mapping = new TableColumn(tbl_uri_mapping, SWT.LEFT);
-		tblc_uri_mapping.setWidth(270);
+		tblc_uri_mapping.setWidth(320);
 		tblc_uri_mapping.setResizable(false);
 		tblc_uri_mapping.setText("URI Pattern");
 		tbl_editor = new TableEditor(tbl_uri_mapping);
@@ -196,7 +233,6 @@ public class URIMappingManager extends Shell {
 				Listener textListener = new Listener() {
 					public void handleEvent(Event e) {
 						if(e.type == SWT.FocusOut) {
-							checkPatternValueAndSet(newEditor.getText(), tbl_editor.getItem(), tbl_uri_mapping.getSelectionIndex());
 							newEditor.dispose();
 						} else if(e.type == SWT.Traverse) {
 							if(e.detail == SWT.TRAVERSE_RETURN) {
@@ -251,36 +287,83 @@ public class URIMappingManager extends Shell {
 		return list;
 	}
 	
+	@SuppressWarnings("unchecked")
 	private void addPatternItems(List<File> files) {
 		int from_idx = tbl_uri_mapping.getItemCount();
-		int cnt = 0;
+		int s_cnt = 0;
+		int f_cnt = 0;
 		for(int i = 0; i < files.size(); i++) {
-			File f = (File)files.get(i);
-			BufferedReader br = null;
-			LineNumberReader lr = null;
-			String line;
+			File f = (File)files.get(i);			
+			Reader reader = null;
 			try {
-				br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
-				lr = new LineNumberReader(br);
-				while((line = lr.readLine()) != null) {
-					String pattern = removeQuotation(line);					
-					if(addPattern(pattern)) {
-						cnt++;
+				if(btn_ftype_text.getSelection()) {
+					// Text type
+					reader = new LineNumberReader(new InputStreamReader(new FileInputStream(f)));
+					LineNumberReader lr = (LineNumberReader)reader;
+					String line;
+					while((line = lr.readLine()) != null) {
+						String pattern = removeQuotation(line);					
+						if(addPattern(pattern)) {
+							s_cnt++;
+						} else {
+							f_cnt++;
+							Logger.debug("Ignored the pattern from line " + lr.getLineNumber() + " (" + f.getCanonicalPath() + ") : " + line);
+						}
+					}
+				} else {
+					// OpenAPI type
+					reader = new FileReader(f);
+					Yaml yaml = new Yaml();
+					Map<String, Object> yamlMaps = yaml.load(reader);
+					Object o_version = yamlMaps.get("swagger") != null ? yamlMaps.get("swagger") : yamlMaps.get("openapi");
+					if(o_version == null) {
+						throw new Exception("Cannot get version of OpenAPI Spec.");
+					}
+					String version = (String)o_version;
+					String basePath = null;
+					Set<String> patterns = null;
+					if(version.startsWith("2")) {
+						basePath = (String)yamlMaps.get("basePath");
+						basePath = (basePath==null ? "" : basePath);
+						patterns = ((Map<String,Object>)yamlMaps.get("paths")).keySet();
+					} else if(version.startsWith("3")) {
+						List<Map<String,Object>> basePaths = ((List<Map<String,Object>>)yamlMaps.get("servers"));
+						basePath = (String)((Map<String,Object>)basePaths.get(0)).get("url");
+						basePath = (basePath==null ? "" : basePath);
+						basePath = (basePath.indexOf("://")>0) ? new URL(basePath).getPath() : basePath;
+						patterns = ((Map<String,Object>)yamlMaps.get("paths")).keySet();
 					} else {
-						Logger.debug("Failed to add a pattern from line " + lr.getLineNumber() + " (" + f.getCanonicalPath() + ") : " + line);
+						throw new Exception("Not support version of OpenAPI Spec.");
+					}
+					basePath = basePath.endsWith("/") ? basePath.substring(0, basePath.length()-1) : basePath;
+					for(String item : patterns) {
+						String pattern = basePath + item;					
+						if(addPattern(pattern)) {
+							s_cnt++;
+						} else {
+							f_cnt++;
+							Logger.debug("Ignored the pattern : " + pattern);
+						}
 					}
 				}
 			} catch(Exception ex) {
 				Logger.debug("Failed to read patterns from the file : " + f.getAbsolutePath());
 				Logger.error(ex);
+			} finally {
+				if(reader != null) {
+					try { reader.close(); } catch(Exception e) {}
+				}
 			}
 		}
-		if(cnt > 0) {
-			Logger.debug(cnt + " items are added successfully.");
+		if(s_cnt > 0) {
+			Logger.debug(s_cnt + " items are added successfully.");
 			tbl_uri_mapping.deselectAll();
 			tbl_uri_mapping.select(from_idx-1, tbl_uri_mapping.getItemCount() - 2);
 			tbl_uri_mapping.showItem(tbl_uri_mapping.getItem(tbl_uri_mapping.getItemCount() - 2));
 			tbl_uri_mapping.forceFocus();
+		}
+		if(f_cnt > 0) {
+			MessageUtil.showWarningMessage(instance, f_cnt + " pattern(s) has been ignored.");
 		}
 	}
 
@@ -321,7 +404,9 @@ public class URIMappingManager extends Shell {
 	}
 	
 	private boolean addPattern(String value) {
-		if(!validatePatternValue(value, -1)) {
+		try {
+			validatePatternValue(value, -1);
+		} catch(Exception e) {
 			return false;
 		}		
 		TableItem item = tbl_uri_mapping.getItem(tbl_uri_mapping.getItemCount()-1);
@@ -333,30 +418,40 @@ public class URIMappingManager extends Shell {
 		return true;
 	}
 	
-	private boolean validatePatternValue(String value, int ignoreIdx) {
+	private void validatePatternValue(String value, int ignoreIdx) throws Exception {
 		// check syntax
 		if(value.startsWith("/") == false) {
-			Logger.debug("Failed to register a pattern. The URI must start with '/'.");
-			return false;
+			String msg = "Failed to validate a pattern. The URI must start with '/'.";
+			Logger.debug(msg);
+			throw new Exception(msg);
 		} else if(value.indexOf('{') < 0 || value.indexOf('}') < 0) {
-			Logger.debug("Failed to register a pattern. The pattern must contain with '{' and '}'.");
-			return false;
-		}		
+			String msg = "Failed to validate a pattern. The pattern must contain with '{' and '}'.";
+			Logger.debug(msg);
+			throw new Exception(msg);
+		}
+		if(StringUtil.checkParentheses(value, "{}") == false) {
+			String msg = "Failed to validate a pattern. The parentheses in the pattern do not match.";
+			Logger.debug(msg);
+			throw new Exception(msg);
+		}
 		// check duplicate
 		TableItem[] items = tbl_uri_mapping.getItems();
 		for(int i = 0; i < items.length; i++) {
 			if(i != ignoreIdx && items[i].getText(1).equals(value)) {
-				Logger.debug("Failed to register a pattern. The input value already exists.");
-				return false;
+				String msg = "Failed to validate a pattern. The input value already exists.";
+				Logger.debug(msg);
+				throw new Exception(msg);
 			}
 		}
-		return true;
 	}
 	
 	private void checkPatternValueAndSet(String value, TableItem item, int index) {
 		value = value.trim();
 		if(!value.equals("")) {
-			if(!validatePatternValue(value, index)) {
+			try {
+				validatePatternValue(value, index);
+			} catch(Exception e) {
+				MessageUtil.showErrorMessage(instance, e.getMessage().replaceAll("\\.\s", "\\.\n"));
 				return;
 			}
 		}

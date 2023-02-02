@@ -845,7 +845,7 @@ public class ResourceFieldMapping extends Composite {
 
 		String delimeter = StringUtil.replaceMetaCharacter(getDelimeter(), false);
 		String[] bracelets = StringUtil.getArrayFromString(getBracelet(), " ");
-		List<String> tokenList = ParserUtil.getTokenList(file_line, delimeter, bracelets, AlybaGUI.getInstance().optionSetting.checkStrictCheck());
+		List<String> tokenList = ParserUtil.getTokenList(file_line, delimeter, bracelets, (AlybaGUI.instance==null)?false:AlybaGUI.getInstance().optionSetting.checkStrictCheck());
 		if(tokenList == null) {
 			return;
 		}

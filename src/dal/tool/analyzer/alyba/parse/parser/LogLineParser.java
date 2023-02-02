@@ -36,6 +36,7 @@ import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.DateUtil;
 import dal.util.JsonUtil;
+import dal.util.StringUtil;
 import dal.util.db.ObjectDBUtil;
 import dal.util.swt.ProgressBarTask;
 
@@ -303,15 +304,40 @@ public abstract class LogLineParser extends FileLineParser {
 		if(list == null) {
 			list = new ArrayList<PatternItem>(uri_mapping_patterns.size());
 			for(String pattern_str : uri_mapping_patterns) {
-				String regex = pattern_str;
+				String regex = "";
 				try {
-					while(regex.indexOf("/{") > -1 && regex.indexOf("}", regex.indexOf("/{")) > -1) {
-						int init = regex.indexOf("/{");
-						int end = regex.indexOf("}", init);
-						String value = ".+";
-						regex = regex.substring(0, init) + value + regex.substring(end + 1);
+					int prev = 0;
+					int init = pattern_str.indexOf("{");
+					int end = pattern_str.indexOf("}", init);
+					while(init > -1 && end > -1) {
+						String before = pattern_str.substring(prev, init).replaceAll("/", "\\/").replaceAll("\\.", "\\\\."); 
+						String pattern_str_in = pattern_str.substring(init+1, end);
+						String regex_str = ".+";
+						if(pattern_str_in.indexOf(":") > -1) {
+							// include regex
+							regex_str = pattern_str_in.substring(pattern_str_in.indexOf(":")+1);
+							int openCnt;
+							String added = regex_str;
+							while((openCnt = StringUtil.countCharacters(added, '{')) > 0) {
+								added = "";
+								for(int i = 0; i < openCnt; i++) {						
+									prev = end;
+									init = end;
+									end = pattern_str.indexOf("}", init+1);
+									added += pattern_str.substring(init, end);
+								}
+								regex_str += added;
+							}
+							regex_str = regex_str.replaceAll("\\\\\\\\", "\\\\");
+						}
+						regex += before + "(" + regex_str + ")";
+						prev = end + 1;
+						init = pattern_str.indexOf("{", prev);
+						end = pattern_str.indexOf("}", init);
 					}
-					regex = regex.replaceAll("/", "\\/");
+					if(prev < pattern_str.length()) {
+						regex += pattern_str.substring(prev).replaceAll("/", "\\/").replaceAll("\\.", "\\\\.");
+					}
 					Pattern pattern = Pattern.compile(regex);
 					list.add(new PatternItem(pattern_str, pattern));
 					Logger.debug("[" + Thread.currentThread().getName() + "] URI Pattern(" + pattern_str + ") compiled successfully.");

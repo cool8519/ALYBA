@@ -28,11 +28,11 @@ public class Logger {
 		dal.tool.analyzer.alyba.util.Logger.logln(s, level);
 		if(AlybaGUI.debugMode) {
 			if("main".equals(Thread.currentThread().getName())) {
-				AlybaGUI.getInstance().console.addDebugMessage(s);
+				AlybaGUI.getDebugConsole().addDebugMessage(s);
 			} else {
 				AlybaGUI.getInstance().display.syncExec(new Runnable() {
 					public void run() {
-						AlybaGUI.getInstance().console.addDebugMessage(s);
+						AlybaGUI.getDebugConsole().addDebugMessage(s);
 					}
 				});
 			}

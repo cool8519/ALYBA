@@ -89,8 +89,8 @@ public class AlybaGUI {
 
 	public static AlybaGUI instance = null;
 	public static boolean debugMode = false;
+	public static DebugConsole debugConsole = null;
 	
-	public DebugConsole console = null;
 	public TPMAnalyzer tpmAnalyzer = null;
 	public ResultAnalyzer resultAnalyzer = null;
 
@@ -127,44 +127,43 @@ public class AlybaGUI {
 
 	public static void main(String[] args) {
 		try {
-			boolean isDebug = false;
 			boolean isResultAnalyzer = false;
 			String dbFileName = null;
-			if(args.length > 0) {
-				if(args[0].equalsIgnoreCase("-result")) {
-					isResultAnalyzer = true;
-					if(args.length > 2) {
-						System.out.println("Too many arguments.");
-						printUsage();
-						return;					
-					} else if(args.length == 2) {
-						dbFileName = args[1];
-						if(!(new File(dbFileName).exists())) {
-							System.out.println("File doesn't exists.");
-							return;
-						}						
-					}
-				} else if(args.length > 1) {
-					System.out.println("Too many arguments.");
-					printUsage();
-					return;										
-				} else {
-					if(args[0].equalsIgnoreCase("-help")) {
-						System.out.println("ALYBA (AccessLog & Your Bad Application)");
-						printUsage();
-						return;					
-					} else if(args[0].equalsIgnoreCase("-version")) {
-						System.out.println(Constant.PROGRAM_VERSION);
+			
+			String[] commandlineOptions = { "-help", "-version", "-debug", "-result" };
+			CommandLineArguments cmdArgs = new CommandLineArguments(commandlineOptions, false);
+			cmdArgs.setNonOptionArguments(0, 1);
+			try {
+				cmdArgs.parse(args);
+			} catch(Exception e) {
+				System.out.println(e.getMessage());
+				printUsage();
+				return;
+			}			
+			if(cmdArgs.isIncludeOption("-help")) {
+				System.out.println("ALYBA (AccessLog & Your Bad Application)");
+				printUsage();
+				return;
+			} else if(cmdArgs.isIncludeOption("-version")) {
+				System.out.println(Constant.PROGRAM_VERSION);
+				return;
+			}			
+			if(cmdArgs.isIncludeOption("-debug")) {
+				debugMode = true;
+			}
+			if(cmdArgs.isIncludeOption("-result")) {
+				isResultAnalyzer = true;
+				if(cmdArgs.getNonOptionSize() == 1) {
+					dbFileName = cmdArgs.getNonOption(0);
+					if(!(new File(dbFileName).exists())) {
+						System.out.println("File does not exists : " + dbFileName);
 						return;
-					} else if(args[0].equalsIgnoreCase("-debug")) {
-						System.out.println("Runnig as debug mode.");
-						isDebug = true;
-					} else {
-						System.out.println("Invalid option.");
-						printUsage();
-						return;					
 					}
 				}
+			} else if(cmdArgs.getNonOptionSize() == 1) {
+				System.out.println("Allowed non-option agrument only with '-result'");
+				printUsage();
+				return;
 			}
 
 			TimeZone.setDefault(Constant.TIMEZONE_UTC);
@@ -176,7 +175,6 @@ public class AlybaGUI {
 				Constant.DEFAULT_FONT_SIZE = fd.getHeight() - (int)Math.ceil((-fd.data.lfHeight-12)/2.0F);
 		        shell = new ResultAnalyzer(display, SWT.SHELL_TRIM, dbFileName);
 			} else {
-				debugMode = isDebug;
 				instance = getInstance();
 				@SuppressWarnings("unused")
 				Splash splashWindow = new Splash(instance.display);
@@ -209,14 +207,30 @@ public class AlybaGUI {
 		if(instance == null) {
             synchronized(AlybaGUI.class) {
                 if(instance == null) {
-                	instance  = new AlybaGUI(debugMode);
+                	instance = new AlybaGUI();
                 }
             }
 		}
 		return instance;
 	}
-	
-	public AlybaGUI(boolean debugMode) {
+
+	public static void createDebugConsole(Display display) {
+		if(debugMode && debugConsole == null) {
+            synchronized(AlybaGUI.class) {
+                if(debugConsole == null) {
+        			debugConsole = new DebugConsole(display, SWT.SHELL_TRIM);
+        			debugConsole.setLocation(0, 0);
+        			debugConsole.setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
+                }
+            }
+		}
+	}
+
+	public static DebugConsole getDebugConsole() {
+		return debugConsole;
+	}
+
+	public AlybaGUI() {
 		this.display = new Display();
 		FontData fd = display.getSystemFont().getFontData()[0];
 		Constant.DEFAULT_FONT_SIZE = fd.getHeight() - (int)Math.ceil((-fd.data.lfHeight-12)/2.0F);
@@ -227,6 +241,7 @@ public class AlybaGUI {
 	 */
 	public void init() {
 		try {
+			createDebugConsole(display);
 			createContents();
 			addEventListener();
 			shell.open();
@@ -265,14 +280,7 @@ public class AlybaGUI {
 		btn_console.setFont(Utility.getFont());
 		btn_console.setText("Hide Console");
 		btn_console.setBounds(510, 8, 100, 23);
-		if(debugMode) {
-			console = new DebugConsole(display, SWT.SHELL_TRIM);
-			console.setLocation(0, 0);
-			console.setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
-			btn_console.setVisible(true);
-		} else {
-			btn_console.setVisible(false);
-		}
+		btn_console.setVisible(debugMode);
 
 		btn_resetAll = new Button(shell, SWT.NONE);
 		btn_resetAll.setFont(Utility.getFont());
@@ -649,12 +657,12 @@ public class AlybaGUI {
 	}
 
 	public void toggleDebugConsole() {
-		console.setVisible(!console.getVisible());
+		debugConsole.setVisible(!debugConsole.getVisible());
 		if(btn_console.getText().equals("Hide Console")) {
 			btn_console.setText("Show Console");
 		} else {
 			btn_console.setText("Hide Console");
-			console.setMinimized(false);
+			debugConsole.setMinimized(false);
 		}
 	}
 	
@@ -1012,7 +1020,7 @@ public class AlybaGUI {
 			outputSetting.chk_html.setSelection(guiSetting.isOutputHtmlTypeChecked());
 			outputSetting.chk_text.setSelection(guiSetting.isOutputTextTypeChecked());
 			outputSetting.checkCheckBox();
-			outputSetting.txt_directory.setText(new File(StringUtil.NVL(guiSetting.getOutputDirectory(), Constant.OUTPUT_DEFAULT_DIRECTORY)).getCanonicalPath());
+			outputSetting.txt_directory.setText(new File(StringUtil.NVL(guiSetting.getOutputDirectory(), Constant.OUTPUT_DEFAULT_DIRECTORY)).getAbsolutePath());
 			outputSetting.btn_count.setSelection(guiSetting.isOutputSortByCountChecked());
 			outputSetting.btn_name.setSelection(!guiSetting.isOutputSortByCountChecked());			
 			optionSetting.chk_multiThread.setSelection(guiSetting.isOptionMultiThreadChecked());
@@ -1399,7 +1407,7 @@ public class AlybaGUI {
 	public static void printUsage() {
 		System.out.println("");
 		System.out.println("Usage: ALYBA [<option>]");
-		System.out.println("       ALYBA -result [<result_db_file>]");
+		System.out.println("       ALYBA -result [-debug] [Result_DB_File_to_Load]");
 		System.out.println("");
 		System.out.println("option");
 		System.out.println("------");
@@ -1414,7 +1422,7 @@ public class AlybaGUI {
 		System.out.println("");
 		System.out.println("  -result");
 		System.out.println("     Open a ResultAnalyzer");
-		System.out.println("     Open a ResultAnalyzer and load the file if <result_db_file> is given.");
+		System.out.println("     Open a ResultAnalyzer and load the file if Result_DB_File_to_Load is given.");
 		System.out.println("");
 	}
 	

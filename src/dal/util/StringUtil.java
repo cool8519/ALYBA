@@ -89,5 +89,58 @@ public class StringUtil {
 	public static boolean isNumeric(String str) {
 		return NumberUtil.isNumeric(str, false);
 	}
+	
+	public static int countCharacters(String s, char c) {
+		int cnt = 0;
+		for(int i = 0; i < s.length(); i++) {
+			if(s.charAt(i) == c) cnt++;
+		}
+		return cnt;
+	}
 
+	public static boolean checkParentheses(String s, String pair) {
+		char l_char = pair.charAt(0);
+		char r_char = pair.charAt(1);
+		try {
+			int init = s.indexOf(l_char);
+			int end = s.indexOf(r_char, init);
+			if(init < 0 && end < 0) {
+				// not included parentheses
+				return true;
+			}
+			while(init > -1 && end > -1) {
+				int openCnt;
+				String added = s.substring(init+1, end);
+				while((openCnt = countCharacters(added, l_char)) > 0) {
+					// found additional left parentheses
+					added = "";
+					for(int i = 0; i < openCnt; i++) {						
+						init = end;
+						end = s.indexOf(r_char, init+1);
+						if(end < 0) {
+							// string exhausted during check
+							return false;
+						}
+						added += s.substring(init, end);
+					}
+				}
+				end++;
+				init = s.indexOf(l_char, end);
+				if(init < 0 || init > s.indexOf(r_char,end)) {
+					// no more left parentheses
+					// or right parentheses before left parentheses(ex. '}1234{')
+					break;
+				}
+				end = s.indexOf(r_char, init);
+			}
+			if(end < s.length() && s.substring(end).indexOf(r_char) > -1) {
+				// included right parenthesis in remaining string
+				return false;
+			}
+		} catch(Exception e) {
+			return false;
+		}		
+		return true;
+	}
+	
 }

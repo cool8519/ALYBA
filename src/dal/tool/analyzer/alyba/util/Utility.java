@@ -115,12 +115,17 @@ public class Utility {
 		return StringToList(str, del, false);
 	}
 
-	public static String toRegEx(String str, boolean ignore_case) throws Exception {
+	public static String toRegEx(String str, boolean ignore_case, boolean full_match) throws Exception {
 		String temp = str;
 		temp = temp.replaceAll("\\?", "(\\\\s|\\\\S)?");
 		temp = temp.replaceAll("\\*", "(\\\\s|\\\\S)*");
-		String exp = "^" + ((ignore_case) ? "(?i)" : "") + "(" + temp + ")$";
+		String exp = ((ignore_case) ? "(?i)" : "") + "(" + temp + ")";
+		exp = full_match ? ("^"+exp+"$") : exp; 
 		return exp;
+	}
+
+	public static String toRegEx(String str, boolean ignore_case) throws Exception {
+		return toRegEx(str, ignore_case, true);
 	}
 
 	public static String toRegEx(String str) throws Exception {

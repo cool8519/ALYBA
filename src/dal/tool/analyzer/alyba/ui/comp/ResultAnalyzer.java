@@ -34,6 +34,7 @@ import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.output.vo.SettingEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
+import dal.tool.analyzer.alyba.ui.CommandLineArguments;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.db.ObjectDBUtil;
@@ -46,6 +47,7 @@ public class ResultAnalyzer extends Shell {
 	public static String title_prefix = "ALYBA " + Constant.PROGRAM_VERSION + " - Result Analyzer";
 	public static ProgressBar pbar_loading;
 
+	public DebugConsole console = null;
 	private ResultAnalyzer instance;
 	
 	private Label lb_notloaded;
@@ -67,19 +69,34 @@ public class ResultAnalyzer extends Shell {
 	private ObjectDBUtil db = null;
 	private EntityManager em = null;
 
+	public static void printUsage() {
+		System.out.println();
+    	System.out.println("Usage: java dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer [-debug] {Result_DB_File_to_Load}");
+	}
+	
     public static void main(String[] args) {
         String dbFileName = null;
         
-        if(args.length == 1) {
-			dbFileName = args[0];
-			if(!(new File(dbFileName).exists())) {
-				System.out.println("File not exists.");
-				return;
-			}        	
-        } else if(args.length > 1) {
-			System.out.println("Too many arguments.");
+        String[] commandlineOptions = { "-debug" };
+		CommandLineArguments cmdArgs = new CommandLineArguments(commandlineOptions, false);
+		cmdArgs.setNonOptionArguments(0, 1);
+		try {
+			cmdArgs.parse(args);
+		} catch(Exception e) {
+			System.out.println(e.getMessage());
+			printUsage();
 			return;
-        }
+		}			
+		if(cmdArgs.isIncludeOption("-debug")) {
+			AlybaGUI.debugMode = true;
+		}
+		if(cmdArgs.getNonOptionSize() == 1) {
+			dbFileName = cmdArgs.getNonOption(0);
+			if(!(new File(dbFileName).exists())) {
+				System.out.println("File does not exists : " + dbFileName);
+				return;
+			}
+		}
 
 		TimeZone.setDefault(Constant.TIMEZONE_UTC);
         Display display = new Display();
@@ -122,6 +139,7 @@ public class ResultAnalyzer extends Shell {
 	
 	public ResultAnalyzer(Display display, int style, String fileName) {
 		super(display, style);
+		AlybaGUI.createDebugConsole(display);
 		createContents();
 		addEventListener();
 		open();
@@ -277,8 +295,10 @@ public class ResultAnalyzer extends Shell {
 		addShellListener(new ShellAdapter() {
 			public void shellClosed(ShellEvent e) {
 				if(AlybaGUI.instance != null) {
-					AlybaGUI.instance.resultAnalyzer.setVisible(false);
-					e.doit = false;
+					if(AlybaGUI.instance.resultAnalyzer != null) {
+						AlybaGUI.instance.resultAnalyzer.setVisible(false);
+						e.doit = false;
+					}
 				} else {
 					e.doit = MessageUtil.showConfirmMessage(instance, "Do you really want to exit?");
 					if(e.doit) {
@@ -373,10 +393,17 @@ public class ResultAnalyzer extends Shell {
 	}
 
 	public void loadDBFile(String fileName) {
-		closeDatabase();
-		initDatabase(fileName);
-		resetData();
-
+		try {
+			closeDatabase();
+			initDatabase(fileName);
+			resetData();
+		} catch(RuntimeException re) {
+			Logger.debug("Failed to open the database : " + re.getMessage());
+			Logger.error(re);
+			MessageUtil.showErrorMessage(instance, "Failed to open the database.");
+			return;
+		}
+		
 		try {
 			lb_notloaded.setVisible(false);
 			pbar_loading.setSelection(0);

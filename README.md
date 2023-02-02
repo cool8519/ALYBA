@@ -10,8 +10,8 @@ Requirements
 Getting Started
 ---------------
 아래의 두개 버전 중 하나를 다운로드 한다.
-* Windows Executable : [ALYBA_v1.8.0.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.8.0.exe)
-* Java Archive File : [ALYBA_v1.8.0.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.8.0.jar)
+* Windows Executable : [ALYBA_v1.8.1.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.8.1.exe)
+* Java Archive File : [ALYBA_v1.8.1.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.8.1.jar)
 
 ALYBA 실행파일을 클릭하거나, 커맨드 창에서 실행시키면 된다.
 `C:\> ALYBA.exe`
@@ -241,6 +241,15 @@ Release Note
 - LogType이 Customize가 아닌 경우도 필드 매핑 수정이 가능하도록 변경
 - RESTful URL 지원. URI Mapping 패턴을 등록하면 URI 패턴별 집계가 가능하도록 기능 추가  
 - 사용자 편의를 위해 주요 컨트롤 툴팁에 설명 추가
+
+##### v1.8.1
+- (Bug) Default Output 디렉토리 절대경로 획득시 문제 수정
+- (Bug) ResultAnalyzer 자원사율률 데이터 Sampling 버튼 동작하지 않는 문제 수정
+- (Bug) ResultAnalyzer 오픈된 ADB를 다른 창에서 중복으로 오픈할때 에러 메시지 표시되지 않는 문제 수정
+- ResultAnalyzer 디버그모드 지원 및 CommmandLine 옵션 처리방식 변경
+- URI Mapping 패턴을 등록시 OpenAPI YAML 파일 지원
+- 정규식이 포함된 URI Mapping 패턴 지원
+
 
 To-do
 --------------
