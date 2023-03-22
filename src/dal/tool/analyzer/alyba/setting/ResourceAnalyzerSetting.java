@@ -15,6 +15,7 @@ public class ResourceAnalyzerSetting {
 	public List<FileInfo> fileInfoList;
 	public ResourceFieldMappingInfo fieldMapping;
 	public int unitMinutes;
+	public boolean checkStrict;
 
 	public ResourceAnalyzerSetting() {
 	}
@@ -87,7 +88,15 @@ public class ResourceAnalyzerSetting {
 	public void setUnitMinutes(int unitMinutes) {
 		this.unitMinutes = unitMinutes;
 	}
+	
+	public boolean getCheckStrict() {
+		return checkStrict;
+	}
 
+	public void setCheckStrict(boolean checkStrict) {
+		this.checkStrict = checkStrict;
+	}
+	
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
 		sb.append("-----------------------------------------------------------\n");

@@ -22,7 +22,6 @@ import dal.tool.analyzer.alyba.parse.FieldIndex;
 import dal.tool.analyzer.alyba.parse.FileInfo;
 import dal.tool.analyzer.alyba.parse.ParserUtil;
 import dal.tool.analyzer.alyba.setting.ResourceAnalyzerSetting;
-import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.util.DateUtil;
 import dal.util.NumberUtil;
@@ -119,7 +118,7 @@ public class ResourceParser extends FileLineParser {
 			if(line.indexOf("%idle") > -1 || line.startsWith("Average:")) {
 				return;
 			} else if(line.length() > 0 && line.charAt(0) != ' ' && Character.isDigit(line.charAt(0)) == false) {
-				List<String> headerTokenList = ParserUtil.getTokenList(line, delimeter, bracelets, AlybaGUI.getInstance().optionSetting.checkStrictCheck());
+				List<String> headerTokenList = ParserUtil.getTokenList(line, delimeter, bracelets, setting.getCheckStrict());
 				String time_idx_str = setting.getFieldMapping().getMappingInfo().get("TIME");
 				String[] time_idx = time_idx_str.split(",");
 				for(String idx : time_idx) {
@@ -137,7 +136,7 @@ public class ResourceParser extends FileLineParser {
 			}
 		}
 
-		List<String> tokenList = ParserUtil.getTokenList(line, delimeter, bracelets, AlybaGUI.getInstance().optionSetting.checkStrictCheck());
+		List<String> tokenList = ParserUtil.getTokenList(line, delimeter, bracelets, setting.getCheckStrict());
 		if(tokenList.size() != setting.fieldMapping.fieldCount) {
 			Logger.debug("Field count is different : " + tokenList.size() + " != " + setting.fieldMapping.fieldCount);
 			throw new Exception("Invaid line : " + line);

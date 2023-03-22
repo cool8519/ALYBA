@@ -57,6 +57,7 @@ import dal.tool.analyzer.alyba.parse.parser.ResourceParser;
 import dal.tool.analyzer.alyba.parse.task.ResourceAnalyzeTask;
 import dal.tool.analyzer.alyba.setting.ResourceAnalyzerSetting;
 import dal.tool.analyzer.alyba.setting.ResourceFieldMappingInfo;
+import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.FileUtil;
@@ -1008,6 +1009,7 @@ public class ResultResource extends Composite {
 		}		
 		setting.setFileInfoList(fileInfoList);
 		setting.setUnitMinutes(settingVo.getTPMUnitMinutes());
+		setting.setCheckStrict(AlybaGUI.getInstance().optionSetting.checkStrictCheck());
 		
 		return setting;
 	}
