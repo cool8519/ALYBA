@@ -8,8 +8,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import javax.persistence.EntityManager;
-
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.DND;
@@ -68,30 +66,12 @@ public class TPMInsert extends Composite {
 
 	private TPMAnalyzer tpmAnalyzer;
 	private TPMFieldMapping fieldMapping;
-	private ObjectDBUtil db = null;
-	private EntityManager em = null;
 
 	public TPMInsert(Composite parent, int style, TPMAnalyzer owner) {
 		super(parent, style);
 		this.tpmAnalyzer = owner;
 		createContents();
 		addEventListener();
-	}
-
-	public void initDatabase() throws Exception {
-		if(db != null) {
-			db.close(em);
-		}
-		this.db = ObjectDBUtil.getInstance();
-		this.em = db.createEntityManager();
-	}
-
-	public void closeDatabase() {
-		if(db != null) {
-			db.close(em);
-		}
-		em = null;
-		db = null;
 	}
 
 	protected void createContents() {
@@ -514,9 +494,8 @@ public class TPMInsert extends Composite {
 		String output_dir = (AlybaGUI.instance != null) ? AlybaGUI.getInstance().outputSetting.getOutputDirectory() : Constant.OUTPUT_DEFAULT_DIRECTORY;
 		String output_filename = LogAnalyzeOutput.getFileName(tpmAnalyzer.getTitle());
 		String dbfile_path = output_dir + File.separatorChar + output_filename + ".adb";
-		ObjectDBUtil db = new ObjectDBUtil(dbfile_path, true);
-		ObjectDBUtil.register(db);
-		Logger.debug("Opened the database : dbfile=" + db.getDBFilePath());
+		AlybaGUI.inProgressDbUtil = new ObjectDBUtil(dbfile_path, true);
+		Logger.debug("Opened the database : dbfile=" + dbfile_path);
 		
 		ProgressBarDialog progressBar = new ProgressBarDialog(getShell(), Utility.getFont());
 		progressBar.setTitle("Analyzer Progress");
@@ -534,15 +513,17 @@ public class TPMInsert extends Composite {
 		}
 
 		try {
-			Logger.debug("Closing the database : dbfile=" + db.getDBFilePath());
+			Logger.debug("Closing the database : dbfile=" + dbfile_path);
 			if(task.isSuccessed()) {
-				db.closeAll();
+				AlybaGUI.inProgressDbUtil.closeAll();
 			} else {
-				db.closeAndDeleteDB();
+				AlybaGUI.inProgressDbUtil.closeAndDeleteDB();
 			}
 		} catch(Exception e) {
 			Logger.debug("Failed to close the database.");
 			Logger.error(e);
+		} finally {
+			AlybaGUI.inProgressDbUtil = null;
 		}
 
 		if(task.isSuccessed()) {
@@ -553,16 +534,16 @@ public class TPMInsert extends Composite {
 				try {
 					if(loadAnalyzer) {
 						AlybaGUI.instance.openResultAnalyzer();
-						AlybaGUI.instance.resultAnalyzer.loadDBFile(db.getDBFilePath());
+						AlybaGUI.instance.resultAnalyzer.loadDBFile(dbfile_path);
 					}
 				} catch(Exception e) {
-					Logger.debug("Failed to load the database : " + db.getDBFilePath());
+					Logger.debug("Failed to load the database : " + dbfile_path);
 					Logger.error(e);
 					MessageUtil.showErrorMessage(getShell(), "Failed to load the database.");
 					AlybaGUI.instance.resultAnalyzer.setVisible(false);
 				}
 			} else {
-				MessageUtil.showInfoMessage(getShell(), "Transaction Coun data has been successfully inserted to the new database.\n\n" + db.getDBFilePath());				
+				MessageUtil.showInfoMessage(getShell(), "Transaction Coun data has been successfully inserted to the new database.\n\n" + dbfile_path);				
 			}
 		}
 

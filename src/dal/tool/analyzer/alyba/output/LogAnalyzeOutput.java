@@ -12,6 +12,7 @@ import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.output.vo.SettingEntryVO;
 import dal.tool.analyzer.alyba.parse.task.OutputTask;
 import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
+import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.util.DateUtil;
 import dal.util.db.ObjectDBUtil;
 
@@ -45,7 +46,7 @@ public class LogAnalyzeOutput {
 		if(db != null) {
 			db.close(em);
 		}
-		this.db = ObjectDBUtil.getInstance();
+		this.db = AlybaGUI.inProgressDbUtil;
 		this.em = db.createEntityManager();		
 	}
 	

@@ -49,6 +49,7 @@ public class ResultAnalyzer extends Shell {
 
 	public DebugConsole console = null;
 	private ResultAnalyzer instance;
+	private int isLoaded = -1;
 	
 	private Label lb_notloaded;
 	private Label hline_top;
@@ -295,9 +296,11 @@ public class ResultAnalyzer extends Shell {
 		addShellListener(new ShellAdapter() {
 			public void shellClosed(ShellEvent e) {
 				if(AlybaGUI.instance != null) {
-					if(AlybaGUI.instance.resultAnalyzer != null) {
+					if(AlybaGUI.instance.resultAnalyzer != null && AlybaGUI.instance.resultAnalyzer == instance) {
 						AlybaGUI.instance.resultAnalyzer.setVisible(false);
 						e.doit = false;
+					} else {
+						dispose();
 					}
 				} else {
 					e.doit = MessageUtil.showConfirmMessage(instance, "Do you really want to exit?");
@@ -392,7 +395,12 @@ public class ResultAnalyzer extends Shell {
 		tbf_view.setSelection(0);
 	}
 
+	public boolean isLoadFailed() {
+		return isLoaded==0 ? true : false;
+	}
+	
 	public void loadDBFile(String fileName) {
+		isLoaded = -1;
 		try {
 			closeDatabase();
 			initDatabase(fileName);
@@ -401,6 +409,7 @@ public class ResultAnalyzer extends Shell {
 			Logger.debug("Failed to open the database : " + re.getMessage());
 			Logger.error(re);
 			MessageUtil.showErrorMessage(instance, "Failed to open the database.");
+			isLoaded = 0;
 			return;
 		}
 		
@@ -428,6 +437,7 @@ public class ResultAnalyzer extends Shell {
 			} else {
 				closeDatabase();
 			}
+			isLoaded = 1;
 		} catch(Exception e) {
 			Logger.debug("Failed to load the database : " + fileName);
 			Logger.error(e);
@@ -437,6 +447,7 @@ public class ResultAnalyzer extends Shell {
 			resourceView.setEnabled(false);
 			lb_notloaded.setVisible(true);
 			closeDatabase();
+			isLoaded = 0;
 		} finally {
 			pbar_loading.setVisible(false);
 		}

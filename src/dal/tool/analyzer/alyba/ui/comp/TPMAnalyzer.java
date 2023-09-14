@@ -20,7 +20,6 @@ import org.eclipse.swt.widgets.Text;
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.util.Utility;
-import dal.util.db.ObjectDBUtil;
 import dal.util.swt.MessageUtil;
 
 public class TPMAnalyzer extends Shell {
@@ -127,8 +126,9 @@ public class TPMAnalyzer extends Shell {
 				} else {
 					e.doit = MessageUtil.showConfirmMessage(instance, "Do you really want to exit?");
 					if(e.doit) {
-						if(ObjectDBUtil.isRegistered()) {
-							ObjectDBUtil.getInstance().closeAll();
+						if(AlybaGUI.inProgressDbUtil != null) {
+							AlybaGUI.inProgressDbUtil.closeAll();
+							AlybaGUI.inProgressDbUtil = null;
 						}
 					}
 				}

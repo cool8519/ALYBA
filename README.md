@@ -10,8 +10,8 @@ Requirements
 Getting Started
 ---------------
 아래의 두개 버전 중 하나를 다운로드 한다.
-* Windows Executable : [ALYBA_v1.8.1.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.8.1.exe)
-* Java Archive File : [ALYBA_v1.8.1.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.8.1.jar)
+* Windows Executable : [ALYBA_v1.8.2.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.8.2.exe)
+* Java Archive File : [ALYBA_v1.8.2.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.8.2.jar)
 
 ALYBA 실행파일을 클릭하거나, 커맨드 창에서 실행시키면 된다.
 `C:\> ALYBA.exe`
@@ -250,11 +250,13 @@ Release Note
 - URI Mapping 패턴을 등록시 OpenAPI YAML 파일 지원
 - 정규식이 포함된 URI Mapping 패턴 지원
 
+##### v1.8.2
+- 히스토리 관리 뷰 지원
+
 
 To-do
 --------------
 What ALYBA will implement in the future:
-* Analysis History Management
 * Non-linear Regression Analysis
 * Customized Visualization
 

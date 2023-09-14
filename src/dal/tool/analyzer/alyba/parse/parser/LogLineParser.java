@@ -32,6 +32,7 @@ import dal.tool.analyzer.alyba.parse.FieldIndex;
 import dal.tool.analyzer.alyba.parse.FileInfo;
 import dal.tool.analyzer.alyba.parse.ParserUtil;
 import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
+import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.DateUtil;
@@ -96,7 +97,7 @@ public abstract class LogLineParser extends FileLineParser {
 		if(db != null) {
 			db.close(em);
 		}
-		this.db = ObjectDBUtil.getInstance();
+		this.db = AlybaGUI.inProgressDbUtil;
 		this.em = db.createEntityManager();		
 	}
 	

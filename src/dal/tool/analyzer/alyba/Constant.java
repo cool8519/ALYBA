@@ -9,7 +9,7 @@ import org.eclipse.swt.dnd.Transfer;
 
 public class Constant {
 
-	public static final String PROGRAM_VERSION = "1.8.1";
+	public static final String PROGRAM_VERSION = "1.8.2";
 
 	public static String DEFAULT_FONT_NAME = "Arial";
 	public static int DEFAULT_FONT_SIZE = 9;

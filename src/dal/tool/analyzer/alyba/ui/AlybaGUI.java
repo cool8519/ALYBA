@@ -68,10 +68,13 @@ import dal.tool.analyzer.alyba.ui.comp.ContentView;
 import dal.tool.analyzer.alyba.ui.comp.DebugConsole;
 import dal.tool.analyzer.alyba.ui.comp.FieldMapping;
 import dal.tool.analyzer.alyba.ui.comp.FilterSetting;
+import dal.tool.analyzer.alyba.ui.comp.HistoryView;
 import dal.tool.analyzer.alyba.ui.comp.OptionSetting;
 import dal.tool.analyzer.alyba.ui.comp.OutputSetting;
 import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
 import dal.tool.analyzer.alyba.ui.comp.TPMAnalyzer;
+import dal.tool.analyzer.alyba.ui.history.HistoryManager;
+import dal.tool.analyzer.alyba.ui.history.HistoryVO;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.DateUtil;
 import dal.util.FileUtil;
@@ -90,7 +93,9 @@ public class AlybaGUI {
 	public static AlybaGUI instance = null;
 	public static boolean debugMode = false;
 	public static DebugConsole debugConsole = null;
+	public static ObjectDBUtil inProgressDbUtil = null;
 	
+	public HistoryView historyView = null;
 	public TPMAnalyzer tpmAnalyzer = null;
 	public ResultAnalyzer resultAnalyzer = null;
 
@@ -114,6 +119,7 @@ public class AlybaGUI {
 	private TabItem tbi_filter;
 	private TabItem tbi_option;
 	private TabItem tbi_output;
+	private Button btn_history;
 	private Button btn_console;
 	private Button btn_resetAll;
 	private Button btn_openFiles;
@@ -229,7 +235,7 @@ public class AlybaGUI {
 	public static DebugConsole getDebugConsole() {
 		return debugConsole;
 	}
-
+	
 	public AlybaGUI() {
 		this.display = new Display();
 		FontData fd = display.getSystemFont().getFontData()[0];
@@ -272,10 +278,15 @@ public class AlybaGUI {
 		lb_title.setFont(Utility.getFont(SWT.NONE));
 
 		txt_title = new Text(shell, SWT.BORDER);
-		txt_title.setBounds(56, 10, 300, 19);
+		txt_title.setBounds(56, 10, 220, 19);
 		txt_title.setFont(Utility.getFont());
 		txt_title.setText(Constant.OUTPUT_DEFAULT_TITLE);
 
+		btn_history = new Button(shell, SWT.NONE);
+		btn_history.setFont(Utility.getFont());
+		btn_history.setText("History View");
+		btn_history.setBounds(300, 8, 100, 23);
+		
 		btn_console = new Button(shell, SWT.NONE);
 		btn_console.setFont(Utility.getFont());
 		btn_console.setText("Hide Console");
@@ -375,8 +386,6 @@ public class AlybaGUI {
 		
 		fileEncodings = new HashMap<String,String>();
 		
-		/* TODO: History*/
-		
 		heapstatus = new HeapStatus(shell, 500, false, ImageUtil.getImageDescriptorFromURL(Constant.IMAGE_PATH_TRASH));
 		heapstatus.setFont(Utility.getFont());
 		heapstatus.setBounds(570, 668, 150, 18);
@@ -410,10 +419,16 @@ public class AlybaGUI {
 				shell.forceActive();
 				e.doit = MessageUtil.showConfirmMessage(shell, "Do you really want to exit?");
 				if(e.doit) {
-					if(ObjectDBUtil.isRegistered()) {
-						ObjectDBUtil.getInstance().closeAll();
+					if(inProgressDbUtil != null) {
+						inProgressDbUtil.closeAll();
 					}
 				}
+			}
+		});
+
+		btn_history.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				openHistoryView();
 			}
 		});
 
@@ -655,6 +670,18 @@ public class AlybaGUI {
 		resetSetting();
 		tbf_setting.setSelection(0);
 	}
+	
+	public void openHistoryView() {
+		if(historyView == null) {
+			historyView = new HistoryView(display, SWT.SHELL_TRIM);
+			historyView.setVisible(false);
+		}
+		historyView.setVisible(true);
+		if(!historyView.hasLoaded()) {
+			historyView.loadHistoryList();
+		}
+		historyView.forceActive();
+	}
 
 	public void toggleDebugConsole() {
 		debugConsole.setVisible(!debugConsole.getVisible());
@@ -684,13 +711,14 @@ public class AlybaGUI {
 		tpmAnalyzer.forceActive();
 	}
 
-	public void openResultAnalyzer() {
+	public ResultAnalyzer openResultAnalyzer() {
 		if(resultAnalyzer == null) {
 			resultAnalyzer = new ResultAnalyzer(display, SWT.SHELL_TRIM);
 			resultAnalyzer.setVisible(false);
 		}
 		resultAnalyzer.setVisible(true);
 		resultAnalyzer.forceActive();
+		return resultAnalyzer;
 	}
 
 	public List<String> getLogFileList() {
@@ -1230,9 +1258,8 @@ public class AlybaGUI {
 		}
 
 		String dbfile_path = outputSetting.getOutputDirectory() + File.separatorChar + output.getFileName() + ".adb";
-		ObjectDBUtil db = new ObjectDBUtil(dbfile_path, true);
-		ObjectDBUtil.register(db);
-		Logger.debug("Opened the database : dbfile=" + db.getDBFilePath());
+		inProgressDbUtil = new ObjectDBUtil(dbfile_path, true);
+		Logger.debug("Opened the database : dbfile=" + dbfile_path);
 		
 		ProgressBarDialog progressBar = new ProgressBarDialog(shell, Utility.getFont());
 		progressBar.setTitle("Analyzer Progress");
@@ -1288,18 +1315,45 @@ public class AlybaGUI {
 		}
 		
 		try {
-			Logger.debug("Closing the database : dbfile=" + db.getDBFilePath());
+			Logger.debug("Closing the database : dbfile=" + dbfile_path);
 			if(task.isSuccessed()) {
-				db.closeAll();
+				inProgressDbUtil.closeAll();
 			} else {
-				db.closeAndDeleteDB();
+				inProgressDbUtil.closeAndDeleteDB();
 			}
 		} catch(Exception e) {
 			Logger.debug("Failed to close the database.");
 			Logger.error(e);
+		} finally {
+			inProgressDbUtil = null;
 		}
 		
 		if(task.isSuccessed() && (output_task == null || output_task.isSuccessed())) {
+			HistoryVO history = null;
+			try {
+				File f = new File(dbfile_path);
+				history = new HistoryVO(f.getName(), f.getParent());
+				history.setTitle(setting.getTitle()); 
+				history.setCreated(setting.getAnalyzeDate().getTime());
+				if(historyView == null) {
+					HistoryManager hm = null;
+					try {
+						hm = new HistoryManager();
+						hm.addHistory(history);
+					} catch(Exception e) {
+						throw e;
+					} finally {
+						if(hm != null) {
+							try { hm.close(); } catch(Exception ex) {}
+						}
+					}
+				} else {
+					historyView.addHistoryItem(history);
+				}
+			} catch(Exception e) {
+				Logger.debug("Failed to add the result to the history : " + e.getMessage());
+				Logger.error(e);
+			}
 			List<String> filenames = output_task.getGeneratedFiles();
 			if(filenames != null) {
 				String msg = "Generated " + filenames.size() + " file(s). What do you want to do?";
@@ -1314,9 +1368,9 @@ public class AlybaGUI {
 					case 0:
 						openResultAnalyzer();
 						try {
-							resultAnalyzer.loadDBFile(db.getDBFilePath());
+							resultAnalyzer.loadDBFile(dbfile_path);
 						} catch(Exception e) {
-							Logger.debug("Failed to load the database : " + db.getDBFilePath());
+							Logger.debug("Failed to load the database : " + dbfile_path);
 							Logger.error(e);
 							MessageUtil.showErrorMessage(shell, "Failed to load the database.");
 							resultAnalyzer.setVisible(false);

@@ -179,7 +179,7 @@ public class Utility {
 					URL url = ClassLoader.getSystemResource(Constant.FILE_PATH_GEOIP);
 					datafile = FileUtil.createTemporaryFile(url.openStream(), "ALYBA_GeoIP_", ".dat", null, true);
 				}
-				ipService = new LookupService(datafile.getAbsolutePath(), LookupService.GEOIP_MEMORY_CACHE);
+				ipService = new LookupService(datafile.getCanonicalPath(), LookupService.GEOIP_MEMORY_CACHE);
 			}
 			if(ip_address != null && (ip_address.equals("127.0.0.1") || ip_address.equals("0:0:0:0:0:0:0:1"))) {
 				return "Localhost";

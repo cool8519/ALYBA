@@ -1,6 +1,7 @@
 package dal.tool.analyzer.alyba.parse;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +32,11 @@ public class FileInfo {
 	}
 	
 	public String getFilePath() {
-		return file.getAbsolutePath();
+		try {
+			return file.getCanonicalPath();
+		} catch(IOException ioe) {
+			return file.getAbsolutePath();
+		}
 	}
 	
 	public void setFileMeta(String key, String value) {
@@ -44,7 +49,7 @@ public class FileInfo {
 
 	@Override
 	public String toString() {
-		return "FileInfo(filePath=" + file.getAbsolutePath() + ", meta=" + meta + ")";
+		return "FileInfo(filePath=" + getFilePath() + ", meta=" + meta + ")";
 	}
 
 }
