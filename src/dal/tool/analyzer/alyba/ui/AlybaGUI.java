@@ -419,8 +419,8 @@ public class AlybaGUI {
 				shell.forceActive();
 				e.doit = MessageUtil.showConfirmMessage(shell, "Do you really want to exit?");
 				if(e.doit) {
-					if(inProgressDbUtil != null) {
-						inProgressDbUtil.closeAll();
+					if(ObjectDBUtil.isRegistered()) {
+						ObjectDBUtil.getInstance().closeAll();
 					}
 				}
 			}
@@ -1058,6 +1058,7 @@ public class AlybaGUI {
 			optionSetting.spn_allowErrors.setEnabled(guiSetting.isOptionAllowErrorsChecked());
 			optionSetting.spn_allowErrors.setSelection(guiSetting.getOptionAllowErrorCount());
 			optionSetting.chk_includeParams.setSelection(guiSetting.isOptionURLIncludeParamsChecked());
+			optionSetting.chk_checkFileEncoding.setSelection(guiSetting.isOptionCheckFileEncodingChecked());
 			optionSetting.chk_collectTPM.setSelection(guiSetting.isOptionCollectTPMChecked());
 			optionSetting.spn_tpmUnit.setEnabled(guiSetting.isOptionCollectTPMChecked());
 			optionSetting.spn_tpmUnit.setSelection(guiSetting.getOptionTPMUnitMinutes());
@@ -1085,15 +1086,16 @@ public class AlybaGUI {
 				fieldMapping.txt_bracelet.setText(mappingInfo.getFieldBracelet());
 				fieldMapping.cb_timestampType.setText(mappingInfo.getTimestampType());
 				fieldMapping.spn_offset.setSelection((int)(mappingInfo.getOffsetHour()*10));
-				fieldMapping.cb_timeFormat.setText(mappingInfo.getTimeFormat());
 				fieldMapping.setTimeLocale(mappingInfo.getTimeLocale());
-				fieldMapping.cb_elapsedUnit.setText(mappingInfo.getElapsedUnit());				
+				fieldMapping.cb_elapsedUnit.setText(mappingInfo.getElapsedUnit());
 				if(tbl_files.getItemCount() > 0) {
+					fieldMapping.uriMappingManager.resetURIPatterns(guiSetting.getURIMappingPatterns());
 					fieldMapping.cb_logType.setText(mappingInfo.getLogType());
 					fieldMapping.autoMapping(mappingInfo);
 				} else {
 					MessageUtil.showWarningMessage(shell, "Fields can not be mapped without a log file.\nOpen the log file first.\n\nMapping data is ignored.");
 				}
+				fieldMapping.cb_timeFormat.setText(mappingInfo.getTimeFormat());
 			}
 		} catch(Exception e) {
 			Logger.debug("Failed to load setting from the file.");
@@ -1132,6 +1134,7 @@ public class AlybaGUI {
 			guiSetting.setOptionAllowErrorsChecked(optionSetting.checkAllowErrors());
 			guiSetting.setOptionAllowErrorCount(Integer.parseInt(StringUtil.NVL(optionSetting.getAllowErrorCount(), "5")));
 			guiSetting.setOptionURLIncludeParamsChecked(optionSetting.checkIncludeParams());
+			guiSetting.setOptionCheckFileEncodingChecked(optionSetting.checkCheckFileEncoding());
 			guiSetting.setOptionCollectTPMChecked(optionSetting.checkCollectTPM());
 			guiSetting.setOptionTPMUnitMinutes(Integer.parseInt(StringUtil.NVL(optionSetting.getTPMUnitMinutes(), "1")));
 			guiSetting.setOptionCollectElapsedTimeChecked(optionSetting.checkCollectElaspsedTime());
@@ -1151,6 +1154,7 @@ public class AlybaGUI {
 				guiSetting.setMappingTimeLocale(fieldMapping.getTimeLocale());
 				guiSetting.setMappingElapsedUnit(fieldMapping.getElapsedUnit());
 				guiSetting.setMappingData(fieldMapping.getMappingData());
+				guiSetting.setURIMappingPatterns(fieldMapping.uriMappingManager.getURIPatterns());
 			}
 	
 			List<Object> writeData = new ArrayList<Object>();
@@ -1182,34 +1186,45 @@ public class AlybaGUI {
 	protected boolean checkFileEncodings() {
 		List<File> files = new ArrayList<File>();
 		TableItem[] items = tbl_files.getItems();
-		for(int i = 0; i < items.length; i++) {
-			files.add((File)items[i].getData("file"));
-		}
-		FileEncodingCheckTask task = new FileEncodingCheckTask(files, fileEncodings);
-		ProgressBarDialog progressBar = new ProgressBarDialog(shell, Utility.getFont());
-		progressBar.setTitle("File Verification Progress");
-		progressBar.setDetailViewCount(task.getFileCount());
-		progressBar.setTask(task);
-		progressBar.open();
-		if(task.isSuccessed()) {
-			fileEncodings = (Map<String,String>)task.getResultData();
+		if(optionSetting.checkCheckFileEncoding()) {
+			for(int i = 0; i < items.length; i++) {
+				files.add((File)items[i].getData("file"));
+			}
+			FileEncodingCheckTask task = new FileEncodingCheckTask(files, fileEncodings);
+			ProgressBarDialog progressBar = new ProgressBarDialog(shell, Utility.getFont());
+			progressBar.setTitle("File Verification Progress");
+			progressBar.setDetailViewCount(task.getFileCount());
+			progressBar.setTask(task);
+			progressBar.open();
+			if(task.isSuccessed()) {
+				fileEncodings = (Map<String,String>)task.getResultData();
+				return true;
+			}
+			return false;
+		} else {
+			for(int i = 0; i < items.length; i++) {
+				fileEncodings.put(((File)items[i].getData("file")).getPath(), "NULL");
+			}
 			return true;
 		}
-		return false;
 	}
 	
 	public String getFileEncoding(File f) {
 		String encoding = fileEncodings.get(f.getPath());
 		if(encoding == null) {
-			encoding = FileUtil.getFileEncoding(f.getPath());
-			if(encoding == null) {
-				encoding = "NULL";
-			} else if("WINDOWS-1252".equals(encoding)) {
-				String default_encoding = System.getProperty("file.encoding");
-				Logger.debug("Unknown file encoding : " + encoding + ". It will be set to default(" + default_encoding + ")");
-				encoding = default_encoding;
-			}			
-			fileEncodings.put(f.getPath(), encoding);
+			if(optionSetting.checkCheckFileEncoding()) {
+				encoding = FileUtil.getFileEncoding(f.getPath());
+				if(encoding == null) {
+					encoding = "NULL";
+				} else if("WINDOWS-1252".equals(encoding)) {
+					String default_encoding = System.getProperty("file.encoding");
+					Logger.debug("Unknown file encoding : " + encoding + ". It will be set to default(" + default_encoding + ")");
+					encoding = default_encoding;
+				}			
+				fileEncodings.put(f.getPath(), encoding);
+			} else {
+				fileEncodings.put(f.getPath(), "NULL");
+			}
 		}
 		encoding = "NULL".equals(encoding) ? null : encoding;
 		Logger.debug("File encoding : path='" + f.getPath() + "', encoding=" + encoding);
@@ -1335,6 +1350,7 @@ public class AlybaGUI {
 				history = new HistoryVO(f.getName(), f.getParent());
 				history.setTitle(setting.getTitle()); 
 				history.setCreated(setting.getAnalyzeDate().getTime());
+				history.setVersion(Constant.PROGRAM_VERSION);
 				if(historyView == null) {
 					HistoryManager hm = null;
 					try {
@@ -1348,7 +1364,7 @@ public class AlybaGUI {
 						}
 					}
 				} else {
-					historyView.addHistoryItem(history);
+					historyView.addHistoryItem(history, true);
 				}
 			} catch(Exception e) {
 				Logger.debug("Failed to add the result to the history : " + e.getMessage());
@@ -1406,7 +1422,7 @@ public class AlybaGUI {
 		fieldMappingInfo.setFieldDelimeter(StringUtil.replaceMetaCharacter(fieldMapping.getDelimeter(), false));
 		fieldMappingInfo.setFieldBracelet(fieldMapping.getBracelet());
 		fieldMappingInfo.setMappingInfo(fieldMapping.getMappingData());
-		fieldMappingInfo.setURIMappingPatterns(fieldMapping.uriMappingManager == null ? null : fieldMapping.uriMappingManager.getURIPatterns());
+		fieldMappingInfo.setURIMappingPatterns(fieldMapping.uriMappingManager.getURIPatterns());
 		fieldMappingInfo.setTimestampType(fieldMapping.getTimestampType());
 		fieldMappingInfo.setOffsetHour(Float.parseFloat(fieldMapping.getOffsetHour()));
 		fieldMappingInfo.setTimeFormat(fieldMapping.getTimeFormat());

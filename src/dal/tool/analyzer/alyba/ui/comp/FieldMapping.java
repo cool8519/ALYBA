@@ -391,6 +391,9 @@ public class FieldMapping extends Composite {
 		cb_elapsedUnit.setFont(Utility.getFont());
 		cb_elapsedUnit.setText(Constant.ELAPSED_TIME_UNITS[0]);
 		cb_elapsedUnit.setBounds(579, 241, 97, 21);
+		
+		uriMappingManager = new URIMappingManager(this.getDisplay(), SWT.SHELL_TRIM & ~SWT.RESIZE & ~SWT.MAX & ~SWT.MIN);
+		uriMappingManager.setVisible(false);
 
 		grp_customizeMapping.setTabList(new Control[] { txt_uri, btn_uriMapping, cb_timestampType, txt_time, spn_offset, cb_timeFormat, txt_ip, txt_method, txt_version, txt_code, txt_bytes, txt_elapsed, cb_elapsedUnit });
 
@@ -1290,10 +1293,6 @@ public class FieldMapping extends Composite {
 	}
 
 	public void openUriMappingManager() {
-		if(uriMappingManager == null) {
-			uriMappingManager = new URIMappingManager(this.getDisplay(), SWT.SHELL_TRIM & ~SWT.RESIZE & ~SWT.MAX & ~SWT.MIN);
-			uriMappingManager.setVisible(false);
-		}
 		uriMappingManager.setVisible(true);
 		uriMappingManager.forceActive();
 	}

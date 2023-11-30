@@ -313,7 +313,7 @@ public abstract class LogLineParser extends FileLineParser {
 					while(init > -1 && end > -1) {
 						String before = pattern_str.substring(prev, init).replaceAll("/", "\\/").replaceAll("\\.", "\\\\."); 
 						String pattern_str_in = pattern_str.substring(init+1, end);
-						String regex_str = ".+";
+						String regex_str = "[^/]+";
 						if(pattern_str_in.indexOf(":") > -1) {
 							// include regex
 							regex_str = pattern_str_in.substring(pattern_str_in.indexOf(":")+1);
@@ -339,7 +339,7 @@ public abstract class LogLineParser extends FileLineParser {
 					if(prev < pattern_str.length()) {
 						regex += pattern_str.substring(prev).replaceAll("/", "\\/").replaceAll("\\.", "\\\\.");
 					}
-					Pattern pattern = Pattern.compile(regex);
+					Pattern pattern = Pattern.compile("^" + regex + "$");
 					list.add(new PatternItem(pattern_str, pattern));
 					Logger.debug("[" + Thread.currentThread().getName() + "] URI Pattern(" + pattern_str + ") compiled successfully.");
 				} catch(Exception e) {
@@ -954,6 +954,7 @@ public abstract class LogLineParser extends FileLineParser {
 			} else {
 				if(sdf == null) {
 					sdf = new SimpleDateFormat(setting.fieldMapping.timeFormat, setting.fieldMapping.timeLocale);
+					sdf.setLenient(false);
 				}
 				if(under_second_format == null || under_second_format.length() < 4) {
 					dt = sdf.parse(date_str);
@@ -1062,6 +1063,7 @@ public abstract class LogLineParser extends FileLineParser {
 			} else {
 				if(sdf == null) {
 					sdf = new SimpleDateFormat(setting.fieldMapping.timeFormat, setting.fieldMapping.timeLocale);
+					sdf.setLenient(false);
 				}
 				dt = sdf.parse(date_str);
 				Calendar c = Calendar.getInstance();

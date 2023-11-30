@@ -36,6 +36,8 @@ import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.CommandLineArguments;
 import dal.tool.analyzer.alyba.ui.Logger;
+import dal.tool.analyzer.alyba.ui.history.HistoryManager;
+import dal.tool.analyzer.alyba.ui.history.HistoryVO;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.db.ObjectDBUtil;
 import dal.util.swt.FileDialogUtil;
@@ -46,9 +48,10 @@ public class ResultAnalyzer extends Shell {
 
 	public static String title_prefix = "ALYBA " + Constant.PROGRAM_VERSION + " - Result Analyzer";
 	public static ProgressBar pbar_loading;
+	public static ResultAnalyzer instance;
 
+	public Display display;
 	public DebugConsole console = null;
-	private ResultAnalyzer instance;
 	private int isLoaded = -1;
 	
 	private Label lb_notloaded;
@@ -132,6 +135,8 @@ public class ResultAnalyzer extends Shell {
 
 	public ResultAnalyzer(Display display, int style) {
 		super(display, style);
+		this.display = display;
+		AlybaGUI.createDebugConsole(display);
 		createContents();
 		addEventListener();
 		open();
@@ -140,6 +145,7 @@ public class ResultAnalyzer extends Shell {
 	
 	public ResultAnalyzer(Display display, int style, String fileName) {
 		super(display, style);
+		this.display = display;
 		AlybaGUI.createDebugConsole(display);
 		createContents();
 		addEventListener();
@@ -434,10 +440,13 @@ public class ResultAnalyzer extends Shell {
 				resourceView.setEnabled(true);
 				btn_openDB.setText("Close DB");
 				setText(title_prefix + " (" + fileName + ")");
+				isLoaded = 1;
+				addToHistoryView(fileName);
 			} else {
+				isLoaded = -1;
+				addToHistoryView(fileName);
 				closeDatabase();
 			}
-			isLoaded = 1;
 		} catch(Exception e) {
 			Logger.debug("Failed to load the database : " + fileName);
 			Logger.error(e);
@@ -472,6 +481,34 @@ public class ResultAnalyzer extends Shell {
 	private void loadTitle() throws Exception {
 		SummaryEntryVO summaryVo = db.select(em, SummaryEntryVO.class);
 		txt_title.setText(summaryVo.getTitle());
+	}
+	
+	private void addToHistoryView(String fileName) throws Exception {
+		File dbfile = new File(fileName);
+		SummaryEntryVO summaryVo = db.select(em, SummaryEntryVO.class);
+		HistoryVO historyVo = new HistoryVO(dbfile.getName(), dbfile.getParent());
+		historyVo.setCreated(summaryVo.getCreatedTime().getTime());
+		historyVo.setVersion(summaryVo.getVersion());
+		historyVo.setFileSize(dbfile.length());
+		historyVo.setTitle(summaryVo.getTitle());
+		if(AlybaGUI.instance != null && AlybaGUI.getInstance().historyView != null) {
+			AlybaGUI.getInstance().historyView.addHistoryItem(historyVo, false);
+		} else {
+			HistoryManager hm = null;
+			try {
+				hm = new HistoryManager();
+				if(hm.getHistory(historyVo.getKey()) == null) {
+					hm.addHistory(historyVo);
+				}
+			} catch(Exception e) {
+				Logger.debug("Failed to add an item : " + fileName);
+				Logger.error(e);
+			} finally {
+				if(hm != null) {
+					try { hm.close(); } catch(Exception ex) {}
+				}
+			}
+		}
 	}
 
 }

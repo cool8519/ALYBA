@@ -1,8 +1,10 @@
 package dal.tool.analyzer.alyba.setting;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 
 public class AlybaSetting implements Serializable {
@@ -33,6 +35,7 @@ public class AlybaSetting implements Serializable {
 	private boolean optionAllowErrorsChecked;
 	private int optionAllowErrorCount;
 	private boolean optionURLIncludeParamsChecked;
+	private boolean optionCheckFileEncodingChecked;
 	private boolean optionCollectTPMChecked;
 	private int optionTPMUnitMinutes;
 	private boolean optionCollectElapsedTimeChecked;
@@ -52,6 +55,7 @@ public class AlybaSetting implements Serializable {
 	private Locale mappingTimeLocale;
 	private String mappingElapsedUnit;
 	private HashMap<String,String> mappingData;
+	private ArrayList<String> uriMappingPatterns;
 	
 	
 	public AlybaSetting() {}
@@ -144,6 +148,10 @@ public class AlybaSetting implements Serializable {
 	public boolean isOptionURLIncludeParamsChecked() {
 		return optionURLIncludeParamsChecked;
 	}
+	
+	public boolean isOptionCheckFileEncodingChecked() {
+		return optionCheckFileEncodingChecked;
+	}
 
 	public boolean isOptionCollectTPMChecked() {
 		return optionCollectTPMChecked;
@@ -215,6 +223,10 @@ public class AlybaSetting implements Serializable {
 
 	public HashMap<String,String> getMappingData() {
 		return mappingData;
+	}
+	
+	public List<String> getURIMappingPatterns() {
+		return uriMappingPatterns;
 	}
 
 	
@@ -305,6 +317,10 @@ public class AlybaSetting implements Serializable {
 	public void setOptionURLIncludeParamsChecked(boolean optionURLIncludeParamsChecked) {
 		this.optionURLIncludeParamsChecked = optionURLIncludeParamsChecked;
 	}
+	
+	public void setOptionCheckFileEncodingChecked(boolean optionCheckFileEncodingChecked) {
+		this.optionCheckFileEncodingChecked = optionCheckFileEncodingChecked;
+	}
 
 	public void setOptionCollectTPMChecked(boolean optionCollectTPMChecked) {
 		this.optionCollectTPMChecked = optionCollectTPMChecked;
@@ -376,6 +392,12 @@ public class AlybaSetting implements Serializable {
 
 	public void setMappingData(HashMap<String, String> mappingData) {
 		this.mappingData = mappingData;
-	}	
+	}
+	
+	public void setURIMappingPatterns(List<String> uriMappingPatterns) {
+		if(uriMappingPatterns != null) {
+			this.uriMappingPatterns = new ArrayList<String>(uriMappingPatterns);
+		}
+	}
 	
 }

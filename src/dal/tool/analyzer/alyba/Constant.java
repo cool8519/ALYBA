@@ -9,7 +9,7 @@ import org.eclipse.swt.dnd.Transfer;
 
 public class Constant {
 
-	public static final String PROGRAM_VERSION = "1.8.2";
+	public static final String PROGRAM_VERSION = "1.8.2_20231130";
 
 	public static String DEFAULT_FONT_NAME = "Arial";
 	public static int DEFAULT_FONT_SIZE = 9;
@@ -84,7 +84,17 @@ public class Constant {
 
 	public static final Locale[] TIME_LOCALES = { Locale.ENGLISH, Locale.KOREAN };
 
-	public static final String[] TIME_FORMATS = { "yyyy.MM.dd HH:mm:ss", "yyyy.MM.dd:HH:mm:ss", "yyyy.MM.dd/HH:mm:ss", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd:HH:mm:ss", "yyyy-MM-dd/HH:mm:ss", "dd/MMM/yyyy:HH:mm:ss", "dd/MMM/yyyy HH:mm:ss", "dd/MMM/yyyy/HH:mm:ss" };
+	public static final String[] TIME_FORMATS = {
+												  "dd/MMM/yyyy:HH:mm:ss Z",   // Apache, Tomcat, Nginx, CLF
+												  "yyyy-MM-dd HH:mm:ss",      // IIS, lighttpd, W3C
+												  "yyyy.MM.dd HH:mm:ss",      // JEUS
+												  "yyyy.MM.dd HH:mm:ss.SSS",  // Millisecond
+												  "yyyy/MM/dd HH:mm:ss",      // Resin
+												  "dd/MMM/yyyy HH:mm:ss,SSS", // Wildfly
+												  "yyyy-MM-dd'T'HH:mm:ssZ",   // WebSphere
+												  "MM/dd/yyyy hh:mm:ss a",     // AM,PM 
+												  "yyyy-MM-dd/HH:mm:ss"
+												};
 	public static final String UNIX_TIME_STR = "UnixTime";
 	
 	public static final int ANALYZER_DATA_PAGESIZE = 50;

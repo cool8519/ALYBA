@@ -10,8 +10,8 @@ Requirements
 Getting Started
 ---------------
 아래의 두개 버전 중 하나를 다운로드 한다.
-* Windows Executable : [ALYBA_v1.8.2.exe](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.8.2.exe)
-* Java Archive File : [ALYBA_v1.8.2.jar](https://github.com/cool8519/ALYBA/raw/master/dist/ALYBA_v1.8.2.jar)
+* Windows Executable : [ALYBA_v1.8.2.exe](https://github.com/cool8519/ALYBA/releases/download/v1.8.2/ALYBA_v1.8.2.exe)
+* Java Archive File : [ALYBA_v1.8.2.jar](https://github.com/cool8519/ALYBA/releases/download/v1.8.2/ALYBA_v1.8.2.jar)
 
 ALYBA 실행파일을 클릭하거나, 커맨드 창에서 실행시키면 된다.
 `C:\> ALYBA.exe`
@@ -72,7 +72,12 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
  - . 좌측의 필드 데이터에 공백으로 구분된 Delimeter가 있을 경우, 선택적으로 매핑이 가능하다.
  - . <kbd>Del</kbd>키로 매핑된 필드를 취소할 수 있다.
  - . 시간은 기본적으로 UTC+0 기준으로 입력되므로, 로그가 기록된 서버의 TimeZone이 있는 경우는 Hour 단위로 Offset 설정을 한다. (예: IST=5.5시간)
- - . 로그의 요청 URI가 RESTful URL 형식인 경우, URI Mapping에 패턴을 등록하면 매칭되는 패턴은 하나의 URI로 집계된다. (예: /user/myId123/get -> /user/{userId}/get) 
+ - . 로그의 요청 URI가 RESTful URL 형식인 경우, URI Mapping에 패턴을 등록하면 매칭되는 패턴은 하나의 URI로 집계된다. (예: /user/myId123/get -> /user/{userId}/get)
+* URI Mapping
+ - . 파일에서 읽어오려면 File Type을 선택한 뒤 파일을 선택하거나 드래그 앤 드롭한다.
+ - . 패턴을 직접 입력하여 목록을 작성하거나 수정할 수 있다.
+ - . 정의된 패턴은 정확히 일치해야 해당 패턴으로 요청이 그룹화 되며, 목록의 순서대로 매칭 여부를 확인한다.
+ - . 각 패턴 문자열에는 “{userID}”와 같이 가변 문자를 지정해야 하며, “{empNo:[\\d]+}”와 같이 ":" 뒤에 정규식 표현을 사용할 수 있다. (Springframework의 RequestMapping 문법 지원) 
 
 ![Screenhot](screenshots/03.jpg)
 
@@ -88,27 +93,31 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
 ![Screenhot](screenshots/04.jpg)
 
 ##### 5. 출력 지정
-필요시 출력되는 파일에 대한 설정이 가능하다.
+필요시 추가로 출력할 파일에 대한 설정이 가능하다.
 툴의 아랫부분에서 Output 탭을 선택한다. 아래의 세가지 설정이 가능하다.
 * Directory : 출력되는 파일이 저장될 디렉토리 지정
-* File Type : 출력되는 파일의 형식을 선택. 기본적으로 파일DB(.db) 형태로 저장되며, 추가로 필요한 출력 형식을 지정.
+* File Type : 출력되는 파일의 형식을 선택. 기본적으로 파일DB(.adb)에 저장되며, 추가로 필요한 출력 형식을 지정.
 * Sort by : 결과물의 정렬 기준을 선택
 
 ##### 6. 옵션 설정
 파싱 및 분석을 위한 옵션을 설정할 수 있다.
 툴의 아랫부분에서 Option 탭을 선택한다. 옵션의 내용은 아래와 같다.
-* Multi-thread Parsing : 분석할 파일의 개수가 많을 경우, Multi-Thread 방식으로 분석하여 속도가 향상됨.
+* Multi-thread Parsing : 분석할 파일의 개수가 많을 경우, Multi-Thread 방식으로 분석하여 속도가 향상된다.
 * Number of fields : 라인의 별로 필드의 수가 동일한 지 체크하여 다른 경우 파싱에러로 처리
+* Strict check : 구분자로 라인을 나눌때 비어 있는 필드도 무시하지 않고 공백필드로 추출
 * Allow Errors : 파일당 지정된 횟수 이상 에러가 발생하면 분석 중지.
 * Includes Parameters : Request URL에 Parameter가 있는지 여부를 선택. 이 옵션을 선택하면 물음표(?) 이전의 URL을 유일한 값으로 집계한다.
 예) /test/index.jsp?param=data1 -> /test/index.jsp
+* Check file encoding : 각 파일의 인코딩 형식 확인 여부를 선택. 대량 파일 확인시 속도가 느리므로, 로그에 한글 등의 특수문자가 포함된 경우만 체크 필요
 * Aggregate TPM : TPM 자료를 몇 분단위로 집계할 지 설정한다.
 * Elapsed time was over : 응답시간이 지정된 시간 이상인 경우 별도 수집.
 * Response bytes was over : 응답크기가 지정된 크기 이상인 경우 별도 수집.
 * Response code was error : 응답코드가 에러(4XX,5XX)인 경우 별도 수집.
+* Collect client IP : 요청한 사용자 IP를 수집.
 * Aggregate TPS : 요청이 가장 많은 날의 TPS를 별도 수집.
 
-설정한 옵션들을 파일을 통해 저장할 수 있다. 파일에는 파일과 매핑정보를 제외한 Filter, Output, Option 정보가 저장되므로, 향후에 동일한 형식의 파일을 분석할 때 저장된 기존 설정을 사용하면 편리하다.
+설정한 옵션들을 파일을 통해 저장할 수 있다. setting 파일에는 필드 매핑정보를 포함한 Filter, Output, Option 정보가 저장되므로, 향후에 동일한 형식의 파일을 분석할 때 저장된 기존 설정을 사용하면 편리하다.
+설정파일은 .alb 확장자를 가지며, 드래그 앤 드롭을 지원한다.
 
 ##### 7. 분석 수행
 위의 모든 설정이 완료되면 우측 상단에 Analyze 버튼이 활성화되고, 버튼을 클릭하면 설정이 맞는지 확인 후 Accesslog에 대한 실제 분석이 진행된다.
@@ -119,7 +128,7 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
 
 Result Item
 ----------
-출력 결과는 설정에 따라 Excel, HTML, Text 중 하나로 저장된다. 파일의 내용은 형식에 따라 다르지 않으며, 카테고리는 아래와 같다.
+출력 결과는 DB파일에 저장되며, 설정에 따라 Excel, HTML, Text 중 하나로 추가 저장할 수 있다. 파일의 내용은 형식에 따라 다르지 않으며, 카테고리는 아래와 같다.
 * Overview : 전체 분석 결과에 대한 개요
 * TPM : 분당 트랜잭션 처리 추이를 설정한 시간 단위로 집계. 전체적인 트랜잭션의 추이를 확인할 수 있다.
 * TPS : 거래량이 가장 많은 날의 초당 트랜잭션 처리 추이를 설정한 시간 단위로 집계. 이벤트와 같은 특정 날짜의 상세 트랜잭션의 추이를 확인할 수 있다.
@@ -181,7 +190,7 @@ Resource Tab에서 자원사용률 데이터를 추가하면 아래와 같은 �
 
 그래프 영역에서 특정 데이터를 클릭하거나 드래그하여 상세하게 확인할 수 있다.
 
-##### Resource Tab (v1.7.0 추가)
+##### Resource Tab
 자원사용률 로그를 분석 결과에 추가한다.
 Accesslog와 동일 시간대의 데이터인 경우, 회귀 분석을 통해 미래예측 및 용량산정을 수행할 수 있다.
 
@@ -252,6 +261,20 @@ Release Note
 
 ##### v1.8.2
 - 히스토리 관리 뷰 지원
+
+##### v1.8.2_20231130
+- (Bug) 프로그램 종료시 DB 파일 Close 되지 않는 문제 수정
+- (Bug) DB에 request_uri_pattern 필드 미저장 되지 않는 문제 수정
+- (Bug) setting 파일 로딩시 저장된 시간 형식이 적용되지 않는 문제 수정
+- (Bug) 자원 데이터 간격이 넓을 경우, 자원 그래프에 표시되지 않는 문제 수정
+- (Bug) 시간 형식에 정확히 맞지 않아도 허용하여 잘못된 시간으로 기록되는 문제 수정
+- (Bug) ResultAnalyzer 모드에서 디버그 콘솔에 로그 기록시 오류발생 문제 수정
+- (Bug) URI Mapping에 등록된 패턴에 정확히 일치하지 않아도 포함하면 매칭되는 문제 수정
+- 파일 인코딩 체크를 옵션으로 변경
+- 히스토리 관리 뷰에 DB파일 버전 추가
+- 디버그 콘솔에 Pause 버튼 추가
+- DB 파일 오픈시 히스토리 관리 뷰 목록에 자동으로 추가
+- setting 파일에 URI Mapping 패턴 목록 추가
 
 
 To-do

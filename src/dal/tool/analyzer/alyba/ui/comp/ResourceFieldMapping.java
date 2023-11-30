@@ -989,7 +989,7 @@ public class ResourceFieldMapping extends Composite {
 						continue;
 					}
 					Logger.debug("check a line : " + line);
-					List<String> main_tokens = ParserUtil.getTokenList(line, delimeter, bracelets, AlybaGUI.getInstance().optionSetting.checkStrictCheck());
+					List<String> main_tokens = ParserUtil.getTokenList(line, delimeter, bracelets, AlybaGUI.instance==null?false:AlybaGUI.getInstance().optionSetting.checkStrictCheck());
 					try {
 						String time_str = "";
 						for(String temp_idx : time_idx_arr) {

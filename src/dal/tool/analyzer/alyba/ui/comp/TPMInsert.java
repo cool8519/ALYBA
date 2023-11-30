@@ -543,7 +543,7 @@ public class TPMInsert extends Composite {
 					AlybaGUI.instance.resultAnalyzer.setVisible(false);
 				}
 			} else {
-				MessageUtil.showInfoMessage(getShell(), "Transaction Coun data has been successfully inserted to the new database.\n\n" + dbfile_path);				
+				MessageUtil.showInfoMessage(getShell(), "Transaction Count data has been successfully inserted to the new database.\n\n" + dbfile_path);				
 			}
 		}
 

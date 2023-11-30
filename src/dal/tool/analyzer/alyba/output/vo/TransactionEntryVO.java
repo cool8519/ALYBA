@@ -202,6 +202,7 @@ public class TransactionEntryVO extends EntryVO {
 		vo.request_date = request_date == null ? null : new Date(request_date.getTime());
 		vo.response_date = response_date == null ? null : new Date(response_date.getTime());
 		vo.request_uri = request_uri == null ? null : new String(request_uri);
+		vo.request_uri_pattern = request_uri_pattern == null ? null : new String(request_uri_pattern);
 		vo.request_ip = request_ip == null ? null : new String(request_ip);
 		vo.response_time = response_time;
 		vo.response_byte = response_byte;

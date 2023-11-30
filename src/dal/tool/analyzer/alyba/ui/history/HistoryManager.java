@@ -46,13 +46,13 @@ public class HistoryManager {
 	public void addHistory(HistoryVO vo) throws Exception {
 		needFlush = true;
 		props.setProperty(vo.getKey(), vo.toEncodedString());
-		Logger.debug("Added the history in memory : " + vo.getKey());
+		Logger.debug("Added the history in memory : key=" + vo.getKey());
 	}
 	
 	public HistoryVO deleteHistory(String key) throws Exception {
 		needFlush = true;
 		String value = (String)props.remove(key);
-		Logger.debug("Deleted the history in memory : " + key);
+		Logger.debug("Deleted the history in memory : key=" + key);
 		return HistoryVO.fromValue(value);
 	}
 	

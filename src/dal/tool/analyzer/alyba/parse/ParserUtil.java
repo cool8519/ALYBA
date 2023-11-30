@@ -173,6 +173,7 @@ public class ParserUtil {
 		}
 		try {
 			SimpleDateFormat sdf = new SimpleDateFormat(format, locale);
+			sdf.setLenient(false);
 			sdf.parse(time_str);
 			return true;
 		} catch(ParseException e) {

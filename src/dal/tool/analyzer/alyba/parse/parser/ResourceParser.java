@@ -115,7 +115,7 @@ public class ResourceParser extends FileLineParser {
 			return;
 		}
 		if("sar".equals(setting.getFieldMapping().getFileType())) {
-			if(line.indexOf("%idle") > -1 || line.startsWith("Average:")) {
+			if(line.indexOf("%idle") > -1 || line.startsWith("Average:") || line.indexOf("RESTART") > -1) {
 				return;
 			} else if(line.length() > 0 && line.charAt(0) != ' ' && Character.isDigit(line.charAt(0)) == false) {
 				List<String> headerTokenList = ParserUtil.getTokenList(line, delimeter, bracelets, setting.getCheckStrict());
@@ -150,6 +150,7 @@ public class ResourceParser extends FileLineParser {
 			} else {
 				if(sdf == null) {
 					sdf = new SimpleDateFormat(setting.fieldMapping.timeFormat, setting.fieldMapping.timeLocale);
+					sdf.setLenient(false);
 				}
 				if(under_second_format == null || under_second_format.length() < 4) {
 					dt = sdf.parse(date_str);

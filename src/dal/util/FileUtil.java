@@ -261,6 +261,7 @@ public class FileUtil {
 				file.seek(pos+1);
 				for(int i = 0; i < line; i++) {
 					String s = file.readLine();
+					if(s == null) break;
 					if(file_encoding == null) {
 						lst.add(s);
 					} else {

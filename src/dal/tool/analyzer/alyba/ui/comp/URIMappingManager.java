@@ -204,11 +204,7 @@ public class URIMappingManager extends Shell {
 
 		btn_removeAll.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				tbl_uri_mapping.removeAll();
-				Logger.debug("Removed all pattern(s).");
-				TableItem blank = new TableItem(tbl_uri_mapping, SWT.NONE);
-				blank.setText(0, "");
-				blank.setText(1, "");
+				removeAllPatterns();
 			}
 		});
 		
@@ -233,6 +229,7 @@ public class URIMappingManager extends Shell {
 				Listener textListener = new Listener() {
 					public void handleEvent(Event e) {
 						if(e.type == SWT.FocusOut) {
+							checkPatternValueAndSet(newEditor.getText(), tbl_editor.getItem(), tbl_uri_mapping.getSelectionIndex());
 							newEditor.dispose();
 						} else if(e.type == SWT.Traverse) {
 							if(e.detail == SWT.TRAVERSE_RETURN) {
@@ -273,6 +270,14 @@ public class URIMappingManager extends Shell {
 				
 	}
 	
+	public void removeAllPatterns() {
+		tbl_uri_mapping.removeAll();
+		Logger.debug("Removed all pattern(s).");
+		TableItem blank = new TableItem(tbl_uri_mapping, SWT.NONE);
+		blank.setText(0, "");
+		blank.setText(1, "");
+	}
+	
 	public List<String> getURIPatterns() {
 		if(tbl_uri_mapping.getItemCount() == 1 && tbl_uri_mapping.getItem(0).getText(1).equals("")) {
 			return null;
@@ -285,6 +290,15 @@ public class URIMappingManager extends Shell {
 			}
 		}
 		return list;
+	}
+	
+	public void resetURIPatterns(List<String> patterns) {
+		removeAllPatterns();
+		if(patterns != null) {
+			for(String pattern : patterns) {
+				addPattern(pattern);
+			}
+		}
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -380,7 +394,7 @@ public class URIMappingManager extends Shell {
 		} else {
 			int cnt = 0;
 			for(int i = indices.length-1; i >= 0; i--) {
-				if(indices[i] < tbl_uri_mapping.getItemCount() && tbl_uri_mapping.getItem(indices[i]).getText(1).length() > 0) {
+				if(indices[i] < tbl_uri_mapping.getItemCount() || tbl_uri_mapping.getItem(indices[i]).getText(1).length() > 0) {
 					tbl_uri_mapping.remove(indices[i]);
 					cnt++;
 				}
@@ -451,7 +465,7 @@ public class URIMappingManager extends Shell {
 			try {
 				validatePatternValue(value, index);
 			} catch(Exception e) {
-				MessageUtil.showErrorMessage(instance, e.getMessage().replaceAll("\\.\s", "\\.\n"));
+				MessageUtil.showErrorMessage(instance, e.getMessage().replaceAll("\\.\\s", "\\.\n"));
 				return;
 			}
 		}

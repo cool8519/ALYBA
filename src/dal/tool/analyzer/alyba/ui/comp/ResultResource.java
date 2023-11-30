@@ -573,16 +573,16 @@ public class ResultResource extends Composite {
 			SummaryEntryVO summaryVo = db.select(em, SummaryEntryVO.class);
 			Date insertDate = summaryVo.getLastResourceInsertTime();
 			
-			String countQuery = "SELECT COUNT(o) FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group AND o.count > 0";
+			String countQuery = "SELECT COUNT(o) FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group AND o.item_count > 0";
 			Map<String,Object> params = new HashMap<String,Object>(2);
 			params.put("name", name);
 			params.put("group", group);
 			long totalRows = db.select(em, countQuery, Long.class, params);
 
-			String fromQuery = "SELECT MIN(o.unit_date) FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group AND o.count > 0";
+			String fromQuery = "SELECT MIN(o.unit_date) FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group AND o.item_count > 0";
 			Date fromDate = db.select(em, fromQuery, Date.class, params);
 
-			String toQuery = "SELECT MAX(o.unit_date) FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group AND o.count > 0";
+			String toQuery = "SELECT MAX(o.unit_date) FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group AND o.item_count > 0";
 			Date toDate = db.select(em, toQuery, Date.class, params);
 
 			lb_insert_date_value.setText(sdf_datetime.format(insertDate));
@@ -1009,7 +1009,7 @@ public class ResultResource extends Composite {
 		}		
 		setting.setFileInfoList(fileInfoList);
 		setting.setUnitMinutes(settingVo.getTPMUnitMinutes());
-		setting.setCheckStrict(AlybaGUI.getInstance().optionSetting.checkStrictCheck());
+		setting.setCheckStrict(AlybaGUI.instance==null?false:AlybaGUI.getInstance().optionSetting.checkStrictCheck());
 		
 		return setting;
 	}

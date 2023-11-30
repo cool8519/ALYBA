@@ -86,6 +86,7 @@ public class OutputSetting extends Composite {
 		lb_fileType.setAlignment(SWT.RIGHT);
 		lb_fileType.setFont(Utility.getFont());
 		lb_fileType.setText("File Type");
+		lb_fileType.setToolTipText("By default, it is recorded as an adb file.\nThis setting allows you to specify additional output formats.");
 		lb_fileType.setBounds(24, 116, 82, 15);
 
 		chk_excel = new Button(this, SWT.CHECK);

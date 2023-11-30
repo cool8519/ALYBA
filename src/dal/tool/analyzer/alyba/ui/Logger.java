@@ -1,5 +1,8 @@
 package dal.tool.analyzer.alyba.ui;
 
+import org.eclipse.swt.widgets.Display;
+
+import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
 import dal.util.LoggingUtil;
 
 public class Logger {
@@ -30,7 +33,8 @@ public class Logger {
 			if("main".equals(Thread.currentThread().getName())) {
 				AlybaGUI.getDebugConsole().addDebugMessage(s);
 			} else {
-				AlybaGUI.getInstance().display.syncExec(new Runnable() {
+				Display display = AlybaGUI.instance != null ? AlybaGUI.getInstance().display : ResultAnalyzer.instance.display;
+				display.syncExec(new Runnable() {
 					public void run() {
 						AlybaGUI.getDebugConsole().addDebugMessage(s);
 					}

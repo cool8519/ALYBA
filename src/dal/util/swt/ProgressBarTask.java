@@ -202,6 +202,7 @@ public abstract class ProgressBarTask implements Runnable {
 			String elapsed_str = "Unknown";
 			long elapsed = System.currentTimeMillis() - startTime;
 			double percent = (getPercent() > 100D) ? 100D : getPercent();
+			percent = Double.isNaN(percent) ? 0D : percent;
 			double round_percent = Math.round(percent * 10) / 10.0;
 			int elaped_sec = (int)Math.round((double)elapsed / 1000);
 			elapsed_str = StringUtil.expressSecondsAsTime(elaped_sec);

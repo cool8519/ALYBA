@@ -63,6 +63,7 @@ public class TransactionCountParser extends LogLineParser {
 			} else {
 				if(sdf == null) {
 					sdf = new SimpleDateFormat(setting.fieldMapping.timeFormat, setting.fieldMapping.timeLocale);
+					sdf.setLenient(false);
 				}
 				if(under_second_format == null || under_second_format.length() < 4) {
 					dt = sdf.parse(date_str);

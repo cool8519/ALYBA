@@ -3,6 +3,7 @@ package dal.tool.analyzer.alyba.ui.chart.timeseries;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.geom.Ellipse2D;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -64,6 +65,7 @@ public class ResourceChart extends TimeSeriesChart {
 	    setUnitString("minute(s)");
 	    setDateFormat("yyyy.MM.dd HH:mm");
 	    setMovingAverageCount(30);
+	    setMergeItemCount(10);
 	    datasetMap = new HashMap<ResourceType,XYDataset>();
 	}
 
@@ -184,7 +186,9 @@ public class ResourceChart extends TimeSeriesChart {
 		    		}
 			    	if(merge_item_count == count) {
 						double value = getValue(mergedVO, type);
-						ts.add(new Minute(mergedVO.getUnitDate()), ((value>-1D) ? value : null));
+						if(value > -1D) {
+							ts.add(new Minute(mergedVO.getUnitDate()), value);
+						}
 		    			count = 0;
 		    			mergedVO = null;
 		    		}
@@ -204,7 +208,9 @@ public class ResourceChart extends TimeSeriesChart {
 		    			str_name_prev = str_name;
 		    		}		    	
 		    		double value = getValue(vo, type);
-		    		ts.add(new Minute(vo.getUnitDate()), ((value>-1D) ? value : null));
+					if(value > -1D) {
+						ts.add(new Minute(vo.getUnitDate()), value);
+					}
     	    	}
     	    	ts_collection.addSeries(ts);
     		} else if(aggregationType == AggregationType.GROUP) {
@@ -214,7 +220,9 @@ public class ResourceChart extends TimeSeriesChart {
 		    		if(str_name_prev == null || !str_name_prev.equals(str_name)) {
 		    			if(str_name_prev != null) {
 		    	    		double value = getValue(mergedVO, type);
-		    	    		ts.add(new Minute(mergedVO.getUnitDate()), ((value>-1D) ? value : null));
+							if(value > -1D) {
+								ts.add(new Minute(mergedVO.getUnitDate()), value);
+							}
 		    				ts_collection.addSeries(ts);
 		    				dt_prev = null;
 		    			}
@@ -228,13 +236,17 @@ public class ResourceChart extends TimeSeriesChart {
 	    				mergedVO = mergedVO.merge(vo);
 		    		} else {
 			    		double value = getValue(mergedVO, type);
-			    		ts.add(new Minute(mergedVO.getUnitDate()), ((value>-1D) ? value : null));
+						if(value > -1D) {
+							ts.add(new Minute(mergedVO.getUnitDate()), value);
+						}
 			    		mergedVO = vo;
 		    		}
 		    		dt_prev = dt;
     	    	}
 	    		double value = getValue(mergedVO, type);
-	    		ts.add(new Minute(mergedVO.getUnitDate()), ((value>-1D) ? value : null));
+				if(value > -1D) {
+					ts.add(new Minute(mergedVO.getUnitDate()), value);
+				}
     	    	ts_collection.addSeries(ts);    			
     		} else {
     			ts = new TimeSeries(resourceType.name());
@@ -247,13 +259,17 @@ public class ResourceChart extends TimeSeriesChart {
 	    				mergedVO = mergedVO.merge(vo);
 		    		} else {
 			    		double value = getValue(mergedVO, type);
-			    		ts.add(new Minute(mergedVO.getUnitDate()), ((value>-1D) ? value : null));
+						if(value > -1D) {
+							ts.add(new Minute(mergedVO.getUnitDate()), value);
+						}			    		
 			    		mergedVO = vo;
 		    		}
 		    		dt_prev = dt;
     			}
 	    		double value = getValue(mergedVO, type);
-	    		ts.add(new Minute(mergedVO.getUnitDate()), ((value>-1D) ? value : null));
+				if(value > -1D) {
+					ts.add(new Minute(mergedVO.getUnitDate()), value);
+				}
 				ts_collection.addSeries(ts);    			
     		}
 	    }	    
@@ -332,14 +348,17 @@ public class ResourceChart extends TimeSeriesChart {
         NumberAxis numberAxis = new NumberAxis(type.name());
         numberAxis.setLabelFont(new Font("SansSerif", Font.BOLD, 13));
         numberAxis.setLabelPaint(Color.darkGray);
+        TimeSeriesCollection ts_collection = (TimeSeriesCollection)dataset;
+        int series_count = ts_collection.getSeriesCount();
         if(renderer == null) {
 	        renderer = new XYLineAndShapeRenderer(true, false);
 		    renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator("[{0}] : (\"{1}\", {2})", new SimpleDateFormat(date_format), NumberFormat.getInstance()));
 		    renderer.setBaseShapesVisible(show_shape);
+			for(int i = 0; i < series_count; i++) {
+				renderer.setSeriesShape(i, new Ellipse2D.Double(-2, -2, 4, 4));
+			}
         }
-		TimeSeriesCollection ts_collection = (TimeSeriesCollection)dataset;
 		if(show_moving_average) {
-			int series_count = ts_collection.getSeriesCount();
 			for(int i = 0; i < series_count; i++) {
 				TimeSeries ts = ts_collection.getSeries(i);
 			    TimeSeries ts_mov = MovingAverage.createMovingAverage(ts, ts_collection.getSeriesKey(i)+"("+moving_avg_count+" Moving Avg.)", moving_avg_count, 0);

@@ -27,6 +27,7 @@ public class OptionSetting extends Composite {
 	public Button chk_strictCheck;
 	public Button chk_allowErrors;
 	public Button chk_includeParams;
+	public Button chk_checkFileEncoding;
 	public Button chk_collectTPM;
 	public Button chk_collectElapsed;
 	public Button chk_collectBytes;
@@ -66,6 +67,10 @@ public class OptionSetting extends Composite {
 
 	public boolean checkIncludeParams() {
 		return chk_includeParams.getSelection();
+	}
+	
+	public boolean checkCheckFileEncoding() {
+		return chk_checkFileEncoding.getSelection();
 	}
 
 	public boolean checkCollectTPM() {
@@ -148,6 +153,12 @@ public class OptionSetting extends Composite {
 		chk_includeParams.setText("URI includes parameters");
 		chk_includeParams.setToolTipText("Check if the URI contains a query string.\nIt will be aggregated into a URI without the query string.");
 		chk_includeParams.setBounds(24, 140, 226, 16);
+		
+		chk_checkFileEncoding = new Button(this, SWT.CHECK);
+		chk_checkFileEncoding.setFont(Utility.getFont());
+		chk_checkFileEncoding.setText("Check encoding of files");
+		chk_checkFileEncoding.setToolTipText("Check what encoding the text in the files is in.\nThis may delay the start of log analysis, so it is recommended to check it only if the log contains special characters such as Korean.");
+		chk_checkFileEncoding.setBounds(24, 170, 226, 16);
 
 		Label lb_verticalSeparator = new Label(this, SWT.SEPARATOR | SWT.VERTICAL);
 		lb_verticalSeparator.setBounds(280, 18, 2, 220);
@@ -249,6 +260,7 @@ public class OptionSetting extends Composite {
 								   chk_strictCheck,
 								   chk_allowErrors, spn_allowErrors,
 								   chk_includeParams,
+								   chk_checkFileEncoding,
 								   chk_collectTPM, spn_tpmUnit,
 								   chk_collectElapsed, spn_collectElapsed,
 								   chk_collectBytes, spn_collectBytes,

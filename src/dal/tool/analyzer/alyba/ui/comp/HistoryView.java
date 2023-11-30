@@ -64,6 +64,7 @@ public class HistoryView extends Shell {
 	private Table tbl_files;
 	private TableColumn tblc_title;
 	private TableColumn tblc_created;
+	private TableColumn tblc_version;
 	private TableColumn tblc_fileSize;
 	private TableColumn tblc_fileExists;
 	private TableColumn tblc_fileName;
@@ -87,8 +88,8 @@ public class HistoryView extends Shell {
 		
 		instance = this;
 		
-		setSize(900, 300);
-		setMinimumSize(900, 300);
+		setSize(1000, 300);
+		setMinimumSize(1000, 300);
 		setText("ALYBA " + Constant.PROGRAM_VERSION + " - History View");
 		Rectangle dispRect = getDisplay().getMonitors()[0].getBounds();
 		Rectangle shellRect = getBounds();
@@ -147,6 +148,8 @@ public class HistoryView extends Shell {
 		tblc_title.setText("Title");
 		tblc_created = new TableColumn(tbl_files, SWT.CENTER);
 		tblc_created.setText("Created");
+		tblc_version = new TableColumn(tbl_files, SWT.CENTER);
+		tblc_version.setText("Version");
 		tblc_fileSize = new TableColumn(tbl_files, SWT.RIGHT);
 		tblc_fileSize.setText("Size");
 		tblc_fileExists = new TableColumn(tbl_files, SWT.CENTER);
@@ -201,7 +204,9 @@ public class HistoryView extends Shell {
 		tbl_files.addKeyListener(new KeyAdapter() {
 			public void keyPressed(KeyEvent e) {
 				if(e.keyCode == 127 && tbl_files.getSelectionCount() == 1) {
-					removeHistory();
+					if(MessageUtil.showConfirmMessage(instance, "Do you really want to delete the item?")) {
+						removeHistory();
+					}				
 				}
 			}
 		});
@@ -218,33 +223,41 @@ public class HistoryView extends Shell {
 			}
 		});
 
+		tblc_version.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				sortTableDataByString(2);
+			}
+		});
+
 		tblc_fileSize.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				sortTableDataByNumber(2);
+				sortTableDataByNumber(3);
 			}
 		});
 		
 		tblc_fileExists.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				sortTableDataByString(3);
+				sortTableDataByString(4);
 			}
 		});
 		
 		tblc_fileName.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				sortTableDataByString(4);
+				sortTableDataByString(5);
 			}
 		});
 
 		tblc_dirName.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				sortTableDataByString(5);
+				sortTableDataByString(6);
 			}
 		});
 		
 		btn_remove.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				removeHistory();
+				if(MessageUtil.showConfirmMessage(instance, "Do you really want to delete the item?")) {
+					removeHistory();
+				}				
 			}
 		});
 
@@ -315,9 +328,10 @@ public class HistoryView extends Shell {
 				HistoryVO historyVo = new HistoryVO(dbfile.getName(), dbfile.getParent());
 				SummaryEntryVO summaryVo = db.select(em, SummaryEntryVO.class);
 				historyVo.setCreated(summaryVo.getCreatedTime().getTime());
+				historyVo.setVersion(summaryVo.getVersion());
 				historyVo.setFileSize(dbfile.length());
 				historyVo.setTitle(summaryVo.getTitle());
-				return addHistoryItem(historyVo);
+				return addHistoryItem(historyVo, true);
 			} catch(Exception e) {
 				Logger.debug("Failed to add an item : " + fileName);
 				Logger.error(e);
@@ -334,21 +348,24 @@ public class HistoryView extends Shell {
 		}
 	}
 	
-	public TableItem addHistoryItem(HistoryVO historyVo) throws Exception {
+	public TableItem addHistoryItem(HistoryVO historyVo, boolean showMessage) throws Exception {
 		HistoryManager hm = null;
 		try {
 			hm = new HistoryManager();
 			if(hm.getHistory(historyVo.getKey()) != null) {
-				MessageUtil.showErrorMessage(instance, "The item already exists.");
+				Logger.debug("Because the item already exists, adding it to the history view is ignored.");
+				if(showMessage) {
+					MessageUtil.showErrorMessage(instance, "The item already exists.");
+				}
 				return null;
 			}
-			hm.addHistory(historyVo);
 			TableItem item = new TableItem(tbl_files, SWT.NULL);
 			item.setData(historyVo.getKey());
 			item.setText(historyVo.getFieldArray());
-			if(item.getText(3).equals("X")) {
-				item.setForeground(3, instance.getDisplay().getSystemColor(SWT.COLOR_RED));
+			if(item.getText(4).equals("X")) {
+				item.setForeground(4, instance.getDisplay().getSystemColor(SWT.COLOR_RED));
 			}
+			hm.addHistory(historyVo);
 			return item;
 		} catch(Exception e) {
 			throw e;
@@ -360,12 +377,9 @@ public class HistoryView extends Shell {
 	}
 	
 	private void removeHistory() {
-		if(!MessageUtil.showConfirmMessage(instance, "Do you really want to delete the item?")) {
-			return;
-		}
 		int idx = tbl_files.getSelectionIndex();
 		TableItem item = tbl_files.getItem(idx);
-		boolean deleteFile = "O".equals(item.getText(3)) && MessageUtil.showYesNoMessage(instance, "Do you want to delete the DB file together?");
+		boolean deleteFile = "O".equals(item.getText(4)) && MessageUtil.showYesNoMessage(instance, "Do you want to delete the DB file together?");
 		String key = (String)item.getData();
 		HistoryManager hm = null;
 		try {
@@ -382,7 +396,7 @@ public class HistoryView extends Shell {
 		}
 		try {
 			if(deleteFile) {
-				String filepath = item.getText(5) + File.separator + item.getText(4);
+				String filepath = item.getText(6) + File.separator + item.getText(5);
 				new File(filepath).delete();
 			}					
 		} catch(Exception ex) {
@@ -397,16 +411,22 @@ public class HistoryView extends Shell {
 	private void openHistory() {
 		int idx = tbl_files.getSelectionIndex();
 		TableItem item = tbl_files.getItem(idx);
-		String filepath = item.getText(5) + File.separator + item.getText(4);
-		ResultAnalyzer resultAnalyzer = AlybaGUI.instance.openResultAnalyzer();
-		try {
-			resultAnalyzer.loadDBFile(filepath);
-			resultAnalyzer.forceActive();
-		} catch(Exception ex) {
-			Logger.debug("Failed to load the database : " + filepath);
-			Logger.error(ex);
-			MessageUtil.showErrorMessage(instance, "Failed to load the database.");
-			resultAnalyzer.setVisible(false);
+		if("O".equals(item.getText(4))) {
+			String filepath = item.getText(6) + File.separator + item.getText(5);
+			ResultAnalyzer resultAnalyzer = AlybaGUI.instance.openResultAnalyzer();
+			try {
+				resultAnalyzer.loadDBFile(filepath);
+				resultAnalyzer.forceActive();
+			} catch(Exception ex) {
+				Logger.debug("Failed to load the database : " + filepath);
+				Logger.error(ex);
+				MessageUtil.showErrorMessage(instance, "Failed to load the database.");
+				resultAnalyzer.setVisible(false);
+			}
+		} else {
+			if(MessageUtil.showConfirmMessage(instance, "DB File does not exists. Do you want to delete the item?")) {
+				removeHistory();
+			}				
 		}
 	}
 
@@ -418,22 +438,25 @@ public class HistoryView extends Shell {
 		}
 		int size_title = 150;
 		int size_created = 150;
+		int size_version = 100;
 		int size_filesize = 100;
 		int size_exists = 60;
 		int size_filename = 150;
 		if(table_width > 0) {
 			size_title = (int)(width*(tblc_title.getWidth()/(float)table_width));
 			size_created = (int)(width*(tblc_created.getWidth()/(float)table_width));
+			size_version = (int)(width*(tblc_version.getWidth()/(float)table_width));
 			size_filesize = (int)(width*(tblc_fileSize.getWidth()/(float)table_width));
 			size_exists = (int)(width*(tblc_fileExists.getWidth()/(float)table_width));
 			size_filename = (int)(width*(tblc_fileName.getWidth()/(float)table_width));
 		}
 		tblc_title.setWidth(size_title);
 		tblc_created.setWidth(size_created);
+		tblc_version.setWidth(size_version);
 		tblc_fileSize.setWidth(size_filesize);
 		tblc_fileExists.setWidth(size_exists);
 		tblc_fileName.setWidth(size_filename);
-		tblc_dirName.setWidth(width -(size_title+size_created+size_filesize+size_exists+size_filename));
+		tblc_dirName.setWidth(width -(size_title+size_created+size_version+size_filesize+size_exists+size_filename));
 		table_width = width;
 	}
 	
@@ -484,8 +507,8 @@ public class HistoryView extends Shell {
 				TableItem item = new TableItem(tbl_files, SWT.NULL);
 				item.setData(vo.getKey());
 				item.setText(vo.getFieldArray());
-				if(item.getText(3).equals("X")) {
-					item.setForeground(3, instance.getDisplay().getSystemColor(SWT.COLOR_RED));
+				if(item.getText(4).equals("X")) {
+					item.setForeground(4, instance.getDisplay().getSystemColor(SWT.COLOR_RED));
 				}
 			}
 			loaded = true;
@@ -518,14 +541,14 @@ public class HistoryView extends Shell {
 			for(int j = 0; j < i; j++) {
 				value2 = items[j].getText(fieldIdx);
 				if((isAsc && collator.compare(value1, value2) < 0) || (!isAsc && collator.compare(value1, value2) > 0)) {
-					String[] values = { items[i].getText(0), items[i].getText(1), items[i].getText(2), items[i].getText(3), items[i].getText(4), items[i].getText(5) };
+					String[] values = { items[i].getText(0), items[i].getText(1), items[i].getText(2), items[i].getText(3), items[i].getText(4), items[i].getText(5), items[i].getText(6) };
 					String key = (String)items[i].getData();
 					items[i].dispose();
 					TableItem item = new TableItem(tbl_files, SWT.NULL, j);
 					item.setText(values);
 					item.setData(key);
-					if(item.getText(3).equals("X")) {
-						item.setForeground(3, instance.getDisplay().getSystemColor(SWT.COLOR_RED));
+					if(item.getText(4).equals("X")) {
+						item.setForeground(4, instance.getDisplay().getSystemColor(SWT.COLOR_RED));
 					}
 					items = tbl_files.getItems();
 					break;
@@ -554,14 +577,14 @@ public class HistoryView extends Shell {
 			for(int j = 0; j < i; j++) {
 				value2 = Long.parseLong(items[j].getText(fieldIdx));
 				if((isAsc && (value1 < value2)) || (!isAsc && (value1 > value2))) {
-					String[] values = { items[i].getText(0), items[i].getText(1), items[i].getText(2), items[i].getText(3), items[i].getText(4), items[i].getText(5) };
+					String[] values = { items[i].getText(0), items[i].getText(1), items[i].getText(2), items[i].getText(3), items[i].getText(4), items[i].getText(5), items[i].getText(6) };
 					String key = (String)items[i].getData();
 					items[i].dispose();
 					TableItem item = new TableItem(tbl_files, SWT.NULL, j);
 					item.setText(values);
 					item.setData(key);
-					if(item.getText(3).equals("X")) {
-						item.setForeground(3, instance.getDisplay().getSystemColor(SWT.COLOR_RED));
+					if(item.getText(4).equals("X")) {
+						item.setForeground(4, instance.getDisplay().getSystemColor(SWT.COLOR_RED));
 					}
 					items = tbl_files.getItems();
 					break;
