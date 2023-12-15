@@ -319,6 +319,8 @@ public class ResourceChart extends TimeSeriesChart {
 			if(getNetworkAvailable()) {
 			    combinedXYPlot.add(createSubChart(ResourceType.Network));
 			}
+			combinedXYPlot.setDomainPannable(true);
+			combinedXYPlot.setRangePannable(true);
 	        jfreeChart = new JFreeChart(title, new Font("Tahoma", Font.BOLD, 20), combinedXYPlot, false);
 			jfreeChart.setBackgroundPaint(Color.white);
 			LegendTitle legend = new LegendTitle((XYPlot)combinedXYPlot.getSubplots().get(0));

@@ -578,8 +578,9 @@ public class AlybaGUI {
 			public void drop(DropTargetEvent event) {
 				String[] sourceFileList = (String[])event.data;
 				String filename_pattern = null;
-				if(event.detail == 1) {
-					InputDialog dlg = new InputDialog(Display.getCurrent().getActiveShell(), "Input", "Enter pattern of filenames (* and ? characters are available)", "*", new IInputValidator() {
+				if(event.detail == DND.DROP_COPY) {
+					// Drop with Ctrl(Copy on windows) key
+					InputDialog dlg = new InputDialog(shell, "Input", "Enter pattern of filenames (* and ? characters are available)", "*", new IInputValidator() {
 						public String isValid(String s) {
 							if(s.length() < 1)
 								return "Too short";

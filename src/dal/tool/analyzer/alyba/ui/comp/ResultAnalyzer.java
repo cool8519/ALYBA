@@ -41,6 +41,7 @@ import dal.tool.analyzer.alyba.ui.history.HistoryVO;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.db.ObjectDBUtil;
 import dal.util.swt.FileDialogUtil;
+import dal.util.swt.ImageUtil;
 import dal.util.swt.MessageUtil;
 import dal.util.swt.SWTResourceManager;
 
@@ -49,14 +50,15 @@ public class ResultAnalyzer extends Shell {
 	public static String title_prefix = "ALYBA " + Constant.PROGRAM_VERSION + " - Result Analyzer";
 	public static ProgressBar pbar_loading;
 	public static ResultAnalyzer instance;
+	public static DebugConsole debugConsole = null;
 
 	public Display display;
-	public DebugConsole console = null;
 	private int isLoaded = -1;
 	
 	private Label lb_notloaded;
 	private Label hline_top;
 	private Text txt_title;
+	private Button btn_console;
 	private Button btn_openDB;
 	private TabFolder tbf_view;
 	private TabItem tbi_summary;
@@ -133,10 +135,13 @@ public class ResultAnalyzer extends Shell {
 		}
 	}
 
+	/**
+	 * @wbp.parser.constructor
+	 */
 	public ResultAnalyzer(Display display, int style) {
 		super(display, style);
 		this.display = display;
-		AlybaGUI.createDebugConsole(display);
+		createDebugConsole(display);
 		createContents();
 		addEventListener();
 		open();
@@ -146,13 +151,39 @@ public class ResultAnalyzer extends Shell {
 	public ResultAnalyzer(Display display, int style, String fileName) {
 		super(display, style);
 		this.display = display;
-		AlybaGUI.createDebugConsole(display);
+		createDebugConsole(display);
 		createContents();
 		addEventListener();
 		open();
 		layout(true, true);
 		if(fileName != null) {
 			loadDBFile(fileName);
+		}
+	}
+	
+	public static void createDebugConsole(Display display) {
+		if(AlybaGUI.debugMode && AlybaGUI.instance == null && debugConsole == null) {
+            synchronized(ResultAnalyzer.class) {
+                if(debugConsole == null) {
+        			debugConsole = new DebugConsole(display, SWT.SHELL_TRIM);
+        			debugConsole.setLocation(0, 0);
+        			debugConsole.setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
+                }
+            }
+		}
+	}
+
+	public static DebugConsole getDebugConsole() {
+		return debugConsole;
+	}
+	
+	public void toggleDebugConsole() {
+		debugConsole.setVisible(!debugConsole.getVisible());
+		if(btn_console.getText().equals("Hide Console")) {
+			btn_console.setText("Show Console");
+		} else {
+			btn_console.setText("Hide Console");
+			debugConsole.setMinimized(false);
 		}
 	}
 	
@@ -216,7 +247,7 @@ public class ResultAnalyzer extends Shell {
 		txt_title.setText("");
 		txt_title.setFont(Utility.getFont());
 		txt_title.setEnabled(false);		
-		
+
 		FormData fd_btn_openDB = new FormData();
 		fd_btn_openDB.right = new FormAttachment(100);
 		fd_btn_openDB.top = new FormAttachment(0);
@@ -251,6 +282,17 @@ public class ResultAnalyzer extends Shell {
 		pbar_loading.setSelection(0);
 		pbar_loading.setVisible(false);
 		
+		FormData fd_btn_console = new FormData();
+		fd_btn_console.top = new FormAttachment(0);
+		fd_btn_console.right = new FormAttachment(pbar_loading, -20);
+		fd_btn_console.width = 100;
+		fd_btn_console.height = 28;
+		btn_console = new Button(this, SWT.NONE);
+		btn_console.setLayoutData(fd_btn_console);
+		btn_console.setText("Hide Console");
+		btn_console.setFont(Utility.getFont());
+		btn_console.setVisible(AlybaGUI.debugMode && AlybaGUI.instance==null);
+		
 		FormData fd_hline_top = new FormData();
 		fd_hline_top.left = new FormAttachment(0);
 		fd_hline_top.right = new FormAttachment(100);
@@ -270,19 +312,19 @@ public class ResultAnalyzer extends Shell {
 
 		tbi_summary = new TabItem(tbf_view, SWT.NONE);
 		tbi_summary.setText("Summary");
-		summaryView = new ResultSummary(tbf_view, SWT.NONE);
+		summaryView = new ResultSummary(tbf_view, SWT.NONE, this);
 		summaryView.setEnabled(false);
 		tbi_summary.setControl(summaryView);
 		
 		tbi_data = new TabItem(tbf_view, SWT.NONE);
 		tbi_data.setText("Data");
-		dataView = new ResultData(tbf_view, SWT.NONE);
+		dataView = new ResultData(tbf_view, SWT.NONE, this);
 		dataView.setEnabled(false);
 		tbi_data.setControl(dataView);
 
 		tbi_chart = new TabItem(tbf_view, SWT.NONE);
 		tbi_chart.setText("Chart");
-		chartView = new ResultChart(tbf_view, SWT.NONE);
+		chartView = new ResultChart(tbf_view, SWT.NONE, this);
 		chartView.setEnabled(false);
 		tbi_chart.setControl(chartView);		
 		
@@ -325,6 +367,14 @@ public class ResultAnalyzer extends Shell {
 				resize(rect);
 			}
 		});
+
+		if(AlybaGUI.debugMode && AlybaGUI.instance == null) {
+			btn_console.addSelectionListener(new SelectionAdapter() {
+				public void widgetSelected(SelectionEvent e) {
+					toggleDebugConsole();
+				}
+			});
+		}
 
 		btn_openDB.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
@@ -376,7 +426,7 @@ public class ResultAnalyzer extends Shell {
 
 	protected void checkSubclass() {
 	}
-
+	
 	private void resize(Rectangle rect) {
 		summaryView.resize(rect);
 		dataView.resize(rect);

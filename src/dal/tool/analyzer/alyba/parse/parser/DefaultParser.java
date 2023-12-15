@@ -205,7 +205,7 @@ public class DefaultParser extends LogLineParser {
 		KeyEntryVO result_vo = getContainsKey(aggr_data2, data);
 		if(result_vo == null) {
 			if(dataKey.equals("URI")) result_vo = new KeyEntryVO(KeyEntryVO.Type.URI, data);
-			else if(dataKey.equals("IP")) {result_vo = new KeyEntryVO(KeyEntryVO.Type.IP, data); result_vo.setDescription(Utility.getCountryFromIPv4(data));}
+			else if(dataKey.equals("IP")) {result_vo = new KeyEntryVO(KeyEntryVO.Type.IP, data); result_vo.setDescription(Utility.getCountryFromIP(data));}
 			else if(dataKey.equals("EXT")) result_vo = new KeyEntryVO(KeyEntryVO.Type.EXT, data);
 			else if(dataKey.equals("CODE")) {result_vo = new KeyEntryVO(KeyEntryVO.Type.CODE, data); result_vo.setDescription(Utility.getCodeDescription(data));}
 			else if(dataKey.equals("METHOD"))result_vo = new KeyEntryVO(KeyEntryVO.Type.METHOD, data);

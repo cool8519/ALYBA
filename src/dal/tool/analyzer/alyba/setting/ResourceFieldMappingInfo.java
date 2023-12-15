@@ -1,8 +1,9 @@
 package dal.tool.analyzer.alyba.setting;
 
+import java.util.HashMap;
 import java.util.Locale;
 
-public class ResourceFieldMappingInfo extends FieldMappingInfo {
+public class ResourceFieldMappingInfo extends FieldMappingInfo implements Cloneable {
 
 	public String fileType;
 	public String timeFormat;
@@ -106,6 +107,19 @@ public class ResourceFieldMappingInfo extends FieldMappingInfo {
 
 	public boolean isMappedNetwork() {
 		return mappingInfo.containsKey("NETWORK");
+	}
+	
+    @SuppressWarnings("unchecked")
+	public ResourceFieldMappingInfo copy() {
+    	ResourceFieldMappingInfo copiedObj = new ResourceFieldMappingInfo(fileType, fieldDelimeter, fieldBracelet, timeFormat, null, (int)offsetHour, isCpuIdle, isMemoryIdle, isDiskIdle, isNetworkIdle, null);
+    	copiedObj.setTimeLocale((Locale)timeLocale.clone());
+    	copiedObj.setMappingInfo((HashMap<String,String>)mappingInfo.clone());
+    	return copiedObj;
+    }
+    
+	@Override
+	public String toString() {
+		return "ResourceFieldMappingInfo [fileType=\"" + fileType + "\", timeFormat=\"" + timeFormat + "\", timeLocale=" + timeLocale + ", mappingInfo=" + mappingInfo + "]";
 	}
 
 }

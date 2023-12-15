@@ -8,7 +8,6 @@ import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -38,9 +37,6 @@ public class DebugConsole extends Shell {
 	}
 
 	protected void createContents() {
-
-		GridLayout gl_main = new GridLayout();
-		gl_main.verticalSpacing = 2;
 
 		setSize(640, 250);
 		setText("Debug Console");
@@ -77,7 +73,11 @@ public class DebugConsole extends Shell {
 		
 		addShellListener(new ShellAdapter() {
 			public void shellClosed(ShellEvent e) {
-				AlybaGUI.getInstance().toggleDebugConsole();
+				if(AlybaGUI.instance == null) {
+					ResultAnalyzer.instance.toggleDebugConsole();
+				} else {
+					AlybaGUI.getInstance().toggleDebugConsole();
+				}
 				e.doit = false;
 			}
 		});

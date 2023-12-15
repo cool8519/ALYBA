@@ -4,12 +4,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.StringTokenizer;
 
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
@@ -27,6 +29,8 @@ import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FormAttachment;
@@ -52,6 +56,7 @@ import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.FileUtil;
+import dal.util.MathUtil;
 import dal.util.NumberUtil;
 import dal.util.StringUtil;
 import dal.util.swt.MessageUtil;
@@ -185,7 +190,7 @@ public class ResourceFieldMapping extends Composite {
 		fd_cb_fileType.height = 15;
 		cb_fileType = new CCombo(this, SWT.BORDER | SWT.READ_ONLY);
 		cb_fileType.setLayoutData(fd_cb_fileType);
-		cb_fileType.setVisibleItemCount(6);
+		cb_fileType.setVisibleItemCount(10);
 		cb_fileType.setItems(Constant.FILE_TYPES);
 		cb_fileType.setFont(Utility.getFont());
 		cb_fileType.setText(Constant.FILE_TYPES[0]);
@@ -495,13 +500,13 @@ public class ResourceFieldMapping extends Composite {
 				resetMappings();
 				boolean isCustomize = cb_fileType.getText().equals(Constant.FILE_TYPES[0]);
 				grp_customizeMapping.setEnabled(isCustomize);
-				ResourceFieldMappingInfo info = getDefaultMappingInfo(cb_fileType.getText());
-				if(info == null) {
+				ResourceFieldMappingInfo[] info = getDefaultMappingInfo(cb_fileType.getText());
+				if(info == null || info.length == 0) {
 					txt_delimeter.setText(StringUtil.replaceMetaCharacter(Constant.FILE_DEFAULT_DELIMETER, true));
 					txt_bracelet.setText(StringUtil.getStringFromArray(Constant.FILE_DEFAULT_BRACELETS, " "));
-				} else {
-					txt_delimeter.setText(StringUtil.replaceMetaCharacter(info.fieldDelimeter, true));
-					txt_bracelet.setText(info.fieldBracelet);
+				} else if(info.length == 1) {
+					txt_delimeter.setText(StringUtil.replaceMetaCharacter(info[0].fieldDelimeter, true));
+					txt_bracelet.setText(info[0].fieldBracelet);
 				}
 				txt_delimeter.setEnabled(isCustomize);
 				txt_bracelet.setEnabled(isCustomize);
@@ -585,6 +590,7 @@ public class ResourceFieldMapping extends Composite {
 		addDragAndDropListeners();
 		
 		addKeyListeners();
+		addDoubleClickListeners();
 
 	}
 
@@ -656,7 +662,7 @@ public class ResourceFieldMapping extends Composite {
 				}
 			}
 		});
-
+		
 		txt_mem.addKeyListener(new KeyAdapter() {
 			public void keyReleased(KeyEvent e) {
 				if(e.keyCode == 127) {
@@ -683,6 +689,42 @@ public class ResourceFieldMapping extends Composite {
 
 	}
 
+	protected void addDoubleClickListeners() {
+
+		txt_cpu.addMouseListener(new MouseAdapter() {
+			public void mouseDoubleClick(MouseEvent e) {
+				if(!txt_cpu.getText().isEmpty()) {
+					calculatingDataByNumber("CPU", txt_cpu);
+				}
+			}
+		});
+
+		txt_mem.addMouseListener(new MouseAdapter() {
+			public void mouseDoubleClick(MouseEvent e) {
+				if(!txt_mem.getText().isEmpty()) {
+					calculatingDataByNumber("MEM", txt_mem);
+				}
+			}
+		});
+
+		txt_disk.addMouseListener(new MouseAdapter() {
+			public void mouseDoubleClick(MouseEvent e) {
+				if(!txt_disk.getText().isEmpty()) {
+					calculatingDataByNumber("DISK", txt_disk);
+				}
+			}
+		});
+
+		txt_network.addMouseListener(new MouseAdapter() {
+			public void mouseDoubleClick(MouseEvent e) {
+				if(!txt_network.getText().isEmpty()) {
+					calculatingDataByNumber("NETWORK", txt_network);
+				}
+			}
+		});
+
+	}
+	
 	protected boolean mappingDataByDND(String key, Text txtCtrl) {
 		if(key == null)
 			return false;
@@ -713,19 +755,38 @@ public class ResourceFieldMapping extends Composite {
 			mapStr = draggingItem.getText(0);
 			fldStr = draggingItem.getText(1);
 		}
-		boolean appendFlag = false;
-		if(key.equals("TIME") && !txtCtrl.getText().equals("")) {
-			String[] labels = new String[] { "Replace", "Append" };
-			int i = MessageUtil.showSelectMessage(getShell(), "Question", "What would you do with this field?", labels);
-			if(i == 1) {
-				appendFlag = true;
-			} else if(i < 0) {
-				return false;
+		if(!txtCtrl.getText().equals("")) {
+			if(key.equals("TIME")) {
+				String[] labels = new String[] { "Replace", "Append" };
+				int i = MessageUtil.showSelectMessage(getShell(), "Question", "What would you do with this field?", labels);
+				if(i == 1) {
+					mapStr = (String)mappingData.get(key) + "," + mapStr;
+					fldStr = txtCtrl.getText() + " " + fldStr;
+				} else if(i < 0) {
+					return false;
+				}
+			} else {
+				String[] labels = new String[] { "Replace", "Calculate" };
+				int i = MessageUtil.showSelectMessage(getShell(), "Question", "What would you do with this field?", labels);
+				if(i == 1) {
+		            CalculationInputDialog dialog = new CalculationInputDialog(getShell());
+		            String currInput = ((String)mappingData.get(key)).startsWith("{") ? txtCtrl.getText() : "{$"+mappingData.get(key)+"}="+txtCtrl.getText(); 
+		            dialog.setValues(currInput, "{$"+mapStr+"}="+fldStr);
+		            if(dialog.open() == Dialog.OK) {
+		            	if(dialog.isResultValid()) {
+			            	fldStr = dialog.getResultValue();
+			            	mapStr = fldStr.split("=")[0];
+		            	} else {
+		            		MessageUtil.showWarningMessage(getShell(), "The calculated value is invalid and will be ignored.");
+		            		return false;
+		            	}
+		            } else {
+		            	return false;
+		            }
+				} else if(i < 0) {
+					return false;
+				}
 			}
-		}
-		if(appendFlag) {
-			mapStr = (String)mappingData.get(key) + "," + mapStr;
-			fldStr = txtCtrl.getText() + " " + fldStr;
 		}
 		Logger.debug("mapping:" + mapStr + ", field:" + fldStr);
 		mappingData.put(key, mapStr);
@@ -742,6 +803,35 @@ public class ResourceFieldMapping extends Composite {
 			draggingItem = null;
 			owner.toggleAnalyzingButton(checkParsingAvailable());
 		}
+	}
+	
+	protected boolean calculatingDataByNumber(String key, Text txtCtrl) {
+		if(key == null)
+			return false;
+		String mapStr;
+		String fldStr;
+		if(!MessageUtil.showConfirmMessage(getShell(), "Do you want to perform numeric operations on this field?")) {
+			return false;
+		}
+        CalculationInputDialog dialog = new CalculationInputDialog(getShell());
+        String currInput = ((String)mappingData.get(key)).startsWith("{") ? txtCtrl.getText() : "{$"+mappingData.get(key)+"}="+txtCtrl.getText(); 
+        dialog.setValues(currInput, null);
+        if(dialog.open() == Dialog.OK) {
+        	if(dialog.isResultValid()) {
+        		fldStr = dialog.getResultValue();
+        		mapStr = fldStr.split("=")[0];
+        	} else {
+        		MessageUtil.showWarningMessage(getShell(), "The calculated value is invalid and will be ignored.");
+        		return false;
+        	}
+        } else {
+        	return false;
+        }
+		Logger.debug("mapping:" + mapStr + ", field:" + fldStr);
+		mappingData.put(key, mapStr);
+		txtCtrl.setText(fldStr);
+		owner.toggleAnalyzingButton(checkParsingAvailable());
+		return true;
 	}
 
 	private int getSubFieldIndex(List<String> fields) {
@@ -767,29 +857,46 @@ public class ResourceFieldMapping extends Composite {
 		}
 	}
 
-	protected boolean mappingField(String key, String value) {
-		if(key == null)
-			return false;
-		if(value == null || value.equals(""))
-			return false;
+	protected String autoMappingField(String mappingKey, String mappingIdxValue) {
+		if(mappingKey == null)
+			return null;
+		if(mappingIdxValue == null || mappingIdxValue.equals(""))
+			return null;
 		Text txtCtrl = null;
-		if(key.equals("TIME"))
+		if(mappingKey.equals("TIME"))
 			txtCtrl = txt_time;
-		else if(key.equals("CPU"))
+		else if(mappingKey.equals("CPU"))
 			txtCtrl = txt_cpu;
-		else if(key.equals("MEM"))
+		else if(mappingKey.equals("MEM"))
 			txtCtrl = txt_mem;
-		else if(key.equals("DISK"))
+		else if(mappingKey.equals("DISK"))
 			txtCtrl = txt_disk;
-		else if(key.equals("NETWORK"))
+		else if(mappingKey.equals("NETWORK"))
 			txtCtrl = txt_network;
-		String val = null;
+		String mappedValue = null;
 		String delimeter = StringUtil.replaceMetaCharacter(getDelimeter(), false);
 		String[] bracelets = StringUtil.getArrayFromString(getBracelet(), " ");
-		if(value.indexOf(',') > 0) {
-			StringTokenizer st = new StringTokenizer(value, ",");
-			String concatValue = "";
-			if(key.equals("TIME")) {
+		if(mappingIdxValue.startsWith("{") && mappingIdxValue.endsWith("}")) {
+			String expr = mappingIdxValue.substring(1, mappingIdxValue.length()-1);
+			List<String> fieldValues = getFieldValues();
+			try {
+				List<Double> variables = NumberUtil.toDoubleList(fieldValues);
+				Logger.debug("Evaluating : expression='" + expr + "', variables=" + variables);
+				Double evalResult = MathUtil.evaluateExpression(expr, variables);
+				String result = String.valueOf(evalResult.doubleValue());
+				if(result.substring(result.indexOf('.')+1).length() > 4) {
+					mappedValue = mappingIdxValue + "=" + Math.round(evalResult.doubleValue()*10000)/10000.0;
+				} else {
+					mappedValue = mappingIdxValue + "=" + evalResult.doubleValue();
+				}
+			} catch(Exception e) {
+				Logger.debug("Failed to evaluate the expression : '" + expr + "' : " + e);
+				return null;
+			}
+		} else if(mappingIdxValue.indexOf(',') > 0) {
+			if(mappingKey.equals("TIME")) {
+				StringTokenizer st = new StringTokenizer(mappingIdxValue, ",");
+				String concatValue = "";
 				String joinChar = " ";
 				int cnt = 1;
 				while(st.hasMoreTokens()) {
@@ -798,42 +905,69 @@ public class ResourceFieldMapping extends Composite {
 						int header_idx = Integer.parseInt(idx_str.substring(1));
 						StringTokenizer st2 = new StringTokenizer(header, delimeter);
 						for(int i = 0; i < header_idx; i++) {
-							val = st2.nextToken();
+							mappedValue = st2.nextToken();
 						}
 					} else {
-						FieldIndex fld_idx = new FieldIndex(key + "_" + cnt, idx_str);
+						FieldIndex fld_idx = new FieldIndex(mappingKey + "_" + cnt, idx_str);
 						String main_fld = tbl_line.getItem(fld_idx.getMainIndex()).getText(1);
-						val = fld_idx.getField(main_fld, delimeter, bracelets);
+						mappedValue = fld_idx.getField(main_fld, delimeter, bracelets);
 					}
 					if(cnt == 1) {
-						if(val == null)
-							return false;
-						concatValue = val;
+						if(mappedValue == null) {
+							return null;
+						}
+						concatValue = mappedValue;
 					} else {
-						concatValue += (val == null) ? "" : (joinChar + val);
+						concatValue += (mappedValue == null) ? "" : (joinChar + mappedValue);
 					}
 					cnt++;
 				}
-				concatValue = concatValue.trim();
-				txtCtrl.setText(concatValue);
+				mappedValue = concatValue.trim();
+			} else {
+				Logger.error("Only the TIME field supports multi-column mapping.");
+				throw new RuntimeException("Only the TIME field supports multi-column mapping.");
 			}
 		} else {
-			FieldIndex fld_idx = new FieldIndex(key, value);
+			FieldIndex fld_idx = new FieldIndex(mappingKey, mappingIdxValue);
 			String main_fld = tbl_line.getItem(fld_idx.getMainIndex()).getText(1);
-			val = fld_idx.getField(main_fld, delimeter, bracelets);
-			if(val == null) {
-				return false;
+			mappedValue = fld_idx.getField(main_fld, delimeter, bracelets);
+			if(mappedValue == null) {
+				return null;
 			}
-			txtCtrl.setText(val);
 		}
+		txtCtrl.setText(mappedValue);
 		owner.toggleAnalyzingButton(checkParsingAvailable());
-		return true;
+		return mappedValue;
+	}
+	
+	protected List<String> getFieldValues() {
+		List<String> result = new ArrayList<String>(tbl_line.getItemCount());
+		for(TableItem item : tbl_line.getItems()) {
+			result.add(item.getText(1));
+		}
+		return result;
 	}
 
 	protected void addLine() {
 		String file_line = "";
 		try {
-			file_line = getSampleLine();
+			int cnt = 0;
+			do {
+				if(cnt == Constant.MAX_SAMPLING_COUNT)
+					break;
+				file_line = getSampleLine();
+				if(file_line == null || file_line.trim().equals("") || file_line.startsWith("#")) {
+					continue;
+				}
+				cnt++;
+				if(getFileType().equals("vmstat")) {
+					if(!headerOfVmstat(file_line)) {
+						break;
+					}
+				} else {
+					break;
+				}
+			} while(true);
 		} catch(Exception e) {
 			Logger.debug("Failed to sample a line from logfile.");
 			Logger.error(e);
@@ -842,10 +976,14 @@ public class ResourceFieldMapping extends Composite {
 			MessageUtil.showErrorMessage(getShell(), "Failed to sample a line.");
 			return;
 		}
-
+		fillTableDataWithLogLine(file_line);
+	}
+	
+	protected void fillTableDataWithLogLine(String line) {
+		tbl_line.removeAll();
 		String delimeter = StringUtil.replaceMetaCharacter(getDelimeter(), false);
 		String[] bracelets = StringUtil.getArrayFromString(getBracelet(), " ");
-		List<String> tokenList = ParserUtil.getTokenList(file_line, delimeter, bracelets, (AlybaGUI.instance==null)?false:AlybaGUI.getInstance().optionSetting.checkStrictCheck());
+		List<String> tokenList = ParserUtil.getTokenList(line, delimeter, bracelets, (AlybaGUI.instance==null)?false:AlybaGUI.getInstance().optionSetting.checkStrictCheck());
 		if(tokenList == null) {
 			return;
 		}
@@ -855,7 +993,7 @@ public class ResourceFieldMapping extends Composite {
 			item.setText(0, String.valueOf(i + 1));
 			item.setText(1, tokenList.get(i));
 			Logger.debug("TOKEN_" + (i + 1) + " : " + tokenList.get(i));
-		}
+		}		
 	}
 
 	protected void addMappingData(String key, String itemIdx) {
@@ -964,7 +1102,7 @@ public class ResourceFieldMapping extends Composite {
 		if(cb_fileType.getText().equals("sar") == false) {
 			return false;
 		}
-		if((line.length() > 0 && line.charAt(0) != ' ' && Character.isDigit(line.charAt(0)) == false) || line.indexOf("%idle") > -1) {
+		if((line.length() > 0 && line.charAt(0) != ' ' && !Character.isDigit(line.charAt(0))) || !Character.isDigit(line.charAt(line.length()-1))) {
 			return true;
 		}
 		return false;
@@ -1082,80 +1220,206 @@ public class ResourceFieldMapping extends Composite {
 		spnCtrl.setSelection(value);
 	}
 
-	public void autoMapping(ResourceFieldMappingInfo info) {
+	public boolean autoMapping(ResourceFieldMappingInfo info) {
 		try {
 			setTextValue(txt_delimeter, StringUtil.replaceMetaCharacter(info.fieldDelimeter, true));
 			setComboValue(cb_timeFormat, info.timeFormat);
 			setSpinnerValue(spn_offset, (int)(info.offsetHour*10));
 			addLine();
 			mappingData = info.mappingInfo;
-			String idx_str;
-			int cnt = 1;
 			for(String key : mappingData.keySet()) {
-				idx_str = mappingData.get(key);
-				Logger.debug("auto mapping(" + key + ") : " + idx_str);
-				boolean success = mappingField(key, idx_str);
-				if(!success) {
-					throw new Exception("Failed to map default setting automatically. key=" + key + ", idx=" + idx_str);
-				}
-				String[] idx_str_arr = idx_str.split(",");
-				FieldIndex[] fld_idx_arr = new FieldIndex[idx_str_arr.length];
-				String data = null;
-				for(int i = 0; i < idx_str_arr.length; i++) {
-					String temp_data = null;
-					if(idx_str_arr[i].startsWith("H")) {
-						int header_idx = Integer.parseInt(idx_str_arr[i].substring(1));
-						StringTokenizer st2 = new StringTokenizer(header, info.fieldDelimeter);
-						for(int j = 0; j < header_idx; j++) {
-							temp_data = st2.nextToken();
-						}
-					} else {
-						fld_idx_arr[i] = new FieldIndex(key + "_" + i, idx_str_arr[i]);
-						temp_data = fld_idx_arr[i].getField(tbl_line.getItem(fld_idx_arr[i].getMainIndex()).getText(1), info.fieldDelimeter, info.getFieldBracelets());
-					}					
-					if(i == 0) {
-						data = temp_data;
-					} else {
-						data += " " + temp_data;
-					}
-				}
-				Logger.debug("[" + cnt + "] idx : " + idx_str + ", data : " + data);
-				cnt++;
+				if("DEVICE".equals(key)) continue;
+				getFieldDataByAutoMapping(key, info);
 			}
 			spn_offset.setEnabled(false);
 			cb_timeFormat.setEnabled(false);
-			if(!lb_resultTimeChk.getText().equals("OK")) {
-				MessageUtil.showErrorMessage(getShell(), "Time format is invalid.");
-				resetMappings();
-			}
 			chk_cpu_isIdle.setSelection(info.isCpuIdle());
 			chk_mem_isIdle.setSelection(info.isMemoryIdle());
 			chk_disk_isIdle.setSelection(info.isDiskIdle());
 			chk_network_isIdle.setSelection(info.isNetworkIdle());
+			if(!lb_resultTimeChk.getText().equals("OK")) {
+				throw new Exception("Time format is invalid.");
+			}
+			return true;
 		} catch(Exception e) {
-			MessageUtil.showErrorMessage(getShell(), "Failed to map default setting automatically.");
-			Logger.debug("Failed to map default setting automatically.");
-			Logger.error(e);
+			Logger.debug("Failed to map default setting automatically : " + info);
 			resetMappings();
+			return false;
 		}
 	}
 
+	public boolean autoMappingFromSar(ResourceFieldMappingInfo info) {
+		try {
+			setTextValue(txt_delimeter, StringUtil.replaceMetaCharacter(info.fieldDelimeter, true));
+			setComboValue(cb_timeFormat, info.timeFormat);
+			setSpinnerValue(spn_offset, (int)(info.offsetHour*10));
+			mappingData = info.mappingInfo;
+			TableItem[] items = owner.tbl_files.getItems();
+			File file = null;
+			int cnt = 0;
+			do {
+				if(cnt == Constant.MAX_SAMPLING_COUNT)
+					break;
+				int idx = NumberUtil.getRandomNumber(items.length);
+				file = (File)items[idx].getData("file");
+				cnt++;
+			} while(file.length() == 0);			
+			int line_number = 0;
+			String line = null;
+			String resourceHeader = null;
+			boolean[] meetHeader = new boolean[4];
+			boolean[] completeMapping = new boolean[4];
+			boolean completeTime = false;
+			String key = null;
+			BufferedReader br = null;
+			try {
+				br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+				while((line = br.readLine()) != null) {
+					line_number++;
+					if(line_number == 1) {
+						header = line;
+					} else if(line.trim().equals("") || !Character.isDigit(line.charAt(0))) {
+						continue;
+					} else if(!completeMapping[0] && !meetHeader[0] && line.indexOf("%idle") > -1) {
+						meetHeader[0] = true; meetHeader[1] = false; meetHeader[2] = false; meetHeader[3] = false; key = "CPU"; resourceHeader = line;
+					} else if(!completeMapping[1] && !meetHeader[1] && line.indexOf("%memused") > -1) {
+						meetHeader[0] = false; meetHeader[1] = true; meetHeader[2] = false; meetHeader[3] = false; key = "MEM"; resourceHeader = line;
+					} else if(!completeMapping[2] && !meetHeader[2] && line.indexOf("%util") > -1) {
+						meetHeader[0] = false; meetHeader[1] = false; meetHeader[2] = true; meetHeader[3] = false; key = "DISK"; resourceHeader = line;
+					} else if(!completeMapping[3] && !meetHeader[3] && line.indexOf("rxkB/s") > -1) {
+						meetHeader[0] = false; meetHeader[1] = false; meetHeader[2] = false; meetHeader[3] = true; key = "NETWORK"; resourceHeader = line;
+					} else {
+						if(key == null || !Character.isDigit(line.charAt(line.length()-1))) {
+							continue;
+						}
+						fillTableDataWithLogLine(line);
+						Logger.debug(key + " Sampled Line(" + file.getCanonicalPath() + ":" + line_number + ") : \n" + line);
+						if(!completeTime) {
+							getFieldDataByAutoMapping("TIME", info);
+							completeTime = true;
+						}
+						convertVariableField(key, resourceHeader, info);
+						getFieldDataByAutoMapping(key, info);
+						if(meetHeader[0]) {
+							meetHeader[0] = false; completeMapping[0] = true; key = null; resourceHeader = null;
+						} else if(meetHeader[1]) {
+							meetHeader[1] = false; completeMapping[1] = true; key = null; resourceHeader = null;
+						} else if(meetHeader[2]) {
+							meetHeader[2] = false; completeMapping[2] = true; key = null; resourceHeader = null;
+						} else if(meetHeader[3]) {
+							meetHeader[3] = false; completeMapping[3] = true; key = null; resourceHeader = null;
+						}
+					}					
+				}
+			} catch(Exception e) {
+				throw e;
+			} finally {
+				try {
+					br.close();
+				} catch(Exception e2) {
+				}
+			}
+			spn_offset.setEnabled(false);
+			cb_timeFormat.setEnabled(false);
+			chk_cpu_isIdle.setSelection(info.isCpuIdle());
+			chk_mem_isIdle.setSelection(info.isMemoryIdle());
+			chk_disk_isIdle.setSelection(info.isDiskIdle());
+			chk_network_isIdle.setSelection(info.isNetworkIdle());
+			if(!lb_resultTimeChk.getText().equals("OK")) {
+				throw new Exception("Time format is invalid.");
+			}
+			cnt = 0;
+			for(int i = 0; i < completeMapping.length; i++) {
+				if(completeMapping[i]) {
+					cnt++;
+				} else {
+					if(i == 0) info.mappingInfo.remove("CPU");
+					else if(i == 1) info.mappingInfo.remove("MEM");
+					else if(i == 2) info.mappingInfo.remove("DISK");
+					else if(i == 3) info.mappingInfo.remove("NETWORK");
+				}
+			}
+			if(cnt == 0) {
+				throw new Exception("No mapped fields.");
+			} else if(cnt > 1) {
+				tbl_line.removeAll();
+				fieldCount = -1;
+			}
+			return true;
+		} catch(Exception e) {
+			Logger.debug("Failed to map default setting automatically : " + e.getMessage() + " : " + info);
+			resetMappings();
+			return false;
+		}
+	}
+	
+	protected void convertVariableField(String key, String header, ResourceFieldMappingInfo info) throws Exception {
+		if(key == null || header == null || !info.getMappingInfo().containsKey(key)) {
+			return;
+		}
+		String idx_str = info.getMappingInfo().get(key);
+		if(idx_str.startsWith("'") && idx_str.endsWith("'")) {
+			idx_str = idx_str.substring(1, idx_str.length()-1);
+			String delimeter = StringUtil.replaceMetaCharacter(info.getFieldDelimeter(), false);
+			String[] bracelets = StringUtil.getArrayFromString(info.getFieldBracelet(), " ");
+			List<String> tokenList = ParserUtil.getTokenList(header, delimeter, bracelets, (AlybaGUI.instance==null)?false:AlybaGUI.getInstance().optionSetting.checkStrictCheck());
+			int idx = tokenList.indexOf(idx_str);
+			if(idx < 0) {
+				throw new Exception("No field name(" + idx_str + ") in header(" + header + ")");
+			} else {
+				info.getMappingInfo().put(key, String.valueOf(idx+1));
+			}
+		}
+	}
+	
+	protected String getFieldDataByAutoMapping(String key, ResourceFieldMappingInfo info) throws Exception {
+		String idx_str = info.getMappingInfo().get(key);
+		Logger.debug("auto mapping(" + key + ") : " + idx_str);
+		String data = autoMappingField(key, idx_str);
+		if(data == null) {
+			throw new Exception("Failed to map default setting automatically. key=" + key + ", idx=" + idx_str);
+		} else if(key.equals("TIME")) {
+			SimpleDateFormat sdf = new SimpleDateFormat(info.getTimeFormat(), info.getTimeLocale());
+			sdf.setLenient(false);
+			sdf.parse(data);
+		}
+		Logger.debug("[" + key + "] idx : " + idx_str + ", data : " + data);
+		return data;
+	}
+	
 	protected void autoMapping() {
 		String type = cb_fileType.getText();
-		ResourceFieldMappingInfo info = getDefaultMappingInfo(type);
-		if(info != null) {
-			autoMapping(info);
+		ResourceFieldMappingInfo[] infos = getDefaultMappingInfo(type);
+		if(infos != null) {
+			boolean success = false;
+			for(ResourceFieldMappingInfo info : infos) {
+				txt_delimeter.setText(StringUtil.replaceMetaCharacter(info.fieldDelimeter, true));
+				txt_bracelet.setText(info.fieldBracelet);
+				if(type.equals("sar")) {
+					success = autoMappingFromSar(info);
+				} else {
+					success = autoMapping(info);
+				}
+				if(success) {
+					break;
+				}
+			}
+			if(!success) {
+				MessageUtil.showErrorMessage(getShell(), "Failed to map default setting automatically.");
+			}
 		}
 	}
 
-	protected ResourceFieldMappingInfo getDefaultMappingInfo(String type) {
-		ResourceFieldMappingInfo info = null;
-		if(type.equals("vmstat")) {
-			info = DefaultMapping.VMSTAT;
-		} else if(type.equals("sar")) {
-			info = DefaultMapping.SAR;
+	protected ResourceFieldMappingInfo[] getDefaultMappingInfo(String type) {
+		List<ResourceFieldMappingInfo> infos = new ArrayList<ResourceFieldMappingInfo>();
+		if(type.equals(Constant.FILE_TYPES[1])) {
+			infos.add(DefaultMapping.VMSTAT);
+		} else if(type.equals(Constant.FILE_TYPES[2])) {
+			infos.add(DefaultMapping.SAR_KO.copy());
+			infos.add(DefaultMapping.SAR_EN.copy());
+			infos.add(DefaultMapping.SAR_C.copy());			
 		}
-		return info;
+		return infos.toArray(new ResourceFieldMappingInfo[infos.size()]);
 	}
 
 	protected boolean checkParsingAvailable() {
@@ -1175,6 +1439,51 @@ public class ResourceFieldMapping extends Composite {
 		txt_delimeter.setText(StringUtil.replaceMetaCharacter(Constant.FILE_DEFAULT_DELIMETER, true));
 		txt_bracelet.setText(StringUtil.getStringFromArray(Constant.FILE_DEFAULT_BRACELETS, " "));
 		resetMappings();
+	}
+	
+	public String[] getDeviceNames(String type) throws Exception {
+		TableItem[] items = owner.tbl_files.getItems();
+		int fileIdx = NumberUtil.getRandomNumber(items.length);
+		File file = (File)items[fileIdx].getData("file");
+		int deviceIdx = Integer.parseInt(mappingData.get("DEVICE")) - 1;
+		List<String> deviceList = new ArrayList<String>();
+		String line = null;
+		int cnt = 0;
+		int line_number = 1;
+		boolean found = false;
+		do {
+			if(cnt == Constant.MAX_SAMPLING_COUNT) {
+				break;
+			}
+			line = FileUtil.readFileLine(file, line_number++, null);
+			if(line == null) {
+				break;
+			}
+			if(("CPU".equals(type) && line.indexOf("%idle")>-1) || ("MEM".equals(type) && line.indexOf("%memused")>-1) || ("DISK".equals(type) && line.indexOf("%util")>-1) || ("NETWORK".equals(type) && line.indexOf("rxkB/s")>-1)) {
+				found = true;
+				continue;
+			}
+			if(!found || line.trim().equals("") || !Character.isDigit(line.charAt(line.length()-1)) || line.startsWith("#") || headerOfSar(line)) {
+				continue;
+			}
+			String delimeter = StringUtil.replaceMetaCharacter(getDelimeter(), false);
+			String[] bracelets = StringUtil.getArrayFromString(getBracelet(), " ");
+			List<String> tokenList = ParserUtil.getTokenList(line, delimeter, bracelets);
+			String deviceName = tokenList.get(deviceIdx);
+			if(deviceList.contains(deviceName)) {
+				break;
+			} else {
+				deviceList.add(deviceName);
+			}
+			cnt++;			
+		} while(true);
+		if(cnt == Constant.MAX_SAMPLING_COUNT) {
+			Logger.debug("Failed to sample a line : " + file.getCanonicalPath());
+			return null;
+		} else {
+			Logger.debug("Sampled Devices(" + file.getCanonicalPath() + ") : " + deviceList);
+			return deviceList.toArray(new String[deviceList.size()]);
+		}
 	}
 
 }

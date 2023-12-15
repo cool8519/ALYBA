@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 import dal.tool.analyzer.alyba.parse.FileInfo;
@@ -16,6 +17,7 @@ public class ResourceAnalyzerSetting {
 	public ResourceFieldMappingInfo fieldMapping;
 	public int unitMinutes;
 	public boolean checkStrict;
+	public Map<String,String> selectedDevices;
 
 	public ResourceAnalyzerSetting() {
 	}
@@ -97,20 +99,29 @@ public class ResourceAnalyzerSetting {
 		this.checkStrict = checkStrict;
 	}
 	
+	public Map<String,String> getSelectedDevices() {
+		return selectedDevices;
+	}
+	
+	public void setSelectedDevices(Map<String,String> deviceNames) {
+		this.selectedDevices = deviceNames;
+	}
+
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
 		sb.append("-----------------------------------------------------------\n");
 		sb.append("Files\n");
-		sb.append("    FILEINFO LIST : " + getFileInfoList().toString() + "\n");
+		sb.append("    FILEINFO LIST : " + getFileInfoList() + "\n");
 		sb.append("Mapping\n");
 		sb.append("    FILE TYPE : " + fieldMapping.getFileType() + "\n");
 		sb.append("    DELIMETER : " + fieldMapping.getFieldDelimeter() + "\n");
 		sb.append("    BRACELET : " + Arrays.asList(fieldMapping.getFieldBracelets()) + "\n");
-		sb.append("    MAPPING DATA : " + fieldMapping.getMappingInfo().toString() + "\n");
+		sb.append("    MAPPING DATA : " + fieldMapping.getMappingInfo() + "\n");
 		sb.append("    OFFSET HOUR : " + fieldMapping.getOffsetHour() + "\n");
 		sb.append("    TIME FORMAT : " + fieldMapping.getTimeFormat() + "\n");
 		sb.append("    TIME LOCALE : " + fieldMapping.getTimeLocale() + "\n");
 		sb.append("    FIELD COUNT : " + fieldMapping.getFieldCount() + "\n");
+		sb.append("    SELECTED DEVICE : " + selectedDevices + "\n");
 		sb.append("Option\n");
 		sb.append("    UNIT MINUTES : " + unitMinutes + "\n");		
 		sb.append("-----------------------------------------------------------\n");

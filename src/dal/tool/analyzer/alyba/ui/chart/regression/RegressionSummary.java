@@ -324,6 +324,7 @@ public class RegressionSummary extends Composite {
 		reset();
 		XYPlot plot = (XYPlot)chart.getJFreeChart().getPlot();
 		XYDataset dataset = plot.getDataset();
+		if(dataset.getItemCount(0) < 1) return;
 		max_x = dataset.getXValue(0, dataset.getItemCount(0)-1);
 		List<SimpleRegression> regressions = chart.getRegressions();
 		regression_map = new HashMap<String, SimpleRegression>(regressions.size());

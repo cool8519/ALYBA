@@ -188,7 +188,11 @@ Resource Tab에서 자원사용률 데이터를 추가하면 아래와 같은 �
 ![Screenhot](screenshots/14.jpg)
 ![Screenhot](screenshots/15.jpg)
 
-그래프 영역에서 특정 데이터를 클릭하거나 드래그하여 상세하게 확인할 수 있다.
+그래프 영역에서 아래의 동작을 수행할 수 있다.
+* 상세 보기 : 그래프 내 데이터 마우스 클릭
+* 확대 및 축소(Zoom in/out) : 마우스 드래그(우측아래 방향) 또는 스크롤. 마우스를 다른 방향으로 드래그시 확대/축소 초기화
+* 그래프 중심 이동(Panning) : <kbd>Ctrl</kbd>을 누른 상태에서 마우스 드래그
+* 회귀분석 이상치 삭제(Regression Analysis) : Drag 스위치를 Delete로 두거나 <kbd>Shift</kbd>를 누른 상태에서 마우스 드래그(우측아래 방향)
 
 ##### Resource Tab
 자원사용률 로그를 분석 결과에 추가한다.
@@ -199,11 +203,20 @@ Accesslog 파싱 과정과 동일하게 아래의 과정을 따른다.
 1. 파일 선택 : 리소스 로그 파일을 지정한다. 파일에 Server명과 Group명을 지정하여 서버 및 그룹별로 분석할 수 있다.
 2. 필드 매핑 : 파일 타입은 vmstat, sar, customize를 지원한다.
  - vmstat : `vmstat -t <interval_secs>` 로 수집된 로그
- - sar : `sar -u <interval_secs>` 로 수집된 로그
+ - sar : sar로 수집된 다양한 종류의 로그
+   * 전체 : `sar -A` 결과 또는 `/var/log/sa` 하위의 텍스트 로그 (모든 데이터가 하나의 파일에 저장된 형태로, 아래의 모든 리소스를 한번에 분석 가능)  
+   * CPU 사용률 : `sar -u` 결과
+   * 메모리 사용률 : `sar -r` 결과
+   * 디스크 사용률 : `sar -d` 결과 
+   * 네트워크 사용량 : `sar -n DEV` 결과(수신/송신KB)
  - customize : 임의 형식의 텍스트 로그. 사용자 지정 필드 매핑을 해야 한다.
 3. 분석 수행 : 필드 매핑이 완료되면 Analyze 버튼이 활성화되고, 버튼을 클릭하면 분석이 시작된다. 완료되면 좌측 상단에 추가된 자료의 목록이 표시된다.
+ - 아래의 경우에 대해 필드 사칙연산이 가능하다.
+   * 이미 매핑된 필드에 다른 필드를 드래그 앤 드롭 (필드간 연산)
+   * 매핑된 필드값을 더블 클릭 (필드에 실수 연산)
 
 ![Screenhot](screenshots/13.jpg)
+![Screenhot](screenshots/16.jpg)
 
 리소스사용률 데이터가 추가되면 Chart 탭에 System Resource와 Regression Analysis 그래프가 추가된다.(DB파일 reload 필요)
 
@@ -262,7 +275,7 @@ Release Note
 ##### v1.8.2
 - 히스토리 관리 뷰 지원
 
-##### v1.8.2_20231130
+##### v1.9.0
 - (Bug) 프로그램 종료시 DB 파일 Close 되지 않는 문제 수정
 - (Bug) DB에 request_uri_pattern 필드 미저장 되지 않는 문제 수정
 - (Bug) setting 파일 로딩시 저장된 시간 형식이 적용되지 않는 문제 수정
@@ -272,14 +285,17 @@ Release Note
 - (Bug) URI Mapping에 등록된 패턴에 정확히 일치하지 않아도 포함하면 매칭되는 문제 수정
 - 파일 인코딩 체크를 옵션으로 변경
 - 히스토리 관리 뷰에 DB파일 버전 추가
-- 디버그 콘솔에 Pause 버튼 추가
+- 디버그 콘솔에 Pause 버튼 및 ResultAnalyzer 모드 Console 버튼 추가
 - DB 파일 오픈시 히스토리 관리 뷰 목록에 자동으로 추가
 - setting 파일에 URI Mapping 패턴 목록 추가
-
+- GeoIP 라이브러리 변경 및 데이터베이스 갱신
+- SAR 로그 다양한 형식 지원(다수 리소스 포함 파일, 시간 형식, 가변 필드) 
+- 포함된 리소스 데이터 확인 및 삭제시 리소스 선택 지원
+- 리소스 데이터 필드간 사칙 연산 지원
+- 회귀분석 데이터 이상치 삭제 기능 지원
 
 To-do
 --------------
 What ALYBA will implement in the future:
 * Non-linear Regression Analysis
-* Customized Visualization
 

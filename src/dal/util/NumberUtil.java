@@ -2,6 +2,8 @@ package dal.util;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class NumberUtil {
@@ -98,6 +100,18 @@ public class NumberUtil {
 
 	public static String getTwoDigitNumber(int num) {
 		return ((num < 10) ? "0" : "") + String.valueOf(num);
+	}
+
+	public static List<Double> toDoubleList(List<String> list) throws Exception {
+		List<Double> result = new ArrayList<Double>(list.size());
+		for(String s : list) {
+			if(isNumeric(s, true)) {
+				result.add(new Double(s));
+			} else {
+				result.add(Double.NaN);
+			}
+		}
+		return result;
 	}
 
 }

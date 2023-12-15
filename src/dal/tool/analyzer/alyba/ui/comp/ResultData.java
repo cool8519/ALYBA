@@ -95,6 +95,8 @@ public class ResultData extends Composite {
 	private Label lb_result_s;
 	private Label lb_result_f;
 
+	@SuppressWarnings("unused")
+	private ResultAnalyzer resultAnalyzer;
 	private int table_idx = -1;
 	private long total_rows = 0;
 	private int start_row = 0;
@@ -121,8 +123,9 @@ public class ResultData extends Composite {
 		map_table.put("System Resource", ResourceUsageEntryVO.class);
 	}
 	
-	public ResultData(Composite parent, int style) {
+	public ResultData(Composite parent, int style, ResultAnalyzer owner) {
 		super(parent, style);
+		this.resultAnalyzer = owner;
 		createContents();
 		addEventListener();
 	}

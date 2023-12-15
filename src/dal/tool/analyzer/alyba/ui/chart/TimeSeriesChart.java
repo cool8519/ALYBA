@@ -174,7 +174,7 @@ public abstract class TimeSeriesChart extends Chart {
 		jfreeChart = ChartFactory.createTimeSeriesChart(title, label_x, label_y, dataset, true, true, false);
 		XYPlot xyPlot = (XYPlot)jfreeChart.getPlot();
 		xyPlot.setDomainPannable(true);
-		xyPlot.setRangePannable(false);
+		xyPlot.setRangePannable(true);
 		xyPlot.setDomainCrosshairVisible(true);
 		xyPlot.setRangeCrosshairVisible(true);
 	    DateAxis dateAxis = (DateAxis)xyPlot.getDomainAxis();

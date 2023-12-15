@@ -115,19 +115,31 @@ public class ResourceUsageEntryVO extends EntryVO {
 	}
 
 	public void addData(ResourceUsageEntryVO vo) {
+		double temp_cpu = -1D;
+		double temp_memory = -1D;
+		double temp_disk = -1D;
+		double temp_network = -1D;
 		if(vo.getCpuUsage() != -1D) {
-			cpu = (cpu == -1D) ? vo.getCpuUsage() : ((cpu*item_count + vo.getCpuUsage()) / (item_count+1));
+			temp_cpu = (cpu == -1D) ? vo.getCpuUsage() : ((cpu*item_count + vo.getCpuUsage()) / (item_count+1));
 		}
 		if(vo.getMemoryUsage() != -1D) {
-			memory = (memory == -1D) ? vo.getMemoryUsage() : ((memory*item_count + vo.getMemoryUsage()) / (item_count+1));
+			temp_memory = (memory == -1D) ? vo.getMemoryUsage() : ((memory*item_count + vo.getMemoryUsage()) / (item_count+1));
 		}
 		if(vo.getDiskUsage() != -1D) {
-			disk = (disk == -1D) ? vo.getDiskUsage() : ((disk*item_count + vo.getDiskUsage()) / (item_count+1));
+			temp_disk = (disk == -1D) ? vo.getDiskUsage() : ((disk*item_count + vo.getDiskUsage()) / (item_count+1));
 		}
 		if(vo.getNetworkUsage() != -1D) {
-			network = (network == -1D) ? vo.getNetworkUsage() : ((network*item_count + vo.getNetworkUsage()) / (item_count+1));
+			temp_network = (network == -1D) ? vo.getNetworkUsage() : ((network*item_count + vo.getNetworkUsage()) / (item_count+1));
 		}
-		item_count++;
+		if((cpu != -1D && vo.getCpuUsage() != -1D) || (memory != -1D && vo.getMemoryUsage() != -1D) || (disk != -1D && vo.getDiskUsage() != -1D) || (network != -1D && vo.getNetworkUsage() != -1D)) {
+			item_count++;
+		} else {
+			item_count = item_count < vo.getDataCount() ? vo.getDataCount() : item_count;
+		}
+		cpu = (temp_cpu!=-1D) ? temp_cpu : cpu;
+		memory = (temp_memory!=-1D) ? temp_memory : memory;
+		disk = (temp_disk!=-1D) ? temp_disk : disk;
+		network = (temp_network!=-1D) ? temp_network : network;
 	}
 
 	public ResourceUsageEntryVO merge(ResourceUsageEntryVO subVO) {

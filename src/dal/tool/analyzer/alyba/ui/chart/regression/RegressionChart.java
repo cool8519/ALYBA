@@ -1,7 +1,15 @@
 package dal.tool.analyzer.alyba.ui.chart.regression;
 
+import java.util.List;
+import java.util.Map;
+
+import javax.swing.JOptionPane;
+
+import org.jfree.data.xy.XYDataItem;
+
 import dal.tool.analyzer.alyba.output.vo.RegressionEntryVO;
 import dal.tool.analyzer.alyba.ui.chart.MultiChart;
+import dal.tool.analyzer.alyba.ui.comp.ResultChart;
 
 public class RegressionChart extends MultiChart {
 
@@ -11,6 +19,7 @@ public class RegressionChart extends MultiChart {
 	public static enum RegressionType { LINEAR/*, EXPONENTIAL, LOGARITHMIC, POWER, POLYNOMIAL*/ }
 	public static enum ResourceMergeType { AVG, SUM }
 
+	protected ResultChart owner;
 	protected VariableX var_x = VariableX.TX;
 	protected VariableY var_y = VariableY.CPU;
 	protected AggregationType aggregation_type = AggregationType.NAME;
@@ -20,8 +29,9 @@ public class RegressionChart extends MultiChart {
 	protected boolean show_regression_equation = true;
 	protected boolean resource_axis_to_100 = false;
 	
-	public RegressionChart() {
+	public RegressionChart(ResultChart owner) {
 		super("Regression Analysis", 2);
+		this.owner = owner;
 	}
 
 	public void setVariableX(VariableX var) {
@@ -57,8 +67,8 @@ public class RegressionChart extends MultiChart {
 	}
 
 	public void initCharts() {
-		setChart(0, new RegressionVariablesChart(title, var_x, var_y, aggregation_type, resource_merge_type, resource_axis_to_100));
-		setChart(1, new RegressionAnalysisChart(null, var_x, var_y, aggregation_type, resource_merge_type, regression_type, show_regression_line, show_regression_equation, resource_axis_to_100));
+		setChart(0, new RegressionVariablesChart(this, title, var_x, var_y, aggregation_type, resource_merge_type, resource_axis_to_100));
+		setChart(1, new RegressionAnalysisChart(this, null, var_x, var_y, aggregation_type, resource_merge_type, regression_type, show_regression_line, show_regression_equation, resource_axis_to_100));
 	}
 
 	public static Number getVariableData(RegressionEntryVO vo, String name) {
@@ -88,6 +98,52 @@ public class RegressionChart extends MultiChart {
 			return true;
 		} else {
 			return false;
+		}
+	}
+	
+	public boolean isDeleteMode() {
+		return owner.isDeleteMode();
+	}
+
+	public void nominateItemsPropagationByVariables(Map<String,List<CustomTimeSeriesDataItem>> selectedItems) {
+		((RegressionAnalysisChart)getChart(1)).nominateItems(selectedItems);
+		owner.getDisplay().syncExec(new Runnable() {
+			public void run() {
+				owner.resetTempDeleteMode();
+			}
+		});
+		String msg = "Do you really want to delete the selected items?\n" +
+				"The item will be temporarily deleted and will not be deleted from the DB.";
+		boolean result = JOptionPane.showConfirmDialog(null, msg, "Confirm", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+		((RegressionVariablesChart)getChart(0)).removeOrRestoreItems(result);
+		((RegressionAnalysisChart)getChart(1)).removeOrRestoreItems(result);
+		if(result) {
+			owner.getDisplay().asyncExec(new Runnable() {
+				public void run() {
+					owner.applyRegressionSummary((RegressionAnalysisChart)getChart(1));
+				}
+			});
+		}
+	}
+
+	public void nominateItemsPropagationByAnalysis(Map<String,List<XYDataItem>> selectedItems) {
+		((RegressionVariablesChart)getChart(0)).nominateItems(selectedItems);
+		owner.getDisplay().syncExec(new Runnable() {
+			public void run() {
+				owner.resetTempDeleteMode();
+			}
+		});
+		String msg = "Do you really want to delete the selected items?\n" +
+				"The item will be temporarily deleted and will not be deleted from the DB.";
+		boolean result = JOptionPane.showConfirmDialog(null, msg, "Confirm", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+		((RegressionVariablesChart)getChart(0)).removeOrRestoreItems(result);
+		((RegressionAnalysisChart)getChart(1)).removeOrRestoreItems(result);
+		if(result) {
+			owner.getDisplay().asyncExec(new Runnable() {
+				public void run() {
+					owner.applyRegressionSummary((RegressionAnalysisChart)getChart(1));
+				}
+			});
 		}
 	}
 	

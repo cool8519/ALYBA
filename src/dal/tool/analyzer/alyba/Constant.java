@@ -9,7 +9,7 @@ import org.eclipse.swt.dnd.Transfer;
 
 public class Constant {
 
-	public static final String PROGRAM_VERSION = "1.8.2_20231130";
+	public static final String PROGRAM_VERSION = "1.9.0";
 
 	public static String DEFAULT_FONT_NAME = "Arial";
 	public static int DEFAULT_FONT_SIZE = 9;
@@ -52,7 +52,7 @@ public class Constant {
 	
 	public static final String FILE_PATH_HTMLTEMPLATE = RESOURCE_PATH + "template/HtmlTemplate.html";
 	public static final String FILE_PATH_DEFAULTSETTING = RESOURCE_PATH + "setting/default.alb";
-	public static final String FILE_PATH_GEOIP = RESOURCE_PATH + "geoip/GeoIP.dat";
+	public static final String FILE_PATH_GEOIP = RESOURCE_PATH + "geoip/GeoLite2-Country.mmdb";
 
 	public static final String DIALOG_INIT_PATH = ".";
 

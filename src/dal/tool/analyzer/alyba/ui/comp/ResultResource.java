@@ -2,6 +2,7 @@ package dal.tool.analyzer.alyba.ui.comp;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.text.Collator;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -39,7 +40,6 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.program.Program;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
@@ -61,6 +61,7 @@ import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.FileUtil;
+import dal.util.ReflectionUtil;
 import dal.util.StringUtil;
 import dal.util.db.ObjectDBUtil;
 import dal.util.swt.FileDialogUtil;
@@ -80,18 +81,22 @@ public class ResultResource extends Composite {
 	private Group grp_left2;
 	private Group grp_right;
 	private Table tbl_list;
+	private TableColumn tblc_name;
+	private TableColumn tblc_group;
 	private TableEditor tbl_editor;
 	private Button btn_list_remove;
 	private Button btn_list_removeAll;
 	
 	private Label lb_insert_date_title;
-	private Label lb_total_rows_title;
 	private Label lb_from_date_title;
 	private Label lb_to_date_title;
+	private Label lb_total_rows_title;
+	private Label lb_resources_title;
 	private Label lb_insert_date_value;
-	private Label lb_total_rows_value;
 	private Label lb_from_date_value;
 	private Label lb_to_date_value;
+	private Label lb_total_rows_value;
+	private Label lb_resources_value;
 	
 	public TableViewer tblv_files;
 	public Table tbl_files;
@@ -106,6 +111,7 @@ public class ResultResource extends Composite {
 	private Button btn_file_removeAll;
 	private Button btn_analyzing;
 
+	@SuppressWarnings("unused")
 	private ResultAnalyzer resultAnalyzer;
 	private ResourceFieldMapping fieldMapping;
 	private ObjectDBUtil db = null;
@@ -174,18 +180,18 @@ public class ResultResource extends Composite {
 		fd_tbl_list.right = new FormAttachment(100);
 		fd_tbl_list.top = new FormAttachment(0);
 		fd_tbl_list.bottom = new FormAttachment(100, -40);
-	    tbl_list = new Table(grp_left1, SWT.BORDER | SWT.FULL_SELECTION | SWT.HIDE_SELECTION);
+	    tbl_list = new Table(grp_left1, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI);
 	    tbl_list.setLayoutData(fd_tbl_list);
 	    tbl_list.setFont(Utility.getFont());
 	    tbl_list.setHeaderVisible(true);
 	    tbl_list.setLinesVisible(true);
 	    tbl_list.getHorizontalBar().setVisible(false);
 	    tbl_list.setVisible(true);
-		TableColumn tblc_name = new TableColumn(tbl_list, SWT.NONE);
+		tblc_name = new TableColumn(tbl_list, SWT.NONE);
 		tblc_name.setText("Server Name");
 		tblc_name.setResizable(false);
 		tblc_name.setWidth(110);
-		TableColumn tblc_group = new TableColumn(tbl_list, SWT.RIGHT);
+		tblc_group = new TableColumn(tbl_list, SWT.RIGHT);
 		tblc_group.setText("Group");
 		tblc_group.setResizable(false);
 		tblc_group.setWidth(80);
@@ -251,28 +257,8 @@ public class ResultResource extends Composite {
 		lb_insert_date_value.setFont(Utility.getFont(SWT.ITALIC));
 		lb_insert_date_value.setVisible(false);
 
-		FormData fd_lb_total_rows_title = new FormData();
-		fd_lb_total_rows_title.top = new FormAttachment(lb_insert_date_title, 20);
-		fd_lb_total_rows_title.left = new FormAttachment(0);
-		fd_lb_total_rows_title.width = 80;
-		lb_total_rows_title = new Label(grp_left2, SWT.RIGHT);
-		lb_total_rows_title.setLayoutData(fd_lb_total_rows_title);
-		lb_total_rows_title.setText("Total Row : ");
-		lb_total_rows_title.setFont(Utility.getFont(SWT.ITALIC));
-		lb_total_rows_title.setVisible(false);
-
-		FormData fd_lb_total_rows_value = new FormData();
-		fd_lb_total_rows_value.top = new FormAttachment(lb_total_rows_title, 0, SWT.TOP);
-		fd_lb_total_rows_value.left = new FormAttachment(lb_total_rows_title, 5, SWT.RIGHT);
-		fd_lb_total_rows_value.right = new FormAttachment(100);
-		lb_total_rows_value = new Label(grp_left2, SWT.LEFT);
-		lb_total_rows_value.setLayoutData(fd_lb_total_rows_value);
-		lb_total_rows_value.setText("0,000");
-		lb_total_rows_value.setFont(Utility.getFont(SWT.ITALIC));
-		lb_total_rows_value.setVisible(false);
-
 		FormData fd_lb_from_date_title = new FormData();
-		fd_lb_from_date_title.top = new FormAttachment(lb_total_rows_title, 20);
+		fd_lb_from_date_title.top = new FormAttachment(lb_insert_date_title, 20);
 		fd_lb_from_date_title.left = new FormAttachment(0);
 		fd_lb_from_date_title.width = 80;
 		lb_from_date_title = new Label(grp_left2, SWT.RIGHT);
@@ -310,6 +296,47 @@ public class ResultResource extends Composite {
 		lb_to_date_value.setText("0000.00.00 00:00:00");
 		lb_to_date_value.setFont(Utility.getFont(SWT.ITALIC));
 		lb_to_date_value.setVisible(false);
+
+		FormData fd_lb_total_rows_title = new FormData();
+		fd_lb_total_rows_title.top = new FormAttachment(lb_to_date_title, 20);
+		fd_lb_total_rows_title.left = new FormAttachment(0);
+		fd_lb_total_rows_title.width = 80;
+		lb_total_rows_title = new Label(grp_left2, SWT.RIGHT);
+		lb_total_rows_title.setLayoutData(fd_lb_total_rows_title);
+		lb_total_rows_title.setText("Total Row : ");
+		lb_total_rows_title.setFont(Utility.getFont(SWT.ITALIC));
+		lb_total_rows_title.setVisible(false);
+
+		FormData fd_lb_total_rows_value = new FormData();
+		fd_lb_total_rows_value.top = new FormAttachment(lb_total_rows_title, 0, SWT.TOP);
+		fd_lb_total_rows_value.left = new FormAttachment(lb_total_rows_title, 5, SWT.RIGHT);
+		fd_lb_total_rows_value.right = new FormAttachment(100);
+		lb_total_rows_value = new Label(grp_left2, SWT.LEFT);
+		lb_total_rows_value.setLayoutData(fd_lb_total_rows_value);
+		lb_total_rows_value.setText("0,000");
+		lb_total_rows_value.setFont(Utility.getFont(SWT.ITALIC));
+		lb_total_rows_value.setVisible(false);
+
+		FormData fd_lb_resources_title = new FormData();
+		fd_lb_resources_title.top = new FormAttachment(lb_total_rows_title, 20);
+		fd_lb_resources_title.left = new FormAttachment(0);
+		fd_lb_resources_title.width = 80;
+		lb_resources_title = new Label(grp_left2, SWT.RIGHT);
+		lb_resources_title.setLayoutData(fd_lb_resources_title);
+		lb_resources_title.setText("Resources : ");
+		lb_resources_title.setFont(Utility.getFont(SWT.ITALIC));
+		lb_resources_title.setVisible(false);
+
+		FormData fd_lb_resources_value = new FormData();
+		fd_lb_resources_value.top = new FormAttachment(lb_resources_title, 0, SWT.TOP);
+		fd_lb_resources_value.left = new FormAttachment(lb_resources_title, 5, SWT.RIGHT);
+		fd_lb_resources_value.right = new FormAttachment(100);
+		fd_lb_resources_value.height = 80;
+		lb_resources_value = new Label(grp_left2, SWT.LEFT | SWT.WRAP);
+		lb_resources_value.setLayoutData(fd_lb_resources_value);
+		lb_resources_value.setText("");
+		lb_resources_value.setFont(Utility.getFont(SWT.ITALIC));
+		lb_resources_value.setVisible(false);
 
 		
 		FormLayout forml_grp_right = new FormLayout();
@@ -416,16 +443,28 @@ public class ResultResource extends Composite {
 				selectServer(tbl_list.getSelection()[0].getText(0), tbl_list.getSelection()[0].getText(1));
 			}
 		});
-		
+
+		tblc_name.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				sortNameAndGroupTableData(0);
+			}
+		});
+
+		tblc_group.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				sortNameAndGroupTableData(1);
+			}
+		});
+
 		btn_list_remove.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				removeServerData();
+				removeServerData(tbl_list.getSelectionIndices());
 			}
 		});
 
 		btn_list_removeAll.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				removeAllServerData();
+				removeServerData(null);
 			}
 		});
 
@@ -570,6 +609,7 @@ public class ResultResource extends Composite {
 	
 	private void selectServer(String name, String group) {
 		try {
+			db.flush(em, true);
 			SummaryEntryVO summaryVo = db.select(em, SummaryEntryVO.class);
 			Date insertDate = summaryVo.getLastResourceInsertTime();
 			
@@ -586,12 +626,16 @@ public class ResultResource extends Composite {
 			Date toDate = db.select(em, toQuery, Date.class, params);
 
 			lb_insert_date_value.setText(sdf_datetime.format(insertDate));
-			lb_total_rows_value.setText(nf_thousand.format(totalRows));
 			lb_from_date_value.setText(sdf_datetime.format(fromDate));
 			lb_to_date_value.setText(sdf_datetime.format(toDate));
+			lb_total_rows_value.setText(nf_thousand.format(totalRows));
+			
+			String resources = getIncludedResourceList(group, name).toString();
+			lb_resources_value.setText(resources.substring(1, resources.length()-1).replaceAll(", ", "\n"));
+			
 			toggleSummaryVisible(true);
 		} catch(Exception e) {
-			Logger.debug("Failed to select resource data : name=" + name + ", group=" + group); 
+			Logger.debug("Failed to select resource data : group=" + group + ", name=" + name); 
 			Logger.error(e);
 			toggleSummaryVisible(false);
 		}
@@ -617,13 +661,15 @@ public class ResultResource extends Composite {
 	
 	private void toggleSummaryVisible(boolean flag) {
 		lb_insert_date_title.setVisible(flag);
-		lb_total_rows_title.setVisible(flag);
 		lb_from_date_title.setVisible(flag);
 		lb_to_date_title.setVisible(flag);		
+		lb_total_rows_title.setVisible(flag);
+		lb_resources_title.setVisible(flag);
 		lb_insert_date_value.setVisible(flag);
-		lb_total_rows_value.setVisible(flag);
 		lb_from_date_value.setVisible(flag);
 		lb_to_date_value.setVisible(flag);		
+		lb_total_rows_value.setVisible(flag);
+		lb_resources_value.setVisible(flag);
 	}
 	
 	public void toggleAnalyzingButton(boolean flag) {
@@ -696,31 +742,124 @@ public class ResultResource extends Composite {
 		}
 		return -1;
 	}
+
+	protected List<String> getIncludedResourceList(String group, String name) throws Exception {
+		List<String> resourceList = new ArrayList<String>();
+		Long cnt_cpu = db.count(em, "SELECT COUNT(o) FROM ResourceUsageEntryVO AS o WHERE o.cpu >= 0 AND o.name='"+name+"' AND o.group='"+group+"'");
+		Long cnt_mem = db.count(em, "SELECT COUNT(o) FROM ResourceUsageEntryVO AS o WHERE o.memory >= 0 AND o.name='"+name+"' AND o.group='"+group+"'");
+		Long cnt_dsk = db.count(em, "SELECT COUNT(o) FROM ResourceUsageEntryVO AS o WHERE o.disk >= 0 AND o.name='"+name+"' AND o.group='"+group+"'");
+		Long cnt_net = db.count(em, "SELECT COUNT(o) FROM ResourceUsageEntryVO AS o WHERE o.network >= 0 AND o.name='"+name+"' AND o.group='"+group+"'");
+		if(cnt_cpu > 0) resourceList.add("CPU");
+		if(cnt_mem > 0) resourceList.add("Memory");
+		if(cnt_dsk > 0) resourceList.add("Disk");
+		if(cnt_net > 0) resourceList.add("Network");	
+		return resourceList;
+	}
+
+	protected List<List<String>> getAllIncludedResourceList(int[] targetIndices) {
+		List<List<String>> resultList = new ArrayList<List<String>>();
+		TableItem[] tableItems;
+		if(targetIndices == null) {
+			tableItems = tbl_list.getItems();
+		} else {
+			tableItems = new TableItem[targetIndices.length];
+			for(int i = 0; i < targetIndices.length; i++) {
+				tableItems[i] = tbl_list.getItem(targetIndices[i]);
+			}
+		}
+		try {
+			for(TableItem item : tableItems) {
+				String name = item.getText(0);
+				String group = item.getText(1);
+				resultList.add(getIncludedResourceList(group, name));
+			}
+			return resultList;
+		} catch(Exception e) {
+			Logger.debug("Failed to get resource count from the database.");
+			Logger.error(e);
+			return null;
+		}
+	}
 	
-	protected void removeServerData() {
-		int[] indices = tbl_list.getSelectionIndices();
-		if(indices.length < 1) {
+	protected String selectResourceToDelete(List<List<String>> resourceList) {
+		List<String> uniqueList = new ArrayList<String>();
+		for(List<String> subList : resourceList) {
+			for(String resource : subList) {
+				if(!uniqueList.contains(resource)) {
+					uniqueList.add(resource);
+				}
+			}
+		}
+		if(uniqueList.size() > 1) {
+			uniqueList.add(0, "All");
+			String[] labels = uniqueList.toArray(new String[uniqueList.size()]);
+			int i = MessageUtil.showSelectMessage(getShell(), "Question", "Which resource do you want to delete?", labels);
+			if(i < 0) {
+				return null;
+			} else {
+				if(i == 0) {
+					return "";
+				} else {
+					return labels[i];
+				}
+			}
+		}
+		return "";
+	}
+	
+	protected void removeServerData(int[] indices) {
+		if(indices != null && indices.length < 1) {
+			return;
+		}
+		List<List<String>> resourceList = getAllIncludedResourceList(indices);
+		if(resourceList == null) {
+			return;
+		}
+		String deleteResourceName = selectResourceToDelete(resourceList);
+		if(deleteResourceName == null) {
 			return;
 		}
 		if(!MessageUtil.showConfirmMessage(getShell(), "The data for the server will be deleted.\n\nDo you want to continue?")) {
 			return;
 		}
-		for(int idx : indices) {
-			TableItem item = tbl_list.getItem(idx);
+		if(indices == null) {
+			indices = new int[resourceList.size()];
+			for(int i = 0; i < resourceList.size(); i++) indices[i] = i;
+		}
+		String deleteColumnName = deleteResourceName.toLowerCase();
+		for(int idx = indices.length-1; idx >= 0; idx--) {
+			if(!deleteResourceName.isEmpty() && !resourceList.get(idx).contains(deleteResourceName)) {
+				continue;
+			}
+			int listIdx = indices[idx];
+			TableItem item = tbl_list.getItem(listIdx);
 			String name = item.getText(0);
 			String group = item.getText(1);
 			try {
-				String delete_query = "DELETE FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group";
 				Map<String,Object> params = new HashMap<String,Object>(2);
-				params.put("name", name);
 				params.put("group", group);
-				int count = db.deleteWithTransaction(em, delete_query, params, true);
-				if(count > 0) {
-					Logger.debug("Removed server(" + name + ":" + group + ") resource data : " + count + " row(s).");				
+				params.put("name", name);
+				if(deleteResourceName.isEmpty() || (resourceList.get(idx).size() == 1 && resourceList.get(idx).contains(deleteResourceName))) {
+					String delete_query = "DELETE FROM ResourceUsageEntryVO AS o WHERE o.name = :name AND o.group = :group";
+					int count = db.deleteWithTransaction(em, delete_query, params, true);
+					if(count > 0) {
+						Logger.debug("Removed server(" + group + ":" + name + ") resource data : " + count + " row(s).");				
+					}
+					tbl_list.remove(listIdx);
+				} else {
+					String select_query = "SELECT o FROM ResourceUsageEntryVO AS o WHERE o.group = :group AND o.name = :name AND o."+deleteColumnName+" >= 0";
+					db.beginTransaction(em);
+					List<ResourceUsageEntryVO> oldList = db.selectList(em, select_query, ResourceUsageEntryVO.class, params);
+					for(ResourceUsageEntryVO vo : oldList) {
+						Field field = ReflectionUtil.getField(vo, deleteColumnName);
+						field.setAccessible(true);
+						field.set(vo, -1D);
+					}
+					db.commitTransaction(em, true, true);
+					Logger.debug("Removed server(" + group + ":" + name + ") resource(" + deleteResourceName + ") data : " + oldList.size() + " row(s).");
 				}
-				tbl_list.remove(idx);
 			} catch(Exception e) {
-				Logger.debug("Failed to remove resource data for the server : name=" + name + ", group=" + group);
+				Logger.debug("Failed to remove resource data for the server : group=" + group + ", name=" + name);
 				Logger.error(e);
 			}
 		}
@@ -728,26 +867,6 @@ public class ResultResource extends Composite {
 		toggleSummaryVisible(false);
 	}
 	
-	protected void removeAllServerData() {
-		if(!MessageUtil.showConfirmMessage(getShell(), "All resource data will be deleted.\n\nDo you want to continue?")) {
-			return;
-		}
-		try {
-			String delete_query = "DELETE FROM ResourceUsageEntryVO";
-			Map<String,Object> params = null;
-			int count = db.deleteWithTransaction(em, delete_query, params, true);
-			if(count > 0) {
-				Logger.debug("Removed all resource data : " + count + " row(s).");				
-			}
-			tbl_list.removeAll();
-		} catch(Exception e) {
-			Logger.debug("Failed to remove all resource data.");
-			Logger.error(e);
-		}
-		checkExistServerData();
-		toggleSummaryVisible(false);
-	}
-
 	private void checkExistServerData() {
 		try {
 			long count = db.count(em, ResourceUsageEntryVO.class);
@@ -817,6 +936,30 @@ public class ResultResource extends Composite {
 			}
 		}
 		addTableItems(tbl_files, filelist);
+	}
+
+	protected void sortNameAndGroupTableData(int fieldIdx) {
+		Object obj = tbl_list.getColumn(fieldIdx).getData("asc");
+		boolean isAsc = (obj == null) ? true : !(Boolean)obj;
+		TableItem[] items = tbl_list.getItems();
+		Collator collator = Collator.getInstance(Locale.getDefault());
+		String value1;
+		String value2;
+		for(int i = 1; i < items.length; i++) {
+			value1 = items[i].getText(fieldIdx);
+			for(int j = 0; j < i; j++) {
+				value2 = items[j].getText(fieldIdx);
+				if((isAsc && collator.compare(value1, value2) < 0) || (!isAsc && collator.compare(value1, value2) > 0)) {
+					String[] values = { items[i].getText(0), items[i].getText(1) };
+					items[i].dispose();
+					TableItem item = new TableItem(tbl_list, SWT.NULL, j);
+					item.setText(values);
+					items = tbl_list.getItems();
+					break;
+				}
+			}
+		}
+		tbl_list.getColumn(fieldIdx).setData("asc", isAsc);
 	}
 
 	protected void sortTableDataByNumber(int fieldIdx) {
@@ -896,7 +1039,7 @@ public class ResultResource extends Composite {
 	}
 
 	private String getStringFromInputDialog(String title, String message, String init_value, final int min_length) {
-		InputDialog dlg = new InputDialog(Display.getCurrent().getActiveShell(), title, message, init_value, new IInputValidator() {
+		InputDialog dlg = new InputDialog(getShell(), title, message, init_value, new IInputValidator() {
 			public String isValid(String s) {
 				if(s.length() < min_length)
 					return "Too short";
@@ -918,6 +1061,16 @@ public class ResultResource extends Composite {
 		}
 
 		ResourceAnalyzerSetting setting = getAnalyzerSetting();
+		try {
+			setting.setSelectedDevices(selectDeviceNames());
+		} catch(Exception e) {
+			MessageUtil.showErrorMessage(getShell(), "Failed to get device name : " + e.getMessage());
+			Logger.debug("Failed to get device name : " + e.getMessage());
+			if(!"No device selected.".equals(e.getMessage())) {
+				Logger.error(e);
+			}
+			return;
+		}
 		setting.setAnalyzeDate(new Date());
 		Logger.debug(setting.toString());
 		
@@ -982,6 +1135,33 @@ public class ResultResource extends Composite {
 		task = null;
 	}
 	
+	private Map<String,String> selectDeviceNames() throws Exception {
+		if(fieldMapping.getFileType().equals("sar") && fieldMapping.getMappingData().get("DEVICE") != null) {
+			Map<String,String> selectedDevices = new HashMap<String,String>(4);
+			for(String type : new String[]{"CPU", "DISK", "NETWORK"}) {
+				if(fieldMapping.getMappingData().get(type) == null) {
+					continue;
+				}
+				String[] deviceNames = fieldMapping.getDeviceNames(type);
+				if(deviceNames == null || deviceNames.length == 0) {
+					continue;
+				} else if(deviceNames.length == 1) {
+					selectedDevices.put(type, deviceNames[0]);
+				} else {
+					String msg = "For " + type + " data, which device name would you like to collect data from?";
+					int i = MessageUtil.showSelectMessage(getShell(), "Question", msg, deviceNames);
+					if(i < 0) {
+						throw new Exception("No device selected.");
+					} else {
+						selectedDevices.put(type, deviceNames[i]);
+					}
+				}
+			}
+			return selectedDevices;
+		}
+		return null;
+	}
+
 	private ResourceAnalyzerSetting getAnalyzerSetting() {
 		ResourceFieldMappingInfo fieldMappingInfo = new ResourceFieldMappingInfo();
 		fieldMappingInfo.setFileType(fieldMapping.getFileType());

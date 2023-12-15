@@ -36,12 +36,15 @@ public class ResultSummary extends Composite {
 	private Table tbl_peak;
 	private Table tbl_bad;
 
+	@SuppressWarnings("unused")
+	private ResultAnalyzer resultAnalyzer;
 	private ObjectDBUtil db = null;
 	private EntityManager em = null;
 	private SettingEntryVO settingVo = null;
 
-	public ResultSummary(Composite parent, int style) {
+	public ResultSummary(Composite parent, int style, ResultAnalyzer owner) {
 		super(parent, style);
+		this.resultAnalyzer = owner;
 		createContents();
 	}
 

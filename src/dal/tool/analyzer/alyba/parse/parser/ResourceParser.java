@@ -24,13 +24,12 @@ import dal.tool.analyzer.alyba.parse.ParserUtil;
 import dal.tool.analyzer.alyba.setting.ResourceAnalyzerSetting;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.util.DateUtil;
+import dal.util.MathUtil;
 import dal.util.NumberUtil;
 import dal.util.db.ObjectDBUtil;
 import dal.util.swt.ProgressBarTask;
 
 public class ResourceParser extends FileLineParser {
-
-	protected static final String STR_DATE_SAR = "MM/dd/yyyy";
 
 	protected ResourceAnalyzerSetting setting = null;
 	protected ObjectDBUtil db = null;
@@ -52,6 +51,7 @@ public class ResourceParser extends FileLineParser {
 	protected DateTimeFormatter usf = null;
 	protected String delimeter = null;
 	protected String[] bracelets = null;
+	boolean meetHeader[] = new boolean[4];
 
 	public ResourceParser(ResourceAnalyzerSetting setting) throws Exception {
 		this.setting = setting;
@@ -114,20 +114,48 @@ public class ResourceParser extends FileLineParser {
 		if(line == null || line.trim().equals("") || line.startsWith("#")) {
 			return;
 		}
-		if("sar".equals(setting.getFieldMapping().getFileType())) {
-			if(line.indexOf("%idle") > -1 || line.startsWith("Average:") || line.indexOf("RESTART") > -1) {
+		if(setting.getFieldMapping().getFileType().equals("sar")) {
+			if(line.indexOf("%idle") > -1) {
+				// CPU Header
+				meetHeader[0] = true; meetHeader[1] = false; meetHeader[2] = false; meetHeader[3] = false;
+				return;
+			} else if(line.indexOf("%memused") > -1) {
+				// Memroy Header
+				meetHeader[0] = false; meetHeader[1] = true; meetHeader[2] = false; meetHeader[3] = false;
+				return;
+			} else if(line.indexOf("%util") > -1) {
+				// Disk Header
+				meetHeader[0] = false; meetHeader[1] = false; meetHeader[2] = true; meetHeader[3] = false;
+				return;
+			} else if(line.indexOf("rxkB/s") > -1) {
+				// Network Header
+				meetHeader[0] = false; meetHeader[1] = false; meetHeader[2] = false; meetHeader[3] = true;
+				return;
+			} else if(line.startsWith("Average:") || line.indexOf("RESTART") > -1) {
+				// End of Data
+				meetHeader[0] = false; meetHeader[1] = false; meetHeader[2] = false; meetHeader[3] = false;
 				return;
 			} else if(line.length() > 0 && line.charAt(0) != ' ' && Character.isDigit(line.charAt(0)) == false) {
+				// SAR Header (First Line)
 				List<String> headerTokenList = ParserUtil.getTokenList(line, delimeter, bracelets, setting.getCheckStrict());
 				String time_idx_str = setting.getFieldMapping().getMappingInfo().get("TIME");
 				String[] time_idx = time_idx_str.split(",");
+				String temp_date_str = null;
 				for(String idx : time_idx) {
 					if(idx.charAt(0) == 'H') {
 						int header_idx = Integer.parseInt(idx.substring(1));
 						String header_date = headerTokenList.get(header_idx-1);
-						fileInfo.setFileMeta("date", header_date);
+						temp_date_str = temp_date_str==null ? header_date : temp_date_str+" "+header_date;
 					}
 				}
+				fileInfo.setFileMeta("date", temp_date_str);
+				return;
+			} else if(!Character.isDigit(line.charAt(line.length()-1))) {
+				// Other Header
+				meetHeader[0] = false; meetHeader[1] = false; meetHeader[2] = false; meetHeader[3] = false;
+				return;
+			} else if(!meetHeader[0] && !meetHeader[1] && !meetHeader[2] && !meetHeader[3]) {
+				// Unnecessary Line
 				return;
 			}
 		} else if("vmstat".equals(setting.getFieldMapping().getFileType())) {
@@ -137,11 +165,21 @@ public class ResourceParser extends FileLineParser {
 		}
 
 		List<String> tokenList = ParserUtil.getTokenList(line, delimeter, bracelets, setting.getCheckStrict());
-		if(tokenList.size() != setting.fieldMapping.fieldCount) {
+		if(setting.fieldMapping.fieldCount > 0 && tokenList.size() != setting.fieldMapping.fieldCount) {
 			Logger.debug("Field count is different : " + tokenList.size() + " != " + setting.fieldMapping.fieldCount);
 			throw new Exception("Invaid line : " + line);
 		}
 
+		if(setting.getSelectedDevices() != null && setting.getFieldMapping().getFileType().equals("sar") && setting.getFieldMapping().getMappingInfo().get("DEVICE") != null) {
+			String dev = getStringOfField(tokenList, "DEVICE");
+			if((meetHeader[0] && setting.getSelectedDevices().containsKey("CPU") && !setting.getSelectedDevices().get("CPU").equals(dev)) ||
+			   (meetHeader[1] && setting.getSelectedDevices().containsKey("MEM") && !setting.getSelectedDevices().get("MEM").equals(dev)) ||
+			   (meetHeader[2] && setting.getSelectedDevices().containsKey("DISK") && !setting.getSelectedDevices().get("DISK").equals(dev)) ||
+			   (meetHeader[3] && setting.getSelectedDevices().containsKey("NETWORK") && !setting.getSelectedDevices().get("NETWORK").equals(dev))) {
+				return;
+			}
+		}		
+		
 		String date_str = getStringOfField(tokenList, "TIME", fileInfo);
 		Date dt = null;
 		if(date_str != null) {
@@ -179,65 +217,79 @@ public class ResourceParser extends FileLineParser {
 			throw new Exception("Invaid line : " + line);
 		}
 		
-		String s_cpu = getStringOfField(tokenList, "CPU");
 		double d_cpu = -1;
-		if(s_cpu != null && NumberUtil.isNumeric(s_cpu.trim(), true)) {
-			d_cpu = ParserUtil.stringToDouble(s_cpu);
-			if(setting.getFieldMapping().isCpuIdle()) {
-				if(d_cpu > 100L) {
-					Logger.debug("CPU Idle is greater than 100% : CPU(idle)=" + s_cpu);
-					throw new Exception("Invaid line : " + line);
-				} else {
-					d_cpu = 100.0D - d_cpu;
+		if(!setting.getFieldMapping().getFileType().equals("sar") || meetHeader[0]) {
+			String s_cpu = getStringOfField(tokenList, "CPU");
+			if(s_cpu != null) {
+				if(!NumberUtil.isNumeric(s_cpu.trim(), true)) return;
+				d_cpu = ParserUtil.stringToDouble(s_cpu);
+				if(setting.getFieldMapping().isCpuIdle()) {
+					if(d_cpu > 100L) {
+						Logger.debug("CPU Idle is greater than 100% : CPU(idle)=" + s_cpu);
+						throw new Exception("Invaid line : " + line);
+					} else {
+						d_cpu = 100.0D - d_cpu;
+					}
 				}
 			}
 		}
 
-		String s_mem = getStringOfField(tokenList, "MEM");
 		double d_mem = -1;
-		if(s_mem != null && NumberUtil.isNumeric(s_mem.trim(), true)) {
-			d_mem = ParserUtil.stringToDouble(s_mem);
-			if(setting.getFieldMapping().isMemoryIdle()) {
-				if(d_mem > 100L) {
-					Logger.debug("Memory Idle is greater than 100% : MEM(idle)=" + s_mem);
-					throw new Exception("Invaid line : " + line);
-				} else {
-					d_mem = 100.0D - d_mem;
+		if(!setting.getFieldMapping().getFileType().equals("sar") || meetHeader[1]) {
+			String s_mem = getStringOfField(tokenList, "MEM");
+			if(s_mem != null) {
+				if(!NumberUtil.isNumeric(s_mem.trim(), true)) return;
+				d_mem = ParserUtil.stringToDouble(s_mem);
+				if(setting.getFieldMapping().isMemoryIdle()) {
+					if(d_mem > 100L) {
+						Logger.debug("Memory Idle is greater than 100% : MEM(idle)=" + s_mem);
+						throw new Exception("Invaid line : " + line);
+					} else {
+						d_mem = 100.0D - d_mem;
+					}
 				}
 			}
 		}
 
-		String s_disk = getStringOfField(tokenList, "DISK");
 		double d_disk = -1;
-		if(s_disk != null && NumberUtil.isNumeric(s_disk.trim(), true)) {
-			d_disk = ParserUtil.stringToDouble(s_disk);
-			if(setting.getFieldMapping().isDiskIdle()) {
-				if(d_disk > 100L) {
-					Logger.debug("Disk Idle is greater than 100% : DISK(idle)=" + s_disk);
-					throw new Exception("Invaid line : " + line);
-				} else {
-					d_disk = 100.0D - d_disk;
+		if(!setting.getFieldMapping().getFileType().equals("sar") || meetHeader[2]) {
+			String s_disk = getStringOfField(tokenList, "DISK");
+			if(s_disk != null) {
+				if(!NumberUtil.isNumeric(s_disk.trim(), true)) return;
+				d_disk = ParserUtil.stringToDouble(s_disk);
+				if(setting.getFieldMapping().isDiskIdle()) {
+					if(d_disk > 100L) {
+						Logger.debug("Disk Idle is greater than 100% : DISK(idle)=" + s_disk);
+						throw new Exception("Invaid line : " + line);
+					} else {
+						d_disk = 100.0D - d_disk;
+					}
 				}
 			}
 		}
 
-		String s_network = getStringOfField(tokenList, "NETWORK");
 		double d_network = -1;
-		if(s_network != null && NumberUtil.isNumeric(s_network.trim(), true)) {
-			d_network = ParserUtil.stringToDouble(s_network);
-			if(setting.getFieldMapping().isNetworkIdle()) {
-				if(d_network > 100L) {
-					Logger.debug("Network Idle is greater than 100% : NETWORK(idle)=" + s_network);
-					throw new Exception("Invaid line : " + line);
-				} else {
-					d_network = 100.0D - d_network;
+		if(!setting.getFieldMapping().getFileType().equals("sar") || meetHeader[3]) {
+			String s_network = getStringOfField(tokenList, "NETWORK");
+			if(s_network != null) {
+				if(!NumberUtil.isNumeric(s_network.trim(), true)) return;
+				d_network = ParserUtil.stringToDouble(s_network);
+				if(setting.getFieldMapping().isNetworkIdle()) {
+					if(d_network > 100L) {
+						Logger.debug("Network Idle is greater than 100% : NETWORK(idle)=" + s_network);
+						throw new Exception("Invaid line : " + line);
+					} else {
+						d_network = 100.0D - d_network;
+					}
 				}
 			}
 		}
 
-		if("sar".equals(setting.getFieldMapping().getFileType())) {
+		if(setting.getFieldMapping().getFileType().equals("sar")) {
 			if(sdf_date_sar == null) {
-				sdf_date_sar = new SimpleDateFormat(STR_DATE_SAR, setting.fieldMapping.timeLocale);
+				int to_idx = setting.fieldMapping.timeFormat.toUpperCase().indexOf("HH");
+				String format_date = setting.fieldMapping.timeFormat.substring(0, to_idx).trim();
+				sdf_date_sar = new SimpleDateFormat(format_date, setting.fieldMapping.timeLocale);
 			}
 			if(prev_cal == null) {
 				prev_cal = Calendar.getInstance();
@@ -300,18 +352,19 @@ public class ResourceParser extends FileLineParser {
 	}
 	
 	private ResourceUsageEntryVO mergeVo(ResourceUsageEntryVO oldVo, ResourceUsageEntryVO newVo) {
-		if(oldVo.getCpuUsage() == -1D || newVo.getCpuUsage() != -1D) {
+		if(newVo.getCpuUsage() != -1D) {
 			oldVo.setCpuUsage(newVo.getCpuUsage());
 		}
-		if(oldVo.getMemoryUsage() == -1D || newVo.getMemoryUsage() != -1D) {
+		if(newVo.getMemoryUsage() != -1D) {
 			oldVo.setMemoryUsage(newVo.getMemoryUsage());
 		}
-		if(oldVo.getDiskUsage() == -1D || newVo.getDiskUsage() != -1D) {
+		if(newVo.getDiskUsage() != -1D) {
 			oldVo.setDiskUsage(newVo.getDiskUsage());
 		}
-		if(oldVo.getNetworkUsage() == -1D || newVo.getNetworkUsage() != -1D) {
+		if(newVo.getNetworkUsage() != -1D) {
 			oldVo.setNetworkUsage(newVo.getNetworkUsage());
 		}
+		oldVo.setDataCount(Math.max(newVo.getDataCount(), oldVo.getDataCount()));
 		return oldVo;
 	}
 
@@ -356,27 +409,36 @@ public class ResourceParser extends FileLineParser {
 	private String getStringOfField(List<String> fld_tokens, String fld_name, FileInfo file_info) {
 		try {
 			String fld_str = "";
-			FieldIndex[] fld_idx = getIndexOfField(fld_name);
-			if(fld_idx == null || fld_idx.length < 1) {
-				return null;
-			}
-			if(fld_idx[0] == null) {
-				fld_str = file_info.getFileMeta("date");
+			String idx_str = setting.fieldMapping.mappingInfo.get(fld_name);
+			if(idx_str == null) return null;
+			if(idx_str.startsWith("{") && idx_str.endsWith("}")) {
+				String expr = idx_str.substring(1, idx_str.length()-1);
+				Double evalResult = MathUtil.evaluateExpression(expr, NumberUtil.toDoubleList(fld_tokens));
+				return evalResult.toString();
 			} else {
-				fld_str = fld_idx[0].getField(fld_tokens, delimeter, bracelets);
-			}			
-			fld_str = (fld_str == null) ? "UNKNOWN" : fld_str;
-			if(fld_idx.length > 1 && fld_name.equals("TIME")) {
-				if(fld_str.equals("UNKNOWN")) {
+				FieldIndex[] fld_idx = getIndexOfField(fld_name);
+				if(fld_idx == null || fld_idx.length < 1) {
 					return null;
 				}
-				for(int i = 1; i < fld_idx.length; i++) {
-					String sub_fld_str = fld_idx[i].getField(fld_tokens, delimeter, bracelets);
-					String joinChar = " ";
-					fld_str += ((sub_fld_str == null) ? "" : (joinChar + sub_fld_str));
+				if(fld_idx[0] == null) {
+					fld_str = file_info.getFileMeta("date");
+				} else {
+					fld_str = fld_idx[0].getField(fld_tokens, delimeter, bracelets);
+				}			
+				fld_str = (fld_str == null) ? "UNKNOWN" : fld_str;
+				if(fld_idx.length > 1 && fld_name.equals("TIME")) {
+					if(fld_str.equals("UNKNOWN")) {
+						return null;
+					}
+					for(int i = 1; i < fld_idx.length; i++) {
+						if(fld_idx[i] == null) continue;
+						String sub_fld_str = fld_idx[i].getField(fld_tokens, delimeter, bracelets);
+						String joinChar = " ";
+						fld_str += ((sub_fld_str == null) ? "" : (joinChar + sub_fld_str));
+					}
 				}
+				return fld_str;
 			}
-			return fld_str;
 		} catch(Exception e) {
 			Logger.debug(e);
 			return null;

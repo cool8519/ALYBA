@@ -31,12 +31,20 @@ public class Logger {
 		dal.tool.analyzer.alyba.util.Logger.logln(s, level);
 		if(AlybaGUI.debugMode) {
 			if("main".equals(Thread.currentThread().getName())) {
-				AlybaGUI.getDebugConsole().addDebugMessage(s);
+				if(AlybaGUI.instance == null) {
+					ResultAnalyzer.getDebugConsole().addDebugMessage(s);
+				} else {
+					AlybaGUI.getDebugConsole().addDebugMessage(s);
+				}
 			} else {
 				Display display = AlybaGUI.instance != null ? AlybaGUI.getInstance().display : ResultAnalyzer.instance.display;
 				display.syncExec(new Runnable() {
 					public void run() {
-						AlybaGUI.getDebugConsole().addDebugMessage(s);
+						if(AlybaGUI.instance == null) {
+							ResultAnalyzer.getDebugConsole().addDebugMessage(s);
+						} else {
+							AlybaGUI.getDebugConsole().addDebugMessage(s);
+						}
 					}
 				});
 			}

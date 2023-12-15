@@ -71,6 +71,7 @@ import dal.util.ReflectionUtil;
 import dal.util.db.ObjectDBUtil;
 import dal.util.swt.ImageUtil;
 import dal.util.swt.MessageUtil;
+import dal.util.swt.SwitchButton;
 
 public class ResultChart extends Composite {
 
@@ -89,6 +90,8 @@ public class ResultChart extends Composite {
 	private Combo cb_data;
 	private Label lb_data;
 	private Label lb_type;
+	private Label lb_drag;
+	private SwitchButton sb_dragdelete;
 	private ToolBar tb_charttype;
 	private ToolBar tb_restype;
 	private ToolItem ti_line;
@@ -115,7 +118,10 @@ public class ResultChart extends Composite {
 	private ChartSetting chart_setting_ra;
 	private RegressionSummary regression_summary;
 	private boolean existsResourceData;
+	private boolean isKeyDeleting;
 	
+	@SuppressWarnings("unused")
+	private ResultAnalyzer resultAnalyzer;
 	private ObjectDBUtil db = null;
 	private EntityManager em = null;
 
@@ -139,8 +145,9 @@ public class ResultChart extends Composite {
 		map_data.put("Regression Analysis", RegressionChart.class);
 	}
 	
-	public ResultChart(Composite parent, int style) {
+	public ResultChart(Composite parent, int style, ResultAnalyzer owner) {
 		super(parent, style);
+		this.resultAnalyzer = owner;
 		createContents();
 		addEventListener();
 	}
@@ -210,6 +217,27 @@ public class ResultChart extends Composite {
 	    cb_data.setLayoutData(fd_cb_data);
 	    cb_data.setFont(Utility.getFont());
 
+		FormData fd_lb_drag = new FormData();
+		fd_lb_drag.top = new FormAttachment(lb_data, 30);
+		fd_lb_drag.left = new FormAttachment(0, 5);
+		lb_drag = new Label(grp_left, SWT.LEFT);
+		lb_drag.setLayoutData(fd_lb_drag);
+		lb_drag.setFont(Utility.getFont());
+		lb_drag.setText("Drag");
+		lb_drag.setVisible(false);
+
+		FormData fd_sb_dragdelete = new FormData();
+		fd_sb_dragdelete.top = new FormAttachment(lb_drag, -2, SWT.TOP);
+		fd_sb_dragdelete.left = new FormAttachment(lb_drag, 10);
+		fd_sb_dragdelete.right = new FormAttachment(100, -5);
+		sb_dragdelete = new SwitchButton(grp_left, SWT.NONE);
+		sb_dragdelete.setLayoutData(fd_sb_dragdelete);
+		sb_dragdelete.setFont(Utility.getFont());
+		sb_dragdelete.setTextOn("Delete");
+		sb_dragdelete.setTextOff("Zoom");
+		sb_dragdelete.setToolTipText("Hold down <Shift> key to delete plots temporarily.");
+		sb_dragdelete.setVisible(false);
+		
 		FormData fd_lb_type = new FormData();
 		fd_lb_type.top = new FormAttachment(lb_data, 30);
 		fd_lb_type.left = new FormAttachment(0, 5);
@@ -313,7 +341,7 @@ public class ResultChart extends Composite {
 		FormData fd_comp_chart_setting_ra = new FormData();
 		fd_comp_chart_setting_ra.left = new FormAttachment(0, -5);
 		fd_comp_chart_setting_ra.right = new FormAttachment(100, 5);
-		fd_comp_chart_setting_ra.top = new FormAttachment(cb_data, 30);
+		fd_comp_chart_setting_ra.top = new FormAttachment(sb_dragdelete, 10);
 		fd_comp_chart_setting_ra.bottom = new FormAttachment(100, -5);
 		chart_setting_ra = new RegressionAnalysisChartSetting(grp_left, this);
 		chart_setting_ra.setLayoutData(fd_comp_chart_setting_ra);
@@ -432,8 +460,48 @@ public class ResultChart extends Composite {
 			}
 		});
 		
+		getDisplay().addFilter(SWT.KeyDown, new Listener() {
+	        @Override
+	        public void handleEvent(Event e) {
+	            if(e.widget instanceof Composite && isKeyValid((Composite)e.widget)) {
+	                if(e.keyCode == SWT.SHIFT && e.stateMask == SWT.NONE) {
+	                	if(!sb_dragdelete.getSelection()) {
+	                		isKeyDeleting = true;
+	                		sb_dragdelete.setSelection(true);
+	                		sb_dragdelete.redraw();
+	                	}
+	                }
+	            }
+	        }
+	    });
+
+		getDisplay().addFilter(SWT.KeyUp, new Listener() {
+	        @Override
+	        public void handleEvent(Event e) {
+	            if(e.widget instanceof Composite && isKeyValid((Composite)e.widget)) {
+	                if(e.keyCode == SWT.SHIFT && e.stateMask == SWT.SHIFT) {
+	                	if(isKeyDeleting && sb_dragdelete.getSelection()) {
+	                		sb_dragdelete.setSelection(false);
+	                		sb_dragdelete.redraw();
+	                	}
+	                	isKeyDeleting = false;
+	                }
+	            }
+	        }
+	    });
+
 	}
 
+	private boolean isKeyValid(Composite eventSrc) {
+	    if(eventSrc.equals(this) && "Regression Analysis".equals(cb_data.getText()))
+	        return true;
+	    Composite p = eventSrc.getParent();
+	    if(p != null)
+	        return isKeyValid(p);
+	    else
+	        return false;
+	}
+	
 	private void checkChartTypeButtons(Widget item) {
 		ti_line.setSelection(ti_line.equals(item));
 		ti_vbar.setSelection(ti_vbar.equals(item));
@@ -512,6 +580,8 @@ public class ResultChart extends Composite {
 			if(name.equals("System Resource")) {
 				lb_type.setVisible(true);
 				tb_charttype.setVisible(false);
+				lb_drag.setVisible(false);
+				sb_dragdelete.setVisible(false);
 				tb_restype.setVisible(true);
 				comp_chart.setVisible(true);
 				comp_regression.setVisible(false);				
@@ -521,16 +591,20 @@ public class ResultChart extends Composite {
 			} else if(name.equals("Regression Analysis")) {
 				lb_type.setVisible(false);
 				tb_charttype.setVisible(false);
+				lb_drag.setVisible(true);
+				sb_dragdelete.setVisible(true);
 				tb_restype.setVisible(false);
 				comp_chart.setVisible(false);
 				comp_regression.setVisible(true);
 				Class<Chart> chartClass = (Class<Chart>)map_data.get(name);
-				Chart chart = chartClass.newInstance();
+				Chart chart = chartClass.getDeclaredConstructor(this.getClass()).newInstance(this);
 				chart_setting_ra.reset(chart);
 			} else {
 				lb_type.setVisible(true);
 				tb_restype.setVisible(false);
 				tb_charttype.setVisible(true);
+				lb_drag.setVisible(false);
+				sb_dragdelete.setVisible(false);
 				comp_chart.setVisible(true);
 				comp_regression.setVisible(false);				
 				Class<Chart> chartClass = (Class<Chart>)map_data.get(name);
@@ -604,7 +678,7 @@ public class ResultChart extends Composite {
 			frame_chart.removeAll();
 			comp_chart.setVisible(false);
 			tb_charttype.setEnabled(false);
-			MessageUtil.showErrorMessage(getShell(), "Failed to draw the chart.");
+			MessageUtil.showErrorMessage(getShell(), "Failed to draw the chart : " + e.getMessage());
 		}
 	}
 
@@ -641,7 +715,7 @@ public class ResultChart extends Composite {
 			frame_chart.removeAll();
 			comp_chart.setVisible(false);
 			tb_restype.setEnabled(false);
-			MessageUtil.showErrorMessage(getShell(), "Failed to draw the chart.");
+			MessageUtil.showErrorMessage(getShell(), "Failed to draw the chart : " + e.getMessage());
 		}
 	}
 
@@ -651,7 +725,7 @@ public class ResultChart extends Composite {
 		frame_regression_top.removeAll();		
 		frame_regression_bottom.removeAll();
 		try {			
-			RegressionChart chart = new RegressionChart();
+			RegressionChart chart = new RegressionChart(this);
 			ChartSetting chartSetting = chart_setting_ra;		
 			current_chart = chart;
 			current_setting = chartSetting;
@@ -716,7 +790,7 @@ public class ResultChart extends Composite {
 			frame_regression_top.removeAll();		
 			frame_regression_bottom.removeAll();
 			comp_regression.setVisible(false);
-			MessageUtil.showErrorMessage(getShell(), "Failed to draw the chart.");
+			MessageUtil.showErrorMessage(getShell(), "Failed to draw the chart : " + e.getMessage());
 		}
 	}
 
@@ -730,6 +804,8 @@ public class ResultChart extends Composite {
 		lb_type.setVisible(false);
 		tb_charttype.setVisible(false);
 		tb_charttype.setEnabled(false);
+		lb_drag.setVisible(false);
+		sb_dragdelete.setVisible(false);
 		tb_restype.setVisible(false);
 		tb_restype.setEnabled(false);
 		frame_chart.removeAll();
@@ -748,6 +824,7 @@ public class ResultChart extends Composite {
 		regression_summary.reset();
 		current_data_name = null;
 		existsResourceData = false;
+		isKeyDeleting = false;
 	}
 	
 	private Class<?> getDataClassOfChart(Class<?> chart_class) {
@@ -855,6 +932,27 @@ public class ResultChart extends Composite {
 			drawRegressionChart(dataName);
 		} else {
 			drawChart(current_chart.getType(), dataName);
+		}
+	}
+	
+	public void applyRegressionSummary(RegressionAnalysisChart chart) {
+		regression_summary.apply(chart);
+	}
+	
+	public boolean isDeleteMode() {
+		return sb_dragdelete.getSelection();
+	}
+	
+	public void setDeleteMode(boolean isDelete) {
+		sb_dragdelete.setSelection(isDelete);
+		sb_dragdelete.redraw();
+	}
+	
+	public void resetTempDeleteMode() {
+		if(isKeyDeleting) {
+			isKeyDeleting = false;
+			sb_dragdelete.setSelection(false);
+			sb_dragdelete.redraw();
 		}
 	}
 	

@@ -121,7 +121,7 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 		btn_merge_sum.setEnabled(false);
 
 		FormData fd_lb_var_x = new FormData();
-		fd_lb_var_x.top = new FormAttachment(grp_merge, 30);
+		fd_lb_var_x.top = new FormAttachment(grp_merge, 25);
 		fd_lb_var_x.left = new FormAttachment(lb_aggr, 0, SWT.LEFT);
 		lb_var_x = new Label(grp_setting, SWT.CENTER);
 		lb_var_x.setLayoutData(fd_lb_var_x);
@@ -153,7 +153,7 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 		cb_var_y.setFont(Utility.getFont());
 
 		FormData fd_lb_reg_type = new FormData();
-		fd_lb_reg_type.top = new FormAttachment(cb_var_y, 30);
+		fd_lb_reg_type.top = new FormAttachment(cb_var_y, 15);
 		fd_lb_reg_type.left = new FormAttachment(lb_var_y, 0, SWT.LEFT);
 		lb_reg_type = new Label(grp_setting, SWT.CENTER);
 		lb_reg_type.setLayoutData(fd_lb_reg_type);
@@ -169,7 +169,7 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 		cb_reg_type.setFont(Utility.getFont());
 		
 		FormData fd_chk_reg_line = new FormData();
-		fd_chk_reg_line.top = new FormAttachment(cb_reg_type, 30);
+		fd_chk_reg_line.top = new FormAttachment(cb_reg_type, 25);
 		fd_chk_reg_line.left = new FormAttachment(lb_reg_type, 0, SWT.LEFT);
 		chk_reg_line = new Button(grp_setting, SWT.CHECK);
 		chk_reg_line.setLayoutData(fd_chk_reg_line);
@@ -187,7 +187,7 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 		chk_reg_equation.setSelection(true);
 		
 		FormData fd_chk_max_y_to_100 = new FormData();
-		fd_chk_max_y_to_100.top = new FormAttachment(chk_reg_equation, 30);
+		fd_chk_max_y_to_100.top = new FormAttachment(chk_reg_equation, 25);
 		fd_chk_max_y_to_100.left = new FormAttachment(chk_reg_line, 0, SWT.LEFT);
 		chk_max_y_to_100 = new Button(grp_setting, SWT.CHECK);
 		chk_max_y_to_100.setLayoutData(fd_chk_max_y_to_100);

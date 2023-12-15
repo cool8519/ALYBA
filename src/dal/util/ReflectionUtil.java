@@ -7,14 +7,24 @@ import java.util.List;
 
 public class ReflectionUtil {
 	
-	public static List<Field> getFields(Object obj) {
-        List<Field> fields = new ArrayList<Field>();
-        Class<?> cls = obj.getClass();
+	public static Field getField(Object obj, String name) {
+        return getField(obj.getClass(), name);
+	}
+
+	public static Field getField(Class<?> cls, String name) {
         while(cls != Object.class) {
-            fields.addAll(Arrays.asList(cls.getDeclaredFields()));
+        	for(Field f : cls.getDeclaredFields()) {
+        		if(f.getName().equals(name)) {
+        			return f;
+        		}
+        	}
             cls = cls.getSuperclass();
         }
-        return fields;
+        return null;
+	}
+
+	public static List<Field> getFields(Object obj) {
+		return getFields(obj.getClass());
     }
 
 	public static List<Field> getFields(Class<?> cls) {
@@ -25,7 +35,7 @@ public class ReflectionUtil {
         }
         return fields;
     }
-
+	
 	public static boolean isNumberType(Field f) {
 		Class<?> type = f.getType();
 		if(type == int.class || type == Integer.class || type == long.class || type == Long.class ||

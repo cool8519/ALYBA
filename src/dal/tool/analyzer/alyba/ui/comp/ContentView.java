@@ -32,9 +32,6 @@ public class ContentView extends Shell {
 
 	protected void createContents() {
 
-		GridLayout gl_main = new GridLayout();
-		gl_main.verticalSpacing = 2;
-
 		setSize(min_width, min_height);
 		setText("Content View");
 		setLayout(new GridLayout());

@@ -1,7 +1,9 @@
 package dal.tool.analyzer.alyba.util;
 
 import java.io.File;
+import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,7 +13,9 @@ import java.util.regex.Pattern;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Font;
 
-import com.maxmind.geoip.LookupService;
+import com.maxmind.geoip2.DatabaseReader;
+import com.maxmind.geoip2.exception.AddressNotFoundException;
+import com.maxmind.geoip2.model.CountryResponse;
 
 import dal.tool.analyzer.alyba.Constant;
 import dal.util.FileUtil;
@@ -20,7 +24,7 @@ import dal.util.swt.SWTResourceManager;
 public class Utility {
 
 	private static HashMap<String, String> codeMap;
-	private static LookupService ipService = null;
+	private static DatabaseReader geoIpReader = null;
 
 	static {
 		codeMap = new HashMap<String, String>();
@@ -171,24 +175,25 @@ public class Utility {
 		}
 	}
 
-	public static String getCountryFromIPv4(String ip_address) {
+	public static String getCountryFromIP(String ip_address) {
 		try {
-			if(ipService == null) {
+			if(ip_address != null && (ip_address.equals("127.0.0.1") || ip_address.equals("0:0:0:0:0:0:0:1"))) {
+				return "Localhost";
+			}
+			if(geoIpReader == null) {
 				File datafile = FileUtil.getFileFromResource(Constant.FILE_PATH_GEOIP);
 				if(datafile == null) {
 					URL url = ClassLoader.getSystemResource(Constant.FILE_PATH_GEOIP);
 					datafile = FileUtil.createTemporaryFile(url.openStream(), "ALYBA_GeoIP_", ".dat", null, true);
 				}
-				ipService = new LookupService(datafile.getCanonicalPath(), LookupService.GEOIP_MEMORY_CACHE);
+			    geoIpReader = new DatabaseReader.Builder(datafile).build();
 			}
-			if(ip_address != null && (ip_address.equals("127.0.0.1") || ip_address.equals("0:0:0:0:0:0:0:1"))) {
-				return "Localhost";
-			}
-			String name = ipService.getCountry(ip_address).getName();
-			if(name.equals("N/A")) {
+			try {
+				InetAddress ipAddress = InetAddress.getByName(ip_address);
+			    CountryResponse response = geoIpReader.country(ipAddress);		    
+				return response.getCountry().getName();
+			} catch(UnknownHostException | AddressNotFoundException e) {
 				return "UNKNOWN";
-			} else {
-				return name;
 			}
 		} catch(Exception e) {
 			e.printStackTrace();
