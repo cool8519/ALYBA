@@ -283,6 +283,8 @@ Release Note
 - (Bug) 시간 형식에 정확히 맞지 않아도 허용하여 잘못된 시간으로 기록되는 문제 수정
 - (Bug) ResultAnalyzer 모드에서 디버그 콘솔에 로그 기록시 오류발생 문제 수정
 - (Bug) URI Mapping에 등록된 패턴에 정확히 일치하지 않아도 포함하면 매칭되는 문제 수정
+- (Bug) 산포도 회귀식 위치 조정 
+- 산포도에서 점 클릭시 상세 데이터 추가(uri pattern)
 - 파일 인코딩 체크를 옵션으로 변경
 - 히스토리 관리 뷰에 DB파일 버전 추가
 - 디버그 콘솔에 Pause 버튼 및 ResultAnalyzer 모드 Console 버튼 추가

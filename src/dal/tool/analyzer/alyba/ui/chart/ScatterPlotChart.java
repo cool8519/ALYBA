@@ -6,6 +6,7 @@ import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import javax.persistence.EntityManager;
 
@@ -37,9 +38,9 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleInsets;
 import org.jfree.ui.TextAnchor;
 
-import dal.tool.analyzer.alyba.output.vo.TransactionEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SettingEntryVO;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
+import dal.tool.analyzer.alyba.output.vo.TransactionEntryVO;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.ui.chart.extension.MultiLineXYPointerAnnotation;
 import dal.util.DateUtil;
@@ -208,6 +209,9 @@ public abstract class ScatterPlotChart extends Chart {
 			if(show_regression_equation) {
 				double eq_x = (start+end) / 2;
 				double eq_y = regression.predict(eq_x);
+				Range screenRangeY = xyPlot.getRangeAxis().getRange();
+				double center = (screenRangeY.getUpperBound()+screenRangeY.getLowerBound()) / 2;
+				int angle = eq_y < center ? 270 : 90;
 				StringBuffer eq = new StringBuffer();				
 				eq.append(" Y = αX + β  (");
 				eq.append("α = ").append(String.format("%.5e", regression.getSlope()));
@@ -215,9 +219,9 @@ public abstract class ScatterPlotChart extends Chart {
 					eq.append(", β = ").append(String.format("%.5e", regression.getIntercept()));
 				}
 				eq.append(", R² = ").append(String.format("%1.5e", regression.getRSquare())).append(") ");
-			    XYPointerAnnotation annotation = new XYPointerAnnotation(eq.toString(), eq_x, eq_y, Math.toRadians(270));
+			    XYPointerAnnotation annotation = new XYPointerAnnotation(eq.toString(), eq_x, eq_y, Math.toRadians(angle));
 			    annotation.setLabelOffset(4.0D);
-			    annotation.setTextAnchor(TextAnchor.BOTTOM_CENTER);
+			    annotation.setTextAnchor(angle==270 ? TextAnchor.BOTTOM_CENTER : TextAnchor.TOP_CENTER);
 			    annotation.setBackgroundPaint(new Color(0, 0, 255, 63));
 			    annotation.setOutlineVisible(false);
 			    annotation.setFont(new Font("Arial", Font.ITALIC, annotation.getFont().getSize()+3));
@@ -301,10 +305,20 @@ public abstract class ScatterPlotChart extends Chart {
 		long val = (long)item.getYValue();
 		String annotation_text = getAnnotationText(item);
 		XYPlot xyPlot = (XYPlot)jfreeChart.getPlot();
-		XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, true);
+		XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)xyPlot.getRenderer(1);
+		MultiLineXYPointerAnnotation annotation = null;
+		if(renderer != null) {
+			List<?> anno = (List<?>)renderer.getAnnotations();
+			annotation = (anno != null && anno.size() > 0) ? (MultiLineXYPointerAnnotation)anno.get(0) : null;
+			if(annotation != null && annotation.getX() == dt.getTime() && annotation.getY() == val) {
+				renderer.removeAnnotation(annotation);
+				return;
+			}
+		}
+		renderer = new XYLineAndShapeRenderer(true, true);
 		renderer.setSeriesPaint(0, Color.BLACK);
 		int angle = getAngleForAnnotation(xyPlot, dt.getTime(), val);
-		MultiLineXYPointerAnnotation annotation = new MultiLineXYPointerAnnotation(annotation_text, dt.getTime(), val, Math.toRadians(angle));
+		annotation = new MultiLineXYPointerAnnotation(annotation_text, dt.getTime(), val, Math.toRadians(angle));
 	    annotation.setFont(new Font("Arial", SWT.NONE, annotation.getFont().getSize()+1));
 	    annotation.setTextAnchor(getTextAnchorByAngle(angle));
 	    annotation.setBackgroundPaint(Color.WHITE);

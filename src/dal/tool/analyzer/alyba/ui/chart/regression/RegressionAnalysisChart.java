@@ -249,8 +249,8 @@ public class RegressionAnalysisChart extends DistributionChart {
 			}
 		}
 	    dataset = xy_collection;
-	    shape_sizes = new ShapeSize[dataset.getSeriesCount()];
-	    for(int i = 0; i < dataset.getSeriesCount(); i++) {
+	    shape_sizes = new ShapeSize[dataset.getSeriesCount()+1];
+	    for(int i = 0; i < dataset.getSeriesCount()+1; i++) {
 	    	shape_sizes[i] = DEFAULT_SHAPE_SIZE;
 	    }
 	    equation_annotations = new XYPointerAnnotation[dataset.getSeriesCount()];
@@ -295,7 +295,7 @@ public class RegressionAnalysisChart extends DistributionChart {
 		renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator("[{0}] : ({1}, {2})", DF_NUMBER, DF_NUMBER));
 
 		if(show_regression_line) {
-			updateRegressionLines();
+			updateRegressionLines(true);
 		}
 
 		TextTitle title = jfreeChart.getTitle();
@@ -422,14 +422,23 @@ public class RegressionAnalysisChart extends DistributionChart {
 		renderer.setDrawSeriesLineAsPath(true);		
 	}
 
-	private void updateRegressionLines() {
+	private void updateRegressionLines(boolean refresh) {
 		XYPlot xyPlot = (XYPlot)jfreeChart.getPlot();
-		
-		// clear regression
-		XYDataset tempDataset = xyPlot.getDataset(1);
-		if(tempDataset != null) {
+
+		Boolean[] regVisible = null; 
+		if(xyPlot.getDataset(1) != null) {
+			XYSeriesCollection regSeriesCollection = (XYSeriesCollection)xyPlot.getDataset(1);
+			//previous state
+			if(!refresh) {
+				XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)xyPlot.getRenderer(1);
+				regVisible = new Boolean[regSeriesCollection.getSeriesCount()];
+				for(int idx_series = 0; idx_series < regSeriesCollection.getSeriesCount(); idx_series++) {
+					regVisible[idx_series] = renderer.getSeriesLinesVisible(idx_series);
+				}
+			}
+			// clear regression
 			regressions.clear();
-			((XYSeriesCollection)tempDataset).removeAllSeries();
+			regSeriesCollection.removeAllSeries();
 			xyPlot.clearAnnotations();
 		}
 		
@@ -437,8 +446,9 @@ public class RegressionAnalysisChart extends DistributionChart {
 		double maxX = Double.MIN_VALUE;
 		XYSeriesCollection seriesCollection = (XYSeriesCollection)dataset;
 		for(int idx_series = 0; idx_series < seriesCollection.getSeriesCount(); idx_series++) {
-			SimpleRegression regression = new SimpleRegression();
 			XYSeries series = seriesCollection.getSeries(idx_series);
+			if(series.getKey().equals("Removed")) continue;
+			SimpleRegression regression = new SimpleRegression();
 			for(int i = 0; i < series.getItemCount(); i++) {
 				XYDataItem item = series.getDataItem(i);
 				maxX = Math.max(maxX, item.getXValue());
@@ -461,6 +471,8 @@ public class RegressionAnalysisChart extends DistributionChart {
 				regDataset.addSeries(regSeries);
 				regRenderer.setSeriesPaint(series, drawingSupplier.getNextPaint());
 				regRenderer.setSeriesStroke(series, new BasicStroke(DEFAULT_LINE_WIDTH, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f, new float[]{4.0f}, 0.0f));
+				boolean visible = (regVisible == null || regVisible[series] == null || regVisible[series] == Boolean.TRUE);
+				regRenderer.setSeriesLinesVisible(series, visible);
 				if(show_regression_equation) {
 					double eq_x = (start+end)/2 + (start+end)/2/regressions.size()*series;
 					double eq_y = regression.predict(eq_x);
@@ -481,7 +493,9 @@ public class RegressionAnalysisChart extends DistributionChart {
 				    annotation.setBackgroundPaint(new Color(color.getRed(), color.getGreen(), color.getBlue(), 150));
 				    annotation.setOutlineVisible(false);
 				    annotation.setFont(new Font("Arial", Font.PLAIN, annotation.getFont().getSize()+1));
-				    xyPlot.addAnnotation(annotation);
+				    if(visible) {
+				    	xyPlot.addAnnotation(annotation);
+				    }
 				    equation_annotations[series] = annotation;
 				}
 			}
@@ -502,11 +516,11 @@ public class RegressionAnalysisChart extends DistributionChart {
     private Map<String,List<XYDataItem>> getSelectedItems(double minX, double maxX, double minY, double maxY, XYDataset dataset) {
     	Map<String,List<XYDataItem>> result = new HashMap<String,List<XYDataItem>>();
     	for(int idx = 0; idx < dataset.getSeriesCount(); idx++) {
+    		XYSeries series = ((XYSeriesCollection)dataset).getSeries(idx);
     		XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)((XYPlot)jfreeChart.getPlot()).getRenderer(0);
     		Boolean visible = renderer.getSeriesShapesVisible(idx);
-    		if(visible == null || visible == Boolean.TRUE) {
+    		if(!series.getKey().equals("Removed") && (visible == null || visible == Boolean.TRUE)) {
     			List<XYDataItem> selectedList = new ArrayList<XYDataItem>();
-    			XYSeries series = ((XYSeriesCollection)dataset).getSeries(idx);
 	    		for(Object itemObj : series.getItems()) {
 	    			XYDataItem item = (XYDataItem)itemObj;
 	    			double xValue = item.getX().doubleValue();
@@ -525,9 +539,12 @@ public class RegressionAnalysisChart extends DistributionChart {
     
     private void nominateItems(Map<String,List<XYDataItem>> mapToRemove, XYDataset dataset) {
     	XYSeriesCollection seriesCollection = (XYSeriesCollection)dataset;
+    	XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)((XYPlot)jfreeChart.getPlot()).getRenderer(0);
     	for(String key : mapToRemove.keySet()) {
     		XYSeries series = seriesCollection.getSeries(key);
     		XYSeries toRemoveSeries = new XYSeries(key+"~toRemove");
+    		series.setNotify(false);
+    		toRemoveSeries.setNotify(false);
     		for(int idx_item = series.getItemCount()-1; idx_item >= 0; idx_item--) {
     			XYDataItem item = series.getDataItem(idx_item);
     			for(XYDataItem itemToRemove : mapToRemove.get(key)) {
@@ -538,9 +555,10 @@ public class RegressionAnalysisChart extends DistributionChart {
     				}
     			}
     		}
+    		series.setNotify(true);
+    		toRemoveSeries.setNotify(true);
     		if(toRemoveSeries.getItemCount() > 0) {
     			seriesCollection.addSeries(toRemoveSeries);
-    			XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)((XYPlot)jfreeChart.getPlot()).getRenderer(0);
     			renderer.setSeriesPaint(dataset.getSeriesCount()-1, Color.BLACK);
     			renderer.setSeriesShape(dataset.getSeriesCount()-1, renderer.getSeriesShape(seriesCollection.indexOf(key)));
     			renderer.setSeriesVisibleInLegend(dataset.getSeriesCount()-1, false);
@@ -550,9 +568,12 @@ public class RegressionAnalysisChart extends DistributionChart {
 
     public void nominateItems(Map<String,List<CustomTimeSeriesDataItem>> mapToRemove) {
     	XYSeriesCollection seriesCollection = (XYSeriesCollection)dataset;
+    	XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)((XYPlot)jfreeChart.getPlot()).getRenderer(0);
     	for(String key : mapToRemove.keySet()) {
     		XYSeries series = seriesCollection.getSeries(key);
     		XYSeries toRemoveSeries = new XYSeries(key+"~toRemove");
+    		series.setNotify(false);
+    		toRemoveSeries.setNotify(false);
     		for(CustomTimeSeriesDataItem itemToRemove : mapToRemove.get(key)) {
         		for(int idx_item = series.getItemCount()-1; idx_item >= 0; idx_item--) {
         			XYDataItem item = series.getDataItem(idx_item);
@@ -563,9 +584,10 @@ public class RegressionAnalysisChart extends DistributionChart {
     				}
         		}
     		}
+    		series.setNotify(true);
+    		toRemoveSeries.setNotify(true);
     		if(toRemoveSeries.getItemCount() > 0) {
     			seriesCollection.addSeries(toRemoveSeries);
-    			XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)((XYPlot)jfreeChart.getPlot()).getRenderer(0);
     			renderer.setSeriesPaint(dataset.getSeriesCount()-1, Color.BLACK);
     			renderer.setSeriesShape(dataset.getSeriesCount()-1, renderer.getSeriesShape(seriesCollection.indexOf(key)));
     			renderer.setSeriesVisibleInLegend(dataset.getSeriesCount()-1, false);
@@ -575,22 +597,44 @@ public class RegressionAnalysisChart extends DistributionChart {
 
 	public void removeOrRestoreItems(boolean remove) {
     	XYSeriesCollection seriesCollection = (XYSeriesCollection)dataset;
+		XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)((XYPlot)jfreeChart.getPlot()).getRenderer(0);
+    	int removedSeriesIndex = seriesCollection.getSeriesIndex("Removed");
+    	XYSeries removedSeries = removedSeriesIndex < 0 ? new XYSeries("Removed") : seriesCollection.getSeries(removedSeriesIndex);
+    	removedSeries.setNotify(false);
 		for(int idx_series = seriesCollection.getSeriesCount()-1; idx_series >= 0 ; idx_series--) {
 			XYSeries series = seriesCollection.getSeries(idx_series);
 			String key = (String)series.getKey();
 			int idx = key.indexOf("~toRemove");
 			if(idx < 0) break;
 			XYSeries orgSeries = seriesCollection.getSeries(key.substring(0, idx));
+    		series.setNotify(false);
+    		orgSeries.setNotify(false);
 			for(int i = series.getItemCount()-1; i >= 0; i--) {
 				XYDataItem item = series.remove(i);
-				if(!remove) {
+				if(remove) {
+					removedSeries.addOrUpdate(item);
+				} else {
 					orgSeries.addOrUpdate(item);
 				}
 			}
+    		series.setNotify(true);
+    		orgSeries.setNotify(true);
 			seriesCollection.removeSeries(idx_series);
+			renderer.setSeriesPaint(idx_series, null);
+			renderer.setSeriesShape(idx_series, null);
+			renderer.setSeriesVisibleInLegend(idx_series, null);
+		}
+		removedSeries.setNotify(true);
+		if(remove && removedSeriesIndex < 0) {
+			seriesCollection.addSeries(removedSeries);
+			removedSeriesIndex = seriesCollection.getSeriesCount()-1;
+			int size = shape_sizes[removedSeriesIndex].ordinal() + 1;
+			renderer.setSeriesShape(removedSeriesIndex, new Ellipse2D.Double(-size, -size, size, size));
+			renderer.setSeriesPaint(removedSeriesIndex, new Color(160, 160, 160));
+			renderer.setSeriesVisibleInLegend(removedSeriesIndex, true);
 		}
 		if(remove) {
-			updateRegressionLines();
+			updateRegressionLines(false);
 		}
 	}
     

@@ -204,8 +204,8 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		}
 	    dataset = tsc_var1;
 	    dataset2 = tsc_var2;
-	    shape_sizes = new ShapeSize[dataset2.getSeriesCount()];
-	    for(int i = 0; i < dataset2.getSeriesCount(); i++) {
+	    shape_sizes = new ShapeSize[dataset2.getSeriesCount()+1];
+	    for(int i = 0; i < dataset2.getSeriesCount()+1; i++) {
 	    	shape_sizes[i] = DEFAULT_SHAPE_SIZE;
 	    }
 	}
@@ -395,11 +395,11 @@ public class RegressionVariablesChart extends TimeSeriesChart {
     	Map<String,List<CustomTimeSeriesDataItem>> result = new HashMap<String,List<CustomTimeSeriesDataItem>>();
     	TimeSeries tpsSeries = ((TimeSeriesCollection)dataset_tps).getSeries(0);
     	for(int idx = 0; idx < dataset.getSeriesCount(); idx++) {
+    		TimeSeries series = ((TimeSeriesCollection)dataset).getSeries(idx);
     		XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)((XYPlot)jfreeChart.getPlot()).getRenderer(1);
     		Boolean visible = renderer.getSeriesShapesVisible(idx);
-    		if(visible == null || visible == Boolean.TRUE) {
+    		if(!series.getKey().equals("Removed") && (visible == null || visible == Boolean.TRUE)) {
     			List<CustomTimeSeriesDataItem> selectedList = new ArrayList<CustomTimeSeriesDataItem>();
-	    		TimeSeries series = ((TimeSeriesCollection)dataset).getSeries(idx);
 	    		for(Object itemObj : series.getItems()) {
 	    			TimeSeriesDataItem item = (TimeSeriesDataItem)itemObj;
 	    			long xValue = item.getPeriod().getFirstMillisecond();
@@ -419,9 +419,12 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 
     private void nominateItems(Map<String,List<CustomTimeSeriesDataItem>> mapToRemove, XYDataset dataset) {
     	TimeSeriesCollection seriesCollection = (TimeSeriesCollection)dataset;
+    	XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)((XYPlot)jfreeChart.getPlot()).getRenderer(1);
     	for(String key : mapToRemove.keySet()) {
     		TimeSeries series = seriesCollection.getSeries(key);
     		TimeSeries toRemoveSeries = new TimeSeries(key+"~toRemove");
+    		series.setNotify(false);
+    		toRemoveSeries.setNotify(false);
     		for(int idx_item = series.getItemCount()-1; idx_item >= 0; idx_item--) {
     			TimeSeriesDataItem item = series.getDataItem(idx_item);
     			for(CustomTimeSeriesDataItem itemToRemove : mapToRemove.get(key)) {
@@ -432,9 +435,10 @@ public class RegressionVariablesChart extends TimeSeriesChart {
     				}
     			}
     		}
+    		series.setNotify(true);
+    		toRemoveSeries.setNotify(true);
     		if(toRemoveSeries.getItemCount() > 0) {
     			seriesCollection.addSeries(toRemoveSeries);
-    			XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)((XYPlot)jfreeChart.getPlot()).getRenderer(1);
     			renderer.setSeriesPaint(dataset.getSeriesCount()-1, Color.BLACK);
     			renderer.setSeriesShape(dataset.getSeriesCount()-1, renderer.getSeriesShape(seriesCollection.indexOf(key)));
     			renderer.setSeriesVisibleInLegend(dataset.getSeriesCount()-1, false);
@@ -444,9 +448,12 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 
     public void nominateItems(Map<String,List<XYDataItem>> mapToRemove) {
     	TimeSeriesCollection seriesCollection = (TimeSeriesCollection)dataset2;
+    	XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)((XYPlot)jfreeChart.getPlot()).getRenderer(1);
     	for(String key : mapToRemove.keySet()) {
     		TimeSeries series = seriesCollection.getSeries(key);
     		TimeSeries toRemoveSeries = new TimeSeries(key+"~toRemove");
+    		series.setNotify(false);
+    		toRemoveSeries.setNotify(false);
     		for(XYDataItem itemToRemove : mapToRemove.get(key)) {
         		for(int idx_item = series.getItemCount()-1; idx_item >= 0; idx_item--) {
         			TimeSeriesDataItem item = series.getDataItem(idx_item);
@@ -457,9 +464,10 @@ public class RegressionVariablesChart extends TimeSeriesChart {
     				}
         		}
     		}
+    		series.setNotify(true);
+    		toRemoveSeries.setNotify(true);
     		if(toRemoveSeries.getItemCount() > 0) {
     			seriesCollection.addSeries(toRemoveSeries);
-    			XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)((XYPlot)jfreeChart.getPlot()).getRenderer(1);
     			renderer.setSeriesPaint(dataset2.getSeriesCount()-1, Color.BLACK);
     			renderer.setSeriesShape(dataset2.getSeriesCount()-1, renderer.getSeriesShape(seriesCollection.indexOf(key)));
     			renderer.setSeriesVisibleInLegend(dataset2.getSeriesCount()-1, false);
@@ -469,20 +477,42 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 
 	public void removeOrRestoreItems(boolean remove) {
 		TimeSeriesCollection seriesCollection = (TimeSeriesCollection)dataset2;
+    	XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)((XYPlot)jfreeChart.getPlot()).getRenderer(1);
+    	int removedSeriesIndex = seriesCollection.getSeriesIndex("Removed");
+    	TimeSeries removedSeries = removedSeriesIndex < 0 ? new TimeSeries("Removed") : seriesCollection.getSeries(removedSeriesIndex);
+    	removedSeries.setNotify(false);
 		for(int idx_series = seriesCollection.getSeriesCount()-1; idx_series >= 0 ; idx_series--) {
 			TimeSeries series = seriesCollection.getSeries(idx_series);
 			String key = (String)series.getKey();
 			int idx = key.indexOf("~toRemove");
 			if(idx < 0) break;
 			TimeSeries orgSeries = seriesCollection.getSeries(key.substring(0, idx));
+    		series.setNotify(false);
+    		orgSeries.setNotify(false);
 			for(int i = series.getItemCount()-1; i >= 0; i--) {
 				TimeSeriesDataItem item = series.getDataItem(i);
-				if(!remove) {
+				if(remove) {
+					removedSeries.addOrUpdate(item);
+				} else {
 					orgSeries.addOrUpdate(item);
 				}
 				series.delete(item.getPeriod());
 			}
+    		series.setNotify(true);
+    		orgSeries.setNotify(true);
 			seriesCollection.removeSeries(idx_series);
+			renderer.setSeriesPaint(idx_series, null);
+			renderer.setSeriesShape(idx_series, null);
+			renderer.setSeriesVisibleInLegend(idx_series, null);
+		}
+		removedSeries.setNotify(true);
+		if(remove && removedSeriesIndex < 0) {
+			seriesCollection.addSeries(removedSeries);
+			removedSeriesIndex = seriesCollection.getSeriesCount()-1;
+			int size = shape_sizes[removedSeriesIndex].ordinal() + 1;
+			renderer.setSeriesShape(removedSeriesIndex, new Ellipse2D.Double(-size, -size, size, size));
+			renderer.setSeriesPaint(removedSeriesIndex, new Color(160, 160, 160));
+			renderer.setSeriesVisibleInLegend(removedSeriesIndex, true);
 		}
 	}
 

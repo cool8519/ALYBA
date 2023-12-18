@@ -221,6 +221,7 @@ public class TransactionEntryVO extends EntryVO {
 		buffer.append("response_date=").append(response_date).append(", ");
 		buffer.append("request_ip=").append(request_ip).append(", ");
 		buffer.append("request_uri=").append(request_uri).append(", ");
+		buffer.append("request_uri_pattern=").append(request_uri_pattern).append(", ");
 		buffer.append("request_ext=").append(request_ext).append(", ");
 		buffer.append("request_method=").append(request_method).append(", ");
 		buffer.append("request_version=").append(request_version).append(", ");
@@ -243,6 +244,9 @@ public class TransactionEntryVO extends EntryVO {
 		}
 		if(request_uri != null) {
 			buffer.append("    uri : ").append(request_uri).append("\n");
+		}
+		if(request_uri_pattern != null) {
+			buffer.append("    uri_pattern : ").append(request_uri_pattern).append("\n");
 		}
 		if(request_ext != null) {
 			buffer.append("    ext : ").append(request_ext).append("\n");
@@ -283,6 +287,9 @@ public class TransactionEntryVO extends EntryVO {
 		}
 		if(request_uri != null) {
 			buffer.append("    uri : ").append(request_uri).append("\n");
+		}
+		if(request_uri_pattern != null) {
+			buffer.append("    uri pattern : ").append(request_uri_pattern).append("\n");
 		}
 		if(request_ext != null) {
 			buffer.append("    ext : ").append(request_ext).append("\n");

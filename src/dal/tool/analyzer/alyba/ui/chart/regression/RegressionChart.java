@@ -112,7 +112,9 @@ public class RegressionChart extends MultiChart {
 				owner.resetTempDeleteMode();
 			}
 		});
-		String msg = "Do you really want to delete the selected items?\n" +
+		int count = 0;
+		for(List<CustomTimeSeriesDataItem> list : selectedItems.values()) count += list.size();
+		String msg = "Do you really want to delete the selected " + count + " item(s)?\n" +
 				"The item will be temporarily deleted and will not be deleted from the DB.";
 		boolean result = JOptionPane.showConfirmDialog(null, msg, "Confirm", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
 		((RegressionVariablesChart)getChart(0)).removeOrRestoreItems(result);
@@ -133,7 +135,9 @@ public class RegressionChart extends MultiChart {
 				owner.resetTempDeleteMode();
 			}
 		});
-		String msg = "Do you really want to delete the selected items?\n" +
+		int count = 0;
+		for(List<XYDataItem> list : selectedItems.values()) count += list.size();
+		String msg = "Do you really want to delete the selected " + count + " item(s)?\n" +
 				"The item will be temporarily deleted and will not be deleted from the DB.";
 		boolean result = JOptionPane.showConfirmDialog(null, msg, "Confirm", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
 		((RegressionVariablesChart)getChart(0)).removeOrRestoreItems(result);
