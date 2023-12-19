@@ -32,6 +32,7 @@ import org.jfree.chart.event.AxisChangeEvent;
 import org.jfree.chart.event.AxisChangeListener;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.DatasetRenderingOrder;
+import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.TextTitle;
@@ -217,6 +218,8 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		xyPlot.setRangePannable(true);
 		xyPlot.setDomainCrosshairVisible(false);
 		xyPlot.setRangeCrosshairVisible(false);
+		xyPlot.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
+	    xyPlot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
 
 		DateAxis dateAxis = (DateAxis)xyPlot.getDomainAxis();
 	    if(tick_unit == null) {
@@ -248,7 +251,6 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 	    xyPlot.setRangeAxisLocation(1, AxisLocation.BOTTOM_OR_RIGHT);
 	    xyPlot.setDataset(1, dataset2);
 	    xyPlot.mapDatasetToRangeAxis(1, 1);
-	    xyPlot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
 	    autoValueRange = secondaryAxis.getRange();
 	    if(resource_axis_to_100 && RegressionChart.isVariableResource(label_y2)) {
 	    	resetValueRangeS = new Range(-2.0D, Math.max(100.0D, autoValueRange.getUpperBound())+2.0D);
@@ -356,11 +358,11 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 					renderer.setSeriesStroke(series_index, new BasicStroke(size, 2, 2));
 				} else {
 					renderer.setSeriesLinesVisible(series_index, false);
+					float size = DEFAULT_SHAPE_SIZE.ordinal() + 1;
+					renderer.setSeriesStroke(series_index, new BasicStroke(size, 2, 2));
 				}
 			} else {
 				renderer.setSeriesLinesVisible(series_index, true);
-				float size = DEFAULT_SHAPE_SIZE.ordinal() + 1;
-				renderer.setSeriesStroke(series_index, new BasicStroke(size, 2, 2));
 			}
 		} else {
 			if(visible == null || visible == Boolean.TRUE) {
@@ -371,12 +373,12 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 					renderer.setSeriesShape(series_index, shape);
 				} else {
 					renderer.setSeriesShapesVisible(series_index, false);
+					shape_sizes[series_index] = DEFAULT_SHAPE_SIZE;
+					int size = shape_sizes[series_index].ordinal() + 1;
+					Shape shape = new Ellipse2D.Double(-size, -size, size, size);
+					renderer.setSeriesShape(series_index, shape);
 				}
 			} else {
-				shape_sizes[series_index] = DEFAULT_SHAPE_SIZE;
-				int size = shape_sizes[series_index].ordinal() + 1;
-				Shape shape = new Ellipse2D.Double(-size, -size, size, size);
-				renderer.setSeriesShape(series_index, shape);
 				renderer.setSeriesShapesVisible(series_index, true);
 			}
 		}		
@@ -439,9 +441,11 @@ public class RegressionVariablesChart extends TimeSeriesChart {
     		toRemoveSeries.setNotify(true);
     		if(toRemoveSeries.getItemCount() > 0) {
     			seriesCollection.addSeries(toRemoveSeries);
-    			renderer.setSeriesPaint(dataset.getSeriesCount()-1, Color.BLACK);
-    			renderer.setSeriesShape(dataset.getSeriesCount()-1, renderer.getSeriesShape(seriesCollection.indexOf(key)));
-    			renderer.setSeriesVisibleInLegend(dataset.getSeriesCount()-1, false);
+    			int orgIdx = seriesCollection.indexOf(key);
+    			int newIdx = dataset.getSeriesCount() - 1;
+    			renderer.setSeriesShape(newIdx, renderer.getSeriesShape(orgIdx));
+    			renderer.setSeriesPaint(newIdx, ((Color)renderer.getSeriesPaint(orgIdx)).darker().darker());
+    			renderer.setSeriesVisibleInLegend(newIdx, false);
     		}
     	}
     }
@@ -468,9 +472,11 @@ public class RegressionVariablesChart extends TimeSeriesChart {
     		toRemoveSeries.setNotify(true);
     		if(toRemoveSeries.getItemCount() > 0) {
     			seriesCollection.addSeries(toRemoveSeries);
-    			renderer.setSeriesPaint(dataset2.getSeriesCount()-1, Color.BLACK);
-    			renderer.setSeriesShape(dataset2.getSeriesCount()-1, renderer.getSeriesShape(seriesCollection.indexOf(key)));
-    			renderer.setSeriesVisibleInLegend(dataset2.getSeriesCount()-1, false);
+    			int orgIdx = seriesCollection.indexOf(key);
+    			int newIdx = dataset2.getSeriesCount() - 1;
+    			renderer.setSeriesShape(newIdx, renderer.getSeriesShape(orgIdx));
+    			renderer.setSeriesPaint(newIdx, ((Color)renderer.getSeriesPaint(orgIdx)).darker().darker());
+    			renderer.setSeriesVisibleInLegend(newIdx, false);
     		}
     	}
     }

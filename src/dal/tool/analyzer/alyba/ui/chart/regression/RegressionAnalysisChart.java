@@ -35,6 +35,7 @@ import org.jfree.chart.plot.DatasetRenderingOrder;
 import org.jfree.chart.plot.DefaultDrawingSupplier;
 import org.jfree.chart.plot.DrawingSupplier;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
@@ -264,6 +265,8 @@ public class RegressionAnalysisChart extends DistributionChart {
 		xyPlot.setRangePannable(true);
 		xyPlot.setDomainCrosshairVisible(false);
 		xyPlot.setRangeCrosshairVisible(false);
+		xyPlot.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
+	    xyPlot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
 
 		NumberAxis numberAxis = (NumberAxis)xyPlot.getDomainAxis();
 		numberAxis.setVerticalTickLabels(true);
@@ -294,9 +297,7 @@ public class RegressionAnalysisChart extends DistributionChart {
 		}
 		renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator("[{0}] : ({1}, {2})", DF_NUMBER, DF_NUMBER));
 
-		if(show_regression_line) {
-			updateRegressionLines(true);
-		}
+		updateRegressionLines(true);
 
 		TextTitle title = jfreeChart.getTitle();
 		if(title != null) {
@@ -388,12 +389,12 @@ public class RegressionAnalysisChart extends DistributionChart {
 					renderer.setSeriesShape(series_index, shape);
 				} else {
 					renderer.setSeriesShapesVisible(series_index, false);
+					shape_sizes[series_index] = DEFAULT_SHAPE_SIZE;
+					int size = shape_sizes[series_index].ordinal() + 1;
+					Shape shape = new Ellipse2D.Double(-size, -size, size, size);
+					renderer.setSeriesShape(series_index, shape);
 				}
 			} else {
-				shape_sizes[series_index] = DEFAULT_SHAPE_SIZE;
-				int size = shape_sizes[series_index].ordinal() + 1;
-				Shape shape = new Ellipse2D.Double(-size, -size, size, size);
-				renderer.setSeriesShape(series_index, shape);
 				renderer.setSeriesShapesVisible(series_index, true);
 			}
 		} else {
@@ -401,30 +402,39 @@ public class RegressionAnalysisChart extends DistributionChart {
 				float width = ((BasicStroke)renderer.getSeriesStroke(series_index)).getLineWidth();
 				if(width == DEFAULT_LINE_WIDTH) {
 					renderer.setSeriesStroke(series_index, new BasicStroke(BOLD_LINE_WIDTH, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER, 1.0f, new float[]{6.0f}, 0.0f));
-					plot.removeAnnotation(equation_annotations[series_index]);
-					equation_annotations[series_index].setFont(new Font("Arial", Font.BOLD, equation_annotations[series_index].getFont().getSize()));
-					Color color = (Color)equation_annotations[series_index].getBackgroundPaint();
-					equation_annotations[series_index].setBackgroundPaint(new Color(color.getRed(), color.getGreen(), color.getBlue(), 200));
-					plot.addAnnotation(equation_annotations[series_index]);
+					if(show_regression_equation) {
+						plot.removeAnnotation(equation_annotations[series_index]);
+						equation_annotations[series_index].setFont(new Font("Arial", Font.BOLD, equation_annotations[series_index].getFont().getSize()));
+						Color color = (Color)equation_annotations[series_index].getBackgroundPaint();
+						equation_annotations[series_index].setBackgroundPaint(new Color(color.getRed(), color.getGreen(), color.getBlue(), 200));
+						plot.addAnnotation(equation_annotations[series_index]);
+					}
 				} else {
 					renderer.setSeriesLinesVisible(series_index, false);
-					plot.removeAnnotation(equation_annotations[series_index]);
+					renderer.setSeriesStroke(series_index, new BasicStroke(DEFAULT_LINE_WIDTH, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f, new float[]{4.0f}, 0.0f));
+					if(show_regression_equation) {
+						equation_annotations[series_index].setFont(new Font("Arial", Font.PLAIN, equation_annotations[series_index].getFont().getSize()));
+						Color color = (Color)equation_annotations[series_index].getBackgroundPaint();
+						equation_annotations[series_index].setBackgroundPaint(new Color(color.getRed(), color.getGreen(), color.getBlue(), 150));
+						plot.removeAnnotation(equation_annotations[series_index]);
+					}
 				}
 			} else {
 				renderer.setSeriesLinesVisible(series_index, true);
-				renderer.setSeriesStroke(series_index, new BasicStroke(DEFAULT_LINE_WIDTH, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f, new float[]{4.0f}, 0.0f));
-				equation_annotations[series_index].setFont(new Font("Arial", Font.PLAIN, equation_annotations[series_index].getFont().getSize()));
-				Color color = (Color)equation_annotations[series_index].getBackgroundPaint();
-				equation_annotations[series_index].setBackgroundPaint(new Color(color.getRed(), color.getGreen(), color.getBlue(), 150));
-				plot.addAnnotation(equation_annotations[series_index]);
+				if(show_regression_equation) {
+					plot.addAnnotation(equation_annotations[series_index]);
+				}
 			}			
 		}		
 		renderer.setDrawSeriesLineAsPath(true);		
 	}
 
 	private void updateRegressionLines(boolean refresh) {
+		if(!show_regression_line) {
+			return;
+		}
+		
 		XYPlot xyPlot = (XYPlot)jfreeChart.getPlot();
-
 		Boolean[] regVisible = null; 
 		if(xyPlot.getDataset(1) != null) {
 			XYSeriesCollection regSeriesCollection = (XYSeriesCollection)xyPlot.getDataset(1);
@@ -501,7 +511,6 @@ public class RegressionAnalysisChart extends DistributionChart {
 			}
 			xyPlot.setDataset(1, regDataset);
 			xyPlot.setRenderer(1, regRenderer);
-		    xyPlot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
 		}
 	}
 	
@@ -559,9 +568,11 @@ public class RegressionAnalysisChart extends DistributionChart {
     		toRemoveSeries.setNotify(true);
     		if(toRemoveSeries.getItemCount() > 0) {
     			seriesCollection.addSeries(toRemoveSeries);
-    			renderer.setSeriesPaint(dataset.getSeriesCount()-1, Color.BLACK);
-    			renderer.setSeriesShape(dataset.getSeriesCount()-1, renderer.getSeriesShape(seriesCollection.indexOf(key)));
-    			renderer.setSeriesVisibleInLegend(dataset.getSeriesCount()-1, false);
+    			int orgIdx = seriesCollection.indexOf(key);
+    			int newIdx = dataset.getSeriesCount() - 1;
+    			renderer.setSeriesShape(newIdx, renderer.getSeriesShape(orgIdx));
+    			renderer.setSeriesPaint(newIdx, ((Color)renderer.getSeriesPaint(orgIdx)).darker().darker());
+    			renderer.setSeriesVisibleInLegend(newIdx, false);
     		}
     	}
     }
@@ -588,9 +599,11 @@ public class RegressionAnalysisChart extends DistributionChart {
     		toRemoveSeries.setNotify(true);
     		if(toRemoveSeries.getItemCount() > 0) {
     			seriesCollection.addSeries(toRemoveSeries);
-    			renderer.setSeriesPaint(dataset.getSeriesCount()-1, Color.BLACK);
-    			renderer.setSeriesShape(dataset.getSeriesCount()-1, renderer.getSeriesShape(seriesCollection.indexOf(key)));
-    			renderer.setSeriesVisibleInLegend(dataset.getSeriesCount()-1, false);
+    			int orgIdx = seriesCollection.indexOf(key);
+    			int newIdx = dataset.getSeriesCount() - 1;
+    			renderer.setSeriesShape(newIdx, renderer.getSeriesShape(orgIdx));
+    			renderer.setSeriesPaint(newIdx, ((Color)renderer.getSeriesPaint(orgIdx)).darker().darker());
+    			renderer.setSeriesVisibleInLegend(newIdx, false);
     		}
     	}
     }
