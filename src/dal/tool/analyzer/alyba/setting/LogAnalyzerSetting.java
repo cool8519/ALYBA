@@ -30,6 +30,7 @@ public class LogAnalyzerSetting {
 	public boolean allowErrors;
 	public int allowErrorCount;
 	public boolean uriIncludeParams;
+	public boolean joinUriAndMethod;
 	public boolean collectTPM;
 	public int tpmUnitMinutes;
 	public boolean collectElapsedTime;
@@ -193,6 +194,14 @@ public class LogAnalyzerSetting {
 
 	public void setUriIncludeParams(boolean uriIncludeParams) {
 		this.uriIncludeParams = uriIncludeParams;
+	}
+	
+	public boolean isJoinUriAndMethod() {
+		return joinUriAndMethod;
+	}
+	
+	public void setJoinUriAndMethod(boolean joinUriAndMethod) {
+		this.joinUriAndMethod = joinUriAndMethod;
 	}
 
 	public boolean isCollectTPM() {

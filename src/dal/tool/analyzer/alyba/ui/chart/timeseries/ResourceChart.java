@@ -417,10 +417,12 @@ public class ResourceChart extends TimeSeriesChart {
 									renderer.setSeriesStroke(index, new BasicStroke(BOLD_LINE_WIDTH, 2, 2));
 								} else {
 									renderer.setSeriesLinesVisible(index, false);
+									renderer.setSeriesShapesVisible(index, false);
 								}
 							} else {
 								renderer.setSeriesLinesVisible(index, true);
 								renderer.setSeriesStroke(index, new BasicStroke(DEFAULT_LINE_WIDTH, 2, 2));
+								renderer.setSeriesShapesVisible(index, show_shape);
 							}
 							renderer.setDrawSeriesLineAsPath(true);								
 						}

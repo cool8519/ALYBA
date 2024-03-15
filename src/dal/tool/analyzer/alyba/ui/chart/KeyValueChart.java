@@ -1,15 +1,14 @@
 package dal.tool.analyzer.alyba.ui.chart;
 
 import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.List;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.axis.AxisLocation;
 import org.jfree.chart.axis.CategoryAxis;
 import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
-import org.jfree.chart.labels.StandardCategoryToolTipGenerator;
+import org.jfree.chart.labels.ItemLabelAnchor;
+import org.jfree.chart.labels.ItemLabelPosition;
 import org.jfree.chart.labels.StandardPieSectionLabelGenerator;
 import org.jfree.chart.labels.StandardPieToolTipGenerator;
 import org.jfree.chart.plot.CategoryPlot;
@@ -20,9 +19,12 @@ import org.jfree.chart.title.TextTitle;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.general.DefaultPieDataset;
 import org.jfree.ui.RectangleInsets;
+import org.jfree.ui.TextAnchor;
 
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
+import dal.tool.analyzer.alyba.ui.chart.extension.SuccessErrorCountToolTipGenerator;
+import dal.tool.analyzer.alyba.ui.chart.extension.TotalCountItemLabelGenerator;
 
 public abstract class KeyValueChart extends Chart {
 
@@ -125,8 +127,9 @@ public abstract class KeyValueChart extends Chart {
 
 	protected <E extends EntryVO> void createDataset(List<E> dataList) {
 		int total_item_count = dataList.size();
-		long sum_value = 0L;
-		int sum_count = 0;
+		long other_total = 0L;
+		long other_error = 0L;
+		int other_count = 0;
 		int item_count = 0;
 		String last_other_name = null;
 
@@ -139,23 +142,36 @@ public abstract class KeyValueChart extends Chart {
 			KeyEntryVO vo = (KeyEntryVO)dataList.get(i);
 			if(merge_to_others && (Float.valueOf(vo.getFilterdRequestRatio()) < min_item_percent || item_count >= max_item_count)) {
 				last_other_name = vo.getKey();
-				sum_value += vo.getRequestCount();
-				sum_count++;
+				other_total += vo.getRequestCount();
+				other_error += vo.getErrorCount();
+				other_count++;
 			} else {
 				if(chartType == Type.Pie) {
 					pieDataset.setValue(vo.getKey(), vo.getRequestCount());
 				} else {
-					categoryDataset.addValue(vo.getRequestCount(), category_name, vo.getKey());
+					int error = vo.getErrorCount();
+					int success = vo.getRequestCount() - error;
+					if(success > 0) {
+						categoryDataset.addValue(success, "Success", vo.getKey());
+					}
+					if(error > 0) {
+						categoryDataset.addValue(error, "Error", vo.getKey());
+					}
 				}
 				item_count++;
 			}
 		}
-		if(sum_count > 0) {
-			String other_key = (sum_count==1) ? last_other_name : ("Others["+sum_count+"]");   
+		if(other_count > 0) {
+			String other_key = (other_count==1) ? last_other_name : ("Others["+other_count+"]");   
 			if(chartType == Type.Pie) {
-				pieDataset.setValue(other_key, sum_value);
+				pieDataset.setValue(other_key, other_total);
 			} else {
-				categoryDataset.addValue(sum_value, category_name, other_key);
+				if(other_total-other_error > 0) {
+					categoryDataset.addValue(other_total-other_error, "Success", other_key);
+				}
+				if(other_error > 0) {
+					categoryDataset.addValue(other_error, "Error", other_key);
+				}
 			}
 		}
 	}	
@@ -177,7 +193,7 @@ public abstract class KeyValueChart extends Chart {
 		    title.setPadding(padding.getTop(), padding.getLeft(), bottomPadding, padding.getRight());			
 		} else {
 			PlotOrientation plotOrientation = (chartType == Type.VerticalBar) ? PlotOrientation.VERTICAL : PlotOrientation.HORIZONTAL; 
-			jfreeChart = ChartFactory.createBarChart(title, label_name, label_value, categoryDataset, plotOrientation, true, true, false);
+			jfreeChart = ChartFactory.createStackedBarChart(title, label_name, label_value, categoryDataset, plotOrientation, true, true, false);
 			CategoryPlot categoryPlot = (CategoryPlot)jfreeChart.getPlot();
 			categoryPlot.setRangeAxisLocation(AxisLocation.BOTTOM_OR_LEFT);
 			categoryPlot.setRangePannable(true);
@@ -193,16 +209,16 @@ public abstract class KeyValueChart extends Chart {
 			numberAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
 			numberAxis.setUpperMargin(0.1D);
 		    BarRenderer renderer = (BarRenderer)categoryPlot.getRenderer();
+		    renderer.setBaseItemLabelGenerator(new TotalCountItemLabelGenerator());
 		    renderer.setItemLabelAnchorOffset(9.0D);
 		    renderer.setBaseItemLabelsVisible(true);
-		    renderer.setBaseItemLabelGenerator(new StandardCategoryItemLabelGenerator());		    
-		    renderer.setBaseToolTipGenerator(new StandardCategoryToolTipGenerator("{1}: {2}", NumberFormat.getInstance()));
-		    if(show_item_label) {
-			    renderer.setItemLabelAnchorOffset(9.0D);
-			    renderer.setBaseItemLabelsVisible(true);
+		    renderer.setBaseItemLabelsVisible(show_item_label);
+		    if(chartType == Type.HorizontalBar) {
+		    	renderer.setBasePositiveItemLabelPosition(new ItemLabelPosition(ItemLabelAnchor.OUTSIDE3, TextAnchor.CENTER_LEFT));
 		    } else {
-			    renderer.setBaseItemLabelsVisible(false);
+		    	renderer.setBasePositiveItemLabelPosition(new ItemLabelPosition(ItemLabelAnchor.OUTSIDE12, TextAnchor.BOTTOM_CENTER));
 		    }
+		    renderer.setBaseToolTipGenerator(new SuccessErrorCountToolTipGenerator());
 		    TextTitle title = jfreeChart.getTitle();
 		    RectangleInsets padding = title.getPadding();
 		    double bottomPadding = Math.max(padding.getBottom(), 4.0D);

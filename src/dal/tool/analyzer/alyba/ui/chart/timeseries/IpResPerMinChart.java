@@ -64,9 +64,11 @@ public class IpResPerMinChart extends TimeSeriesChart {
 	    TimeSeriesCollection ts_collection = new TimeSeriesCollection();
 	    ts_collection.addSeries(ts);	    
 	    dataset = ts_collection;
-	    TimeSeriesCollection ts2_collection = new TimeSeriesCollection();
-	    ts2_collection.addSeries(ts2);
-	    dataset2 = ts2_collection;
+	    if(show_secondary_axis) {
+		    TimeSeriesCollection ts2_collection = new TimeSeriesCollection();
+		    ts2_collection.addSeries(ts2);
+		    dataset2 = ts2_collection;
+	    }
 	}
 
 }

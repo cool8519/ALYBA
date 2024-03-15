@@ -296,6 +296,19 @@ Release Note
 - 리소스 데이터 필드간 사칙 연산 지원
 - 회귀분석 데이터 이상치 삭제 기능 지원
 
+##### v1.9.1
+- (Bug) 설정 저장시 커스텀 시간 포멧을 사용한 경우 오류 수정
+- (Bug) 히스토리 뷰 중복 방지 및 UI 오류 수정
+- (Bug) Legend Shape visible 오류 수정
+- (Bug) 팝업창 트레이 아이콘 안보이는 오류 수정
+- (Bug) ResultAnalyzer 데이터 탭에서 컬럼 visible 오류 수정
+- 산포도 상세 데이터에 IP에 대한 국가 정보 추가
+- URI Mapping 창 크기 조절
+- 히스토리 뷰 버튼을 ResultAnalyzer로 이동
+- Client IP 미수집 설정시 국가명으로 수집 
+- URI 키에 Method를 포함하는 기능 추가
+- 그래프에 에러 계열을 추가
+
 To-do
 --------------
 What ALYBA will implement in the future:

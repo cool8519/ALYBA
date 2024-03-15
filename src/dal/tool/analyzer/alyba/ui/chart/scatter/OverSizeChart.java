@@ -1,8 +1,15 @@
 package dal.tool.analyzer.alyba.ui.chart.scatter;
 
+import java.awt.Color;
 import java.util.List;
 
 import org.apache.commons.math3.stat.regression.SimpleRegression;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.SeriesRenderingOrder;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.category.BarRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.time.Second;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
@@ -29,29 +36,57 @@ public class OverSizeChart extends DistributionChart {
 		return ResultAnalyzer.hasMappingInfo("BYTES");
 	}
 
-	protected <E extends EntryVO> void createDataset(List<E> dataList) {
+	public <E extends EntryVO> void createDataset(List<E> dataList) {
 		if(chartType == Type.ScatterPlot) {
-	    	XYSeries xy = new XYSeries("Transaction");
+			XYSeriesCollection xy_collection = new XYSeriesCollection();
 	    	if(show_regression_line) {
 	    		regression = new SimpleRegression();
-	    	}    	
+	    	}
+	    	XYSeries xy_success = new XYSeries("Success");
+	    	XYSeries xy_error = new XYSeries("Error");
 	    	for(EntryVO data : dataList) {
 	    		BadTransactionEntryVO vo = (BadTransactionEntryVO) data;
 	    		long x = new Second(vo.getDate()).getMiddleMillisecond();
 	    		long y = vo.getResponseBytes() / 1024;
-				xy.add(new TransactionXYDataItem(x, y, vo));
+	    		if(vo.isResponseError()) {
+	    			xy_error.add(new TransactionXYDataItem(x, y, vo));
+	    		} else {
+	    			xy_success.add(new TransactionXYDataItem(x, y, vo));
+	    		}
 		    	if(show_regression_line) {
 		    		regression.addData(x, y);
 		    	}
 	    	}
-	    	XYSeriesCollection xy_collection = new XYSeriesCollection();
-	        xy_collection.addSeries(xy);
+	    	if(xy_success.getItemCount() > 0) {
+	    		xy_collection.addSeries(xy_success);
+	    	}
+	    	if(xy_error.getItemCount() > 0) {
+	    		xy_collection.addSeries(xy_error);
+	    	}
 		    dataset = xy_collection;
 		} else {
 			createDistributionDataset(dataList);
 		}
 	}
 	
+	public void afterCreateChart(JFreeChart jfreeChart) {
+		if(chartType == Type.ScatterPlot) {
+			XYPlot plot = (XYPlot)jfreeChart.getPlot();
+			plot.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
+			XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)plot.getRenderer(0);
+			renderer.setSeriesShape(1, renderer.getSeriesShape(0));
+			renderer.setSeriesPaint(0, new Color(85, 85, 255));
+			renderer.setSeriesPaint(1, new Color(255, 85, 85));
+		} else if(chartType != Type.Pie) {
+			CategoryPlot categoryPlot = (CategoryPlot)jfreeChart.getPlot();
+			BarRenderer renderer = (BarRenderer)categoryPlot.getRenderer();
+			if(categoryDataset.getRowCount() > 1) {
+				renderer.setSeriesPaint(0, new Color(85, 85, 255));
+				renderer.setSeriesPaint(1, new Color(255, 85, 85));
+			}
+		}
+	}
+
 	public String getAnnotationText(XYDataItem item) {
 		return ((TransactionXYDataItem)item).getTransaction().toPrettyString();
 	}

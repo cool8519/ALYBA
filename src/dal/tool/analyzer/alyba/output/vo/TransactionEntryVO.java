@@ -7,6 +7,7 @@ import java.util.Date;
 
 import javax.persistence.Entity;
 
+import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.DateUtil;
 import dal.util.NumberUtil;
 
@@ -20,18 +21,21 @@ public class TransactionEntryVO extends EntryVO {
 	protected String request_uri = null;
 	protected String request_uri_pattern = null;
 	protected String request_ip = null;
+	protected String request_ip_country = null;
 	protected long response_time = 0L;
 	protected long response_byte = 0L;
 	protected String response_code = null;
 	protected String request_method = null;
 	protected String request_version = null;
 	protected String request_ext = null;
+	protected boolean response_is_error = false;
 
 	public TransactionEntryVO() {
 	}
 
-	public TransactionEntryVO(Date dt, String request_uri, String request_uri_pattern, String ip, long rtime, long rbyte, String code, String method, String version, String ext) {
-		this.response_date = dt;
+	public TransactionEntryVO(Date dt, String request_uri, String request_uri_pattern, String ip, long rtime, long rbyte, String code, String method, String version, String ext, boolean is_date_response, boolean is_error) {
+		this.request_date = is_date_response ? null : dt;
+		this.response_date = is_date_response ? dt : null;
 		this.request_uri = request_uri;
 		this.request_uri_pattern = request_uri_pattern;
 		this.request_ip = ip;
@@ -41,28 +45,15 @@ public class TransactionEntryVO extends EntryVO {
 		this.request_method = method;
 		this.request_version = version;
 		this.request_ext = ext;
-		calculateRequestOrResponseDate(true);
-	}
-
-	public TransactionEntryVO(Date dt, String request_uri, String request_uri_pattern, String ip, long rtime, long rbyte, String code, String method, String version, String ext, boolean isDateResponse) {
-		this.request_date = isDateResponse ? null : dt;
-		this.response_date = isDateResponse ? dt : null;
-		this.request_uri = request_uri;
-		this.request_uri_pattern = request_uri_pattern;
-		this.request_ip = ip;
-		this.response_time = rtime;
-		this.response_byte = rbyte;
-		this.response_code = code;
-		this.request_method = method;
-		this.request_version = version;
-		this.request_ext = ext;
-		calculateRequestOrResponseDate(isDateResponse);
+		this.response_is_error = is_error;
+		resolveRequestIPCountry();
+		calculateRequestOrResponseDate(is_date_response);
 	}
 	
 	public String getRequestURI() {
 		return request_uri;
 	}
-
+	
 	public void setRequestURI(String request_uri) {
 		this.request_uri = request_uri;
 	}
@@ -111,6 +102,13 @@ public class TransactionEntryVO extends EntryVO {
 		return response_date != null ? response_date : request_date;
 	}
 	
+	protected void resolveRequestIPCountry() {
+		if(request_ip != null) {
+			request_ip_country = Utility.getCountryFromIP(request_ip);
+			request_ip_country = request_ip_country==null||"UNKNOWN".equals(request_ip_country) ? "#UNKNOWN#" : request_ip_country;
+		}
+	}
+	
 	protected void calculateRequestOrResponseDate(boolean is_response) {
 		if(is_response) {
 			if(response_time == -1L) {
@@ -145,6 +143,11 @@ public class TransactionEntryVO extends EntryVO {
 
 	public void setRequestIP(String request_ip) {
 		this.request_ip = request_ip;
+		resolveRequestIPCountry();
+	}
+	
+	public String getRequestIPCountry() {
+		return request_ip_country;
 	}
 
 	public String getRequestMethod() {
@@ -169,6 +172,14 @@ public class TransactionEntryVO extends EntryVO {
 
 	public void setRequestExt(String request_ext) {
 		this.request_ext = request_ext;
+	}
+	
+	public boolean isResponseError() {
+		return response_is_error;
+	}
+	
+	public void setResponseError(boolean is_error) {
+		this.response_is_error = is_error;
 	}
 	
 	public String toResponseTimeString(SimpleDateFormat dateFormat, DecimalFormat numberFormat) {
@@ -204,6 +215,7 @@ public class TransactionEntryVO extends EntryVO {
 		vo.request_uri = request_uri == null ? null : new String(request_uri);
 		vo.request_uri_pattern = request_uri_pattern == null ? null : new String(request_uri_pattern);
 		vo.request_ip = request_ip == null ? null : new String(request_ip);
+		vo.request_ip_country = request_ip_country == null ? null : new String(request_ip_country);
 		vo.response_time = response_time;
 		vo.response_byte = response_byte;
 		vo.response_code = response_code == null ? null : new String(response_code);
@@ -220,6 +232,7 @@ public class TransactionEntryVO extends EntryVO {
 		buffer.append("request_date=").append(request_date).append(", ");
 		buffer.append("response_date=").append(response_date).append(", ");
 		buffer.append("request_ip=").append(request_ip).append(", ");
+		buffer.append("request_ip_country=").append(request_ip_country).append(", ");
 		buffer.append("request_uri=").append(request_uri).append(", ");
 		buffer.append("request_uri_pattern=").append(request_uri_pattern).append(", ");
 		buffer.append("request_ext=").append(request_ext).append(", ");
@@ -240,7 +253,11 @@ public class TransactionEntryVO extends EntryVO {
 			buffer.append("    date : ").append(DateUtil.dateToString(request_date, DateUtil.SDF_DATETIME)).append("\n");
 		}
 		if(request_ip != null) {
-			buffer.append("    ip : ").append(request_ip).append("\n");
+			buffer.append("    ip : ").append(request_ip);
+			if(request_ip_country != null && !"UNKNOWN".equals(request_ip_country)) {
+				buffer.append("(").append(request_ip_country).append(")");
+			}
+			buffer.append("\n");
 		}
 		if(request_uri != null) {
 			buffer.append("    uri : ").append(request_uri).append("\n");
@@ -283,7 +300,11 @@ public class TransactionEntryVO extends EntryVO {
 			buffer.append("    date : ").append(DateUtil.dateToString(request_date, DateUtil.SDF_DATETIME)).append("\n");
 		}
 		if(request_ip != null) {
-			buffer.append("    ip : ").append(request_ip).append("\n");
+			buffer.append("    ip : ").append(request_ip);
+			if(request_ip_country != null && !"UNKNOWN".equals(request_ip_country)) {
+				buffer.append(" (").append(request_ip_country).append(")");
+			}
+			buffer.append("\n");
 		}
 		if(request_uri != null) {
 			buffer.append("    uri : ").append(request_uri).append("\n");

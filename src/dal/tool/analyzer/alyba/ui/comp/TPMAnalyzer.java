@@ -20,6 +20,7 @@ import org.eclipse.swt.widgets.Text;
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.util.Utility;
+import dal.util.swt.ImageUtil;
 import dal.util.swt.MessageUtil;
 
 public class TPMAnalyzer extends Shell {
@@ -61,6 +62,7 @@ public class TPMAnalyzer extends Shell {
 		
 		setSize(800, 750);
 		setMinimumSize(800, 750);
+		setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
 		setText("ALYBA " + Constant.PROGRAM_VERSION + " - TPM Analyzer");
 		Rectangle dispRect = getDisplay().getMonitors()[0].getBounds();
 		Rectangle shellRect = getBounds();

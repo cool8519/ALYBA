@@ -181,9 +181,6 @@ public class DefaultParser extends LogLineParser {
 		if(dataKey.equals("URI")) {
 			data = (vo.getRequestURI_Pattern() == null) ? vo.getRequestURI() : vo.getRequestURI_Pattern();
 		} else if(dataKey.equals("IP")) {
-			if(!setting.collectIP) {
-				return;
-			}
 			data = vo.getRequestIP();
 		} else if(dataKey.equals("EXT")) {
 			data = vo.getRequestExt();
@@ -202,10 +199,15 @@ public class DefaultParser extends LogLineParser {
 			aggr_data2 = new ArrayList<EntryVO>();
 			aggr_data.put(dataKey, aggr_data2);
 		}
+		if(dataKey.equals("IP") && !setting.collectIP) {
+			data = vo.getRequestIPCountry();
+		} else if(dataKey.equals("URI") && vo.getRequestMethod() != null && setting.joinUriAndMethod) {
+			data += "<" + vo.getRequestMethod() + ">";
+		}
 		KeyEntryVO result_vo = getContainsKey(aggr_data2, data);
 		if(result_vo == null) {
 			if(dataKey.equals("URI")) result_vo = new KeyEntryVO(KeyEntryVO.Type.URI, data);
-			else if(dataKey.equals("IP")) {result_vo = new KeyEntryVO(KeyEntryVO.Type.IP, data); result_vo.setDescription(Utility.getCountryFromIP(data));}
+			else if(dataKey.equals("IP")) {result_vo = new KeyEntryVO(KeyEntryVO.Type.IP, data); result_vo.setDescription(vo.getRequestIPCountry());}
 			else if(dataKey.equals("EXT")) result_vo = new KeyEntryVO(KeyEntryVO.Type.EXT, data);
 			else if(dataKey.equals("CODE")) {result_vo = new KeyEntryVO(KeyEntryVO.Type.CODE, data); result_vo.setDescription(Utility.getCodeDescription(data));}
 			else if(dataKey.equals("METHOD"))result_vo = new KeyEntryVO(KeyEntryVO.Type.METHOD, data);

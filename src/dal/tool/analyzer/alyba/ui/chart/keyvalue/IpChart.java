@@ -1,5 +1,6 @@
 package dal.tool.analyzer.alyba.ui.chart.keyvalue;
 
+import java.awt.Color;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -9,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.general.DefaultPieDataset;
 
@@ -23,6 +26,10 @@ public class IpChart extends KeyValueChart {
 	public IpChart() {
 		super(Type.VerticalBar, "Transaction by IP-Address", "IP-Address", "Transactions");
 		setCategoryName("IP");
+	}
+
+	public Type getDefaultChartType() {
+		return Type.HorizontalBar;
 	}
 
 	public boolean getShowByLocation() {
@@ -43,12 +50,14 @@ public class IpChart extends KeyValueChart {
 	
 	private <E extends EntryVO> void createDatasetByLocation(List<E> dataList) {
 		int total_item_count = dataList.size();
-		long sum_value = 0L;
-		int sum_count = 0;
+		long other_total = 0L;
+		long other_error = 0L;
+		int other_count = 0;
 		int item_count = 0;
 		long req_total = 0;
 		String last_other_name = null;
-		Map<String,Long> loc_map = new HashMap<String,Long>();
+		Map<String,Long> loc_total_map = new HashMap<String,Long>();
+		Map<String,Long> loc_error_map = new HashMap<String,Long>();
 		
 		if(chartType == Type.Pie) {
 			pieDataset = new DefaultPieDataset();
@@ -58,32 +67,47 @@ public class IpChart extends KeyValueChart {
 		for(int i = 0; i < total_item_count; i++) {
 			KeyEntryVO vo = (KeyEntryVO)dataList.get(i);
 			req_total = vo.getTotal();
-			Long acc_value = loc_map.get(vo.getDescription());
-			loc_map.put(vo.getDescription(), (acc_value==null)?(long)vo.getRequestCount():acc_value+vo.getRequestCount());
+			Long acc_total_value = loc_total_map.get(vo.getDescription());
+			Long acc_error_value = loc_error_map.get(vo.getDescription());
+			loc_total_map.put(vo.getDescription(), (acc_total_value==null)?(long)vo.getRequestCount():acc_total_value+vo.getRequestCount());
+			loc_error_map.put(vo.getDescription(), (acc_error_value==null)?(long)vo.getErrorCount():acc_error_value+vo.getErrorCount());
 		}
-		loc_map = sortByValue(loc_map);
-		for(String key : loc_map.keySet()) {
-			Long value = loc_map.get(key);
-			float ratio = (float)(value / Double.valueOf(req_total)) * 100;
+		loc_total_map = sortByValue(loc_total_map);
+		for(String key : loc_total_map.keySet()) {
+			Long total = loc_total_map.get(key);
+			Long error = loc_error_map.get(key);
+			float ratio = (float)(total / Double.valueOf(req_total)) * 100;
 			if(merge_to_others && (ratio < min_item_percent || item_count >= max_item_count)) {
 				last_other_name = key;
-				sum_value += value;
-				sum_count++;
+				other_total += total;
+				other_error += error;
+				other_count++;
 			} else {
 				if(chartType == Type.Pie) {
-					pieDataset.setValue(key, value);
+					pieDataset.setValue(key, total);
 				} else {
-					categoryDataset.addValue(value, category_name, key);
+					long success = total - error;
+					if(success > 0) {
+						categoryDataset.addValue(success, "Success", key);
+					}
+					if(error > 0) {
+						categoryDataset.addValue(error, "Error", key);
+					}
 				}
 				item_count++;
 			}
 		}
-		if(sum_count > 0) {
-			String other_key = (sum_count==1) ? last_other_name : ("Others["+sum_count+"]");   
+		if(other_count > 0) {
+			String other_key = (other_count==1) ? last_other_name : ("Others["+other_count+"]");   
 			if(chartType == Type.Pie) {
-				pieDataset.setValue(other_key, sum_value);
+				pieDataset.setValue(other_key, other_total);
 			} else {
-				categoryDataset.addValue(sum_value, category_name, other_key);
+				if(other_total-other_error > 0) {
+					categoryDataset.addValue(other_total-other_error, "Success", other_key);
+				}
+				if(other_error > 0) {
+					categoryDataset.addValue(other_error, "Error", other_key);
+				}
 			}
 		}
 	}
@@ -105,7 +129,12 @@ public class IpChart extends KeyValueChart {
 	public void afterCreateChart(JFreeChart jfreeChart) {
 		super.afterCreateChart(jfreeChart);
 		if(chartType != Type.Pie) {
-			jfreeChart.removeLegend();
+			CategoryPlot categoryPlot = (CategoryPlot)jfreeChart.getPlot();
+			BarRenderer renderer = (BarRenderer)categoryPlot.getRenderer();
+			if(categoryDataset.getRowCount() > 1) {
+				renderer.setSeriesPaint(0, new Color(85, 85, 255));
+				renderer.setSeriesPaint(1, new Color(255, 85, 85));
+			}
 		}
 	}
 	

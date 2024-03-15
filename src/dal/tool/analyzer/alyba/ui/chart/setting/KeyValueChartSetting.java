@@ -30,6 +30,7 @@ import dal.tool.analyzer.alyba.ui.chart.Chart;
 import dal.tool.analyzer.alyba.ui.chart.DistributionChart;
 import dal.tool.analyzer.alyba.ui.chart.KeyValueChart;
 import dal.tool.analyzer.alyba.ui.chart.keyvalue.IpChart;
+import dal.tool.analyzer.alyba.ui.chart.keyvalue.UriChart;
 import dal.tool.analyzer.alyba.ui.comp.ResultChart;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.StringUtil;
@@ -41,6 +42,7 @@ public class KeyValueChartSetting extends ChartSetting {
 	private Group grp_setting;
 	private Button chk_merge;
 	private Button chk_item_label;
+	private Button chk_merge_methods;
 	private Button chk_location;
 	private Button btn_boudary_def;
 	private Button btn_apply;
@@ -147,6 +149,16 @@ public class KeyValueChartSetting extends ChartSetting {
 		chk_item_label.setFont(Utility.getFont());
 		chk_item_label.setText(" Item label");
 
+
+		FormData fd_chk_merge_methods = new FormData();
+		fd_chk_merge_methods.top = new FormAttachment(chk_item_label, 26);
+		fd_chk_merge_methods.left = new FormAttachment(chk_merge, 0, SWT.LEFT);
+		chk_merge_methods = new Button(grp_setting, SWT.CHECK);
+		chk_merge_methods.setLayoutData(fd_chk_merge_methods);
+		chk_merge_methods.setFont(Utility.getFont());
+		chk_merge_methods.setText(" Merge Methods");
+		chk_merge_methods.setVisible(false);
+		
 		FormData fd_chk_location = new FormData();
 		fd_chk_location.top = new FormAttachment(chk_item_label, 26);
 		fd_chk_location.left = new FormAttachment(chk_merge, 0, SWT.LEFT);
@@ -306,6 +318,7 @@ public class KeyValueChartSetting extends ChartSetting {
 				sp_merge_max.setEnabled(false);
 				sp_merge_pct.setEnabled(false);
 				chk_item_label.setSelection(distChart.getShowItemLabel());
+				chk_merge_methods.setVisible(false);
 				chk_location.setVisible(false);
 				tbl_boundary_values.setVisible(true);
 				btn_boudary_def.setVisible(true);
@@ -321,11 +334,16 @@ public class KeyValueChartSetting extends ChartSetting {
 				chk_item_label.setSelection(kvChart.getShowItemLabel());
 				tbl_boundary_values.setVisible(false);
 				btn_boudary_def.setVisible(false);
+				chk_merge_methods.setVisible(false);
 				chk_location.setVisible(false);
 				if(chart instanceof IpChart) {
 					IpChart ipChart = (IpChart)chart;
 					chk_location.setSelection(ipChart.getShowByLocation());
 					chk_location.setVisible(true);
+				} else if(chart instanceof UriChart) {
+					UriChart uriChart = (UriChart)chart;
+					chk_merge_methods.setSelection(uriChart.getMergeMethods());
+					chk_merge_methods.setVisible(true);
 				}
 			}
 		} else {
@@ -336,6 +354,8 @@ public class KeyValueChartSetting extends ChartSetting {
 			sp_merge_pct.setSelection(10);
 			sp_merge_pct.setEnabled(true);
 			chk_item_label.setSelection(true);
+			chk_merge_methods.setSelection(true);
+			chk_merge_methods.setVisible(false);
 			chk_location.setSelection(true);
 			chk_location.setVisible(false);
 			tbl_boundary_values.removeAll();
@@ -408,7 +428,10 @@ public class KeyValueChartSetting extends ChartSetting {
 			if(chart instanceof IpChart) {
 				IpChart ip_chart = (IpChart)chart;
 				ip_chart.setShowByLocation(chk_location.getSelection());
-			}
+			}  else if(chart instanceof UriChart) {
+				UriChart uriChart = (UriChart)chart;
+				uriChart.setMergeMethods(chk_merge_methods.getSelection());
+			} 
 		}
 	}
 }

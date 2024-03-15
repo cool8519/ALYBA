@@ -205,6 +205,7 @@ public class LogAnalyzeOutput {
 		vo.mappingOffsetHour = setting.getFieldMapping().getOffsetHour();
 		vo.mappingFieldCount = setting.getFieldMapping().getFieldCount();
 		vo.logMappingInfo = setting.getFieldMapping().getMappingInfo();
+		vo.uriMappingPatterns = setting.getFieldMapping().getURIMappingPatterns();		
 		vo.dateFilterEnable = !setting.getFilterSetting().isAllRangeEnable();
 		vo.dateFilterFromRange = setting.getFilterSetting().getFromDateRange();
 		vo.dateFilterToRange = setting.getFilterSetting().getToDateRange();

@@ -38,26 +38,76 @@ public class HistoryManager {
 		return list;
 	}
 	
-	public HistoryVO getHistory(String key) throws Exception {
+	public HistoryVO getHistoryByKey(String key) throws Exception {
 		String value = props.getProperty(key);
 		return HistoryVO.fromValue(value);
 	}
 	
-	public void addHistory(HistoryVO vo) throws Exception {
-		needFlush = true;
-		props.setProperty(vo.getKey(), vo.toEncodedString());
-		Logger.debug("Added the history in memory : key=" + vo.getKey());
+	public String getHistoryKeyByVO(HistoryVO vo) throws Exception {
+		String value = (String)props.get(vo.getKey());
+		if(value != null) {
+			return vo.getKey();
+		} else {
+			Iterator<Object> iter = props.keySet().iterator();
+			String key;
+			while(iter.hasNext()) {
+				key = (String)iter.next();
+				value = props.getProperty(key);
+				if(value.equals(vo.toEncodedString(false))) {
+					return key;
+				}
+			}
+			return null;
+		}
 	}
 	
-	public HistoryVO deleteHistory(String key) throws Exception {
+	public boolean addHistory(HistoryVO vo) throws Exception {
+		needFlush = true;
+		boolean found = false;
+		for(HistoryVO oldVo : getAllHistories()) {
+			if(oldVo.toEncodedString(false).equals(vo.toEncodedString(false))) {
+				found = true; break;
+			}
+		}
+		if(found) {
+			return false;
+		} else {
+			props.setProperty(vo.getKey(), vo.toEncodedString());
+			Logger.debug("Added the history in memory : key=" + vo.getKey());
+			return true;
+		}
+	}
+	
+	public boolean deleteHistoryByKey(String key) throws Exception {
 		needFlush = true;
 		String value = (String)props.remove(key);
 		Logger.debug("Deleted the history in memory : key=" + key);
-		return HistoryVO.fromValue(value);
+		return (value != null);
 	}
-	
-	public HistoryVO deleteHistory(HistoryVO vo) throws Exception {
-		return deleteHistory(vo.getKey());
+
+	public boolean deleteHistoryByVO(HistoryVO vo) throws Exception {
+		needFlush = true;
+		String value = (String)props.remove(vo.getKey());
+		if(value != null) {
+			Logger.debug("Deleted the history in memory : key=" + vo.getKey());
+			return true;
+		} else {
+			Iterator<Object> iter = props.keySet().iterator();
+			String key;
+			while(iter.hasNext()) {
+				key = (String)iter.next();
+				value = props.getProperty(key);
+				if(value.equals(vo.toEncodedString())) {
+					props.remove(key);
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
+	public boolean deleteHistory(HistoryVO vo) throws Exception {
+		return deleteHistoryByVO(vo);
 	}
 
 	private void checkDirectoryAndFile() throws Exception {

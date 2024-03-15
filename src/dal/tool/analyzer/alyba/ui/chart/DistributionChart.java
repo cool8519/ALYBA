@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,16 +20,17 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartMouseListener;
 import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYPointerAnnotation;
 import org.jfree.chart.axis.AxisLocation;
 import org.jfree.chart.axis.CategoryAxis;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.DateTickUnit;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.entity.ChartEntity;
+import org.jfree.chart.entity.LegendItemEntity;
 import org.jfree.chart.entity.XYItemEntity;
-import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
-import org.jfree.chart.labels.StandardCategoryToolTipGenerator;
+import org.jfree.chart.labels.ItemLabelAnchor;
+import org.jfree.chart.labels.ItemLabelPosition;
 import org.jfree.chart.labels.StandardPieSectionLabelGenerator;
 import org.jfree.chart.labels.StandardPieToolTipGenerator;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
@@ -65,6 +65,8 @@ import dal.tool.analyzer.alyba.ui.chart.extension.Distribution.Boundary;
 import dal.tool.analyzer.alyba.ui.chart.extension.Distribution.ValueBoundaray;
 import dal.tool.analyzer.alyba.ui.chart.extension.Distribution.ValueRange;
 import dal.tool.analyzer.alyba.ui.chart.extension.MultiLineXYPointerAnnotation;
+import dal.tool.analyzer.alyba.ui.chart.extension.SuccessErrorCountToolTipGenerator;
+import dal.tool.analyzer.alyba.ui.chart.extension.TotalCountItemLabelGenerator;
 import dal.util.DateUtil;
 import dal.util.NumberUtil;
 import dal.util.db.ObjectDBUtil;
@@ -273,7 +275,7 @@ public abstract class DistributionChart extends KeyValueChart {
 		    }
 		} else {
 			PlotOrientation plotOrientation = (chartType == Type.VerticalBar) ? PlotOrientation.VERTICAL : PlotOrientation.HORIZONTAL; 
-			jfreeChart = ChartFactory.createBarChart(title, label_name, label_value, categoryDataset, plotOrientation, true, true, false);
+			jfreeChart = ChartFactory.createStackedBarChart(title, label_name, label_value, categoryDataset, plotOrientation, true, true, false);
 			CategoryPlot categoryPlot = (CategoryPlot)jfreeChart.getPlot();
 			categoryPlot.setRangeAxisLocation(AxisLocation.BOTTOM_OR_LEFT);
 			categoryPlot.setRangePannable(true);
@@ -289,16 +291,16 @@ public abstract class DistributionChart extends KeyValueChart {
 			numberAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
 			numberAxis.setUpperMargin(0.1D);
 		    BarRenderer renderer = (BarRenderer)categoryPlot.getRenderer();
+		    renderer.setBaseItemLabelGenerator(new TotalCountItemLabelGenerator());
 		    renderer.setItemLabelAnchorOffset(9.0D);
 		    renderer.setBaseItemLabelsVisible(true);
-		    renderer.setBaseItemLabelGenerator(new StandardCategoryItemLabelGenerator());		    
-		    renderer.setBaseToolTipGenerator(new StandardCategoryToolTipGenerator("{1}: {2}", NumberFormat.getInstance()));
-		    if(show_item_label) {
-			    renderer.setItemLabelAnchorOffset(9.0D);
-			    renderer.setBaseItemLabelsVisible(true);
+		    renderer.setBaseItemLabelsVisible(show_item_label);
+		    if(chartType == Type.HorizontalBar) {
+		    	renderer.setBasePositiveItemLabelPosition(new ItemLabelPosition(ItemLabelAnchor.OUTSIDE3, TextAnchor.CENTER_LEFT));
 		    } else {
-			    renderer.setBaseItemLabelsVisible(false);
+		    	renderer.setBasePositiveItemLabelPosition(new ItemLabelPosition(ItemLabelAnchor.OUTSIDE12, TextAnchor.BOTTOM_CENTER));
 		    }
+		    renderer.setBaseToolTipGenerator(new SuccessErrorCountToolTipGenerator());
 		}
 		TextTitle title = jfreeChart.getTitle();
 		RectangleInsets padding = title.getPadding();
@@ -311,18 +313,21 @@ public abstract class DistributionChart extends KeyValueChart {
 			chartPanel.addChartMouseListener(new ChartMouseListener() {
 				public void chartMouseMoved(ChartMouseEvent event) {}
 				public void chartMouseClicked(ChartMouseEvent event) {
-					if(event.getEntity() instanceof XYItemEntity) {
-						showAnnotation((XYItemEntity)event.getEntity());
+					ChartEntity entity = event.getEntity();
+					if(entity instanceof XYItemEntity) {
+						XYItemEntity itemEntity = (XYItemEntity)entity;
+						showAnnotation(itemEntity);
+					} else if(entity instanceof LegendItemEntity) {
+						LegendItemEntity itemEntity = (LegendItemEntity)entity;
+						XYDataset xyDataset = (XYDataset)itemEntity.getDataset();
+						int series_index = xyDataset.indexOf(itemEntity.getSeriesKey());
+						XYPlot plot = (XYPlot)jfreeChart.getPlot();
+						XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)plot.getRenderer(0);
+						Boolean visible = renderer.getSeriesShapesVisible(series_index);
+						renderer.setSeriesShapesVisible(series_index, !(visible==null || visible==Boolean.TRUE));
 					}
 				}
 			});
-		}
-	}
-	
-	public void afterCreateChart(JFreeChart jfreeChart) {
-		super.afterCreateChart(jfreeChart);
-		if(chartType != Type.Pie || (chartType == Type.ScatterPlot && !show_regression_line)) {
-			jfreeChart.removeLegend();
 		}
 	}
 	
@@ -390,6 +395,9 @@ public abstract class DistributionChart extends KeyValueChart {
     		for(ValueRange rangeItem : distRange) {
     			if(rangeItem.isValueInRange(getDistributionValue(data))) {
     				rangeItem.count++;
+    				if(data instanceof TransactionEntryVO && ((TransactionEntryVO)data).isResponseError()) {
+    					rangeItem.error++;
+    				}
     			}
     		}    		
     	}
@@ -399,7 +407,12 @@ public abstract class DistributionChart extends KeyValueChart {
 					pieDataset.setValue(rangeItem.getRangeString(), rangeItem.count);
 				}
 			} else {
-				categoryDataset.addValue(rangeItem.count, category_name, rangeItem.getRangeString());
+				if(rangeItem.count-rangeItem.error > 0) {
+					categoryDataset.addValue(rangeItem.count-rangeItem.error, "Success", rangeItem.getRangeString());
+				}
+				if(rangeItem.error > 0) {
+					categoryDataset.addValue(rangeItem.error, "Error", rangeItem.getRangeString());
+				}
 			}
 		}    		
 	}
@@ -454,7 +467,7 @@ public abstract class DistributionChart extends KeyValueChart {
 	    renderer.addAnnotation(annotation);
 	    xyPlot.setRenderer(1, renderer);
 	}
-
+	
 	public String getAnnotationText(XYDataItem item) {
 		Date dt = new Date((long)item.getXValue());
 		long val = (long)item.getYValue();

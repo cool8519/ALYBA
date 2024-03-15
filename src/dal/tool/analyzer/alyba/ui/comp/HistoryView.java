@@ -16,8 +16,6 @@ import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DropTarget;
 import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.DropTargetListener;
-import org.eclipse.swt.events.ControlAdapter;
-import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.KeyAdapter;
@@ -43,20 +41,20 @@ import org.eclipse.swt.widgets.TableItem;
 
 import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.output.vo.SummaryEntryVO;
-import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.ui.history.HistoryManager;
 import dal.tool.analyzer.alyba.ui.history.HistoryVO;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.db.ObjectDBUtil;
+import dal.util.swt.ImageUtil;
 import dal.util.swt.MessageUtil;
 import dal.util.swt.SWTResourceManager;
 
 public class HistoryView extends Shell {
 
+	public ResultAnalyzer resultAnalyzer;
 	private HistoryView instance;
 	private Composite comp_main;
-	private int table_width;
 	private boolean loaded;
 	private List<Process> runningProcesses; 
 
@@ -75,8 +73,9 @@ public class HistoryView extends Shell {
 	private DropTarget droptarget_dbfile;
 	
 	
-	public HistoryView(Display display, int style) {
+	public HistoryView(Display display, int style, ResultAnalyzer owner) {
 		super(display, style);
+		this.resultAnalyzer = owner;
 		createContents();
 		addEventListener();
 		open();
@@ -88,8 +87,9 @@ public class HistoryView extends Shell {
 		
 		instance = this;
 		
-		setSize(1000, 300);
-		setMinimumSize(1000, 300);
+		setSize(1024, 300);
+		setMinimumSize(1024, 300);
+		setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
 		setText("ALYBA " + Constant.PROGRAM_VERSION + " - History View");
 		Rectangle dispRect = getDisplay().getMonitors()[0].getBounds();
 		Rectangle shellRect = getBounds();
@@ -146,19 +146,26 @@ public class HistoryView extends Shell {
 		tbl_files.setFont(Utility.getFont());
 		tblc_title = new TableColumn(tbl_files, SWT.LEFT);
 		tblc_title.setText("Title");
+		tblc_title.setWidth(145);
 		tblc_created = new TableColumn(tbl_files, SWT.CENTER);
 		tblc_created.setText("Created");
+		tblc_created.setWidth(150);
 		tblc_version = new TableColumn(tbl_files, SWT.CENTER);
 		tblc_version.setText("Version");
+		tblc_version.setWidth(80);
 		tblc_fileSize = new TableColumn(tbl_files, SWT.RIGHT);
 		tblc_fileSize.setText("Size");
+		tblc_fileSize.setWidth(95);
 		tblc_fileExists = new TableColumn(tbl_files, SWT.CENTER);
 		tblc_fileExists.setText("Exists");
+		tblc_fileExists.setWidth(60);
 		tblc_fileName = new TableColumn(tbl_files, SWT.LEFT);
 		tblc_fileName.setText("Filename");
+		tblc_fileName.setWidth(235);
 		tblc_dirName = new TableColumn(tbl_files, SWT.LEFT);
 		tblc_dirName.setText("Directory");
-
+		tblc_dirName.setWidth(175);
+		
 		droptarget_dbfile = new DropTarget(this, DND.DROP_MOVE | DND.DROP_DEFAULT);
 		droptarget_dbfile.setTransfer(Constant.FILE_TRANSFER_TYPE);
 
@@ -170,10 +177,8 @@ public class HistoryView extends Shell {
 		
 		addShellListener(new ShellAdapter() {
 			public void shellClosed(ShellEvent e) {
-				if(AlybaGUI.instance != null) {
-					AlybaGUI.instance.historyView.setVisible(false);
-					e.doit = false;
-				}
+				setVisible(false);
+				e.doit = false;
 			}
 		});
 		
@@ -187,12 +192,6 @@ public class HistoryView extends Shell {
 			}
 		});
 		
-		comp_main.addControlListener(new ControlAdapter() {
-			public void controlResized(ControlEvent e) {
-				resizeTableColumn();
-			}
-		});
-
 		tbl_files.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if(tbl_files.getSelectionCount() == 1) {
@@ -292,6 +291,8 @@ public class HistoryView extends Shell {
 							last = item;
 						}
 					}
+					tbl_files.setSortColumn(null);
+					tbl_files.setSortDirection(SWT.NONE);
 					if(last != null) {
 						tbl_files.showItem(last);
 					}
@@ -352,21 +353,26 @@ public class HistoryView extends Shell {
 		HistoryManager hm = null;
 		try {
 			hm = new HistoryManager();
-			if(hm.getHistory(historyVo.getKey()) != null) {
+			String key = hm.getHistoryKeyByVO(historyVo);
+			if(key != null && hm.getHistoryByKey(key) != null) {
 				Logger.debug("Because the item already exists, adding it to the history view is ignored.");
 				if(showMessage) {
 					MessageUtil.showErrorMessage(instance, "The item already exists.");
 				}
 				return null;
 			}
-			TableItem item = new TableItem(tbl_files, SWT.NULL);
-			item.setData(historyVo.getKey());
-			item.setText(historyVo.getFieldArray());
-			if(item.getText(4).equals("X")) {
-				item.setForeground(4, instance.getDisplay().getSystemColor(SWT.COLOR_RED));
+			boolean added = hm.addHistory(historyVo);
+			if(added) {
+				TableItem item = new TableItem(tbl_files, SWT.NULL);
+				item.setData(historyVo.getKey());
+				item.setText(historyVo.getFieldArray());
+				if(item.getText(4).equals("X")) {
+					item.setForeground(4, instance.getDisplay().getSystemColor(SWT.COLOR_RED));
+				}
+				return item;
+			} else {
+				return null;
 			}
-			hm.addHistory(historyVo);
-			return item;
 		} catch(Exception e) {
 			throw e;
 		} finally {
@@ -384,7 +390,7 @@ public class HistoryView extends Shell {
 		HistoryManager hm = null;
 		try {
 			hm = new HistoryManager();
-			hm.deleteHistory(key);
+			hm.deleteHistoryByKey(key);
 		} catch(Exception ex) {
 			Logger.debug("Failed to remove the history item : " + ex.getMessage());
 			Logger.error(ex);
@@ -413,9 +419,8 @@ public class HistoryView extends Shell {
 		TableItem item = tbl_files.getItem(idx);
 		if("O".equals(item.getText(4))) {
 			String filepath = item.getText(6) + File.separator + item.getText(5);
-			ResultAnalyzer resultAnalyzer = AlybaGUI.instance.openResultAnalyzer();
 			try {
-				resultAnalyzer.loadDBFile(filepath);
+				resultAnalyzer.loadDBFile(filepath, false);
 				resultAnalyzer.forceActive();
 			} catch(Exception ex) {
 				Logger.debug("Failed to load the database : " + filepath);
@@ -430,40 +435,10 @@ public class HistoryView extends Shell {
 		}
 	}
 
-	private void resizeTableColumn() {
-		Rectangle area = comp_main.getClientArea();
-		int width = area.width - 2*tbl_files.getBorderWidth() - 40;
-		if(table_width > 0 && tbl_files.getVerticalBar().getVisible()) {
-			width -= tbl_files.getVerticalBar().getSize().x;
-		}
-		int size_title = 150;
-		int size_created = 150;
-		int size_version = 100;
-		int size_filesize = 100;
-		int size_exists = 60;
-		int size_filename = 150;
-		if(table_width > 0) {
-			size_title = (int)(width*(tblc_title.getWidth()/(float)table_width));
-			size_created = (int)(width*(tblc_created.getWidth()/(float)table_width));
-			size_version = (int)(width*(tblc_version.getWidth()/(float)table_width));
-			size_filesize = (int)(width*(tblc_fileSize.getWidth()/(float)table_width));
-			size_exists = (int)(width*(tblc_fileExists.getWidth()/(float)table_width));
-			size_filename = (int)(width*(tblc_fileName.getWidth()/(float)table_width));
-		}
-		tblc_title.setWidth(size_title);
-		tblc_created.setWidth(size_created);
-		tblc_version.setWidth(size_version);
-		tblc_fileSize.setWidth(size_filesize);
-		tblc_fileExists.setWidth(size_exists);
-		tblc_fileName.setWidth(size_filename);
-		tblc_dirName.setWidth(width -(size_title+size_created+size_version+size_filesize+size_exists+size_filename));
-		table_width = width;
-	}
-	
 	public void toggleButton() {
 		boolean flag = false;
 		int idx = tbl_files.getSelectionIndex();
-		if(idx > -1 && "O".equals(tbl_files.getItem(idx).getText(3))) {
+		if(idx > -1 && "O".equals(tbl_files.getItem(idx).getText(4))) {
 			flag = true;
 		}
 		btn_open.setEnabled(flag);
@@ -521,7 +496,6 @@ public class HistoryView extends Shell {
 				try { hm.close(); } catch(Exception e) {}
 			}
 		}
-		resizeTableColumn();
 		tbl_files.getColumn(1).setData("asc", true);
 		tbl_files.setSortColumn(tbl_files.getColumn(1));
 		tbl_files.setSortDirection(SWT.UP);

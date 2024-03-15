@@ -13,8 +13,10 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.util.Utility;
+import dal.util.swt.ImageUtil;
 
 public class DebugConsole extends Shell {
 
@@ -39,6 +41,7 @@ public class DebugConsole extends Shell {
 	protected void createContents() {
 
 		setSize(640, 250);
+		setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
 		setText("Debug Console");
 		setLayout(new FormLayout());
 

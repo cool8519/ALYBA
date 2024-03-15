@@ -22,6 +22,7 @@ public class BadTransactionEntryVO extends TransactionEntryVO {
 		request_uri = vo.request_uri;
 		request_uri_pattern = vo.request_uri_pattern;
 		request_ip = vo.request_ip;
+		request_ip_country = vo.request_ip_country;
 		response_time = vo.response_time;
 		response_byte = vo.response_byte;
 		response_code = vo.response_code;

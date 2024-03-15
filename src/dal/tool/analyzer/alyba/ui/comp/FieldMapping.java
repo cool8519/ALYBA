@@ -392,7 +392,7 @@ public class FieldMapping extends Composite {
 		cb_elapsedUnit.setText(Constant.ELAPSED_TIME_UNITS[0]);
 		cb_elapsedUnit.setBounds(579, 241, 97, 21);
 		
-		uriMappingManager = new URIMappingManager(this.getDisplay(), SWT.SHELL_TRIM & ~SWT.RESIZE & ~SWT.MAX & ~SWT.MIN);
+		uriMappingManager = new URIMappingManager(this.getDisplay(), SWT.SHELL_TRIM & ~SWT.MAX & ~SWT.MIN);
 		uriMappingManager.setVisible(false);
 
 		grp_customizeMapping.setTabList(new Control[] { txt_uri, btn_uriMapping, cb_timestampType, txt_time, spn_offset, cb_timeFormat, txt_ip, txt_method, txt_version, txt_code, txt_bytes, txt_elapsed, cb_elapsedUnit });
@@ -1193,7 +1193,7 @@ public class FieldMapping extends Composite {
 		spnCtrl.setSelection(value);
 	}
 
-	public void autoMapping(LogFieldMappingInfo info) {
+	public void autoMapping(LogFieldMappingInfo info, boolean fromSetting) {
 		try {
 			setTextValue(txt_delimeter, StringUtil.replaceMetaCharacter(info.fieldDelimeter, true));
 			setComboValue(cb_timestampType, info.timestampType);
@@ -1221,6 +1221,11 @@ public class FieldMapping extends Composite {
 						filterSetting.setVersionEnabled(true);
 					} else if("CODE".equals(key)) {
 						filterSetting.setCodeEnabled(true);		
+					} else if("TIME".equals(key)) {
+						if(fromSetting && info.timeFormat.length() > 0 && txt_time.getText().length() > 0) {
+							cb_timeFormat.setText(info.timeFormat);
+							checkTimeString(new String[]{info.timeFormat}, txt_time.getText());
+						}
 					}
 				}
 				String[] idx_str_arr = idx_str.split(",");
@@ -1248,7 +1253,9 @@ public class FieldMapping extends Composite {
 			}
 			if(!lb_resultTimeChk.getText().equals("OK")) {
 				MessageUtil.showErrorMessage(getShell(), "Time format is invalid.");
-				resetMappings();
+				if(!fromSetting) {
+					resetMappings();
+				}
 			}
 		} catch(Exception e) {
 			Logger.debug("Failed to map default setting automatically.");
@@ -1262,7 +1269,7 @@ public class FieldMapping extends Composite {
 		String type = cb_logType.getText();
 		LogFieldMappingInfo info = getDefaultMappingInfo(type);
 		if(info != null) {
-			autoMapping(info);
+			autoMapping(info, false);
 		}
 	}
 

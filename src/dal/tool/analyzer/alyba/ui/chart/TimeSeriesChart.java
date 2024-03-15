@@ -225,10 +225,12 @@ public abstract class TimeSeriesChart extends Chart {
 							renderer.setSeriesStroke(index, new BasicStroke(4.0F, 2, 2));
 						} else {
 							renderer.setSeriesLinesVisible(index, false);
+							renderer.setSeriesShapesVisible(index, false);
 						}
 					} else {
 						renderer.setSeriesLinesVisible(index, true);
 						renderer.setSeriesStroke(index, new BasicStroke(1.0F, 2, 2));
+						renderer.setSeriesShapesVisible(index, show_shape);
 					}
 					renderer.setDrawSeriesLineAsPath(true);
 				}

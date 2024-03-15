@@ -57,6 +57,7 @@ public class Distribution {
 		public ValueBoundaray from = null;
 		public ValueBoundaray to = null;
 		public long count = 0;
+		public long error = 0;
 		
 		public ValueRange(ValueBoundaray from, ValueBoundaray to) {
 			this.from = from;

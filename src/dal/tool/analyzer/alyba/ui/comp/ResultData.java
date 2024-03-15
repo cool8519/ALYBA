@@ -411,7 +411,7 @@ public class ResultData extends Composite {
 	    btn_execute.addSelectionListener(new SelectionAdapter() {
 	    	public void widgetSelected(SelectionEvent e) {
 	    		sort_query = txt_squery.getText().trim();
-	    		loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, false, true);
+	    		loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, false, true, false);
 	    	}
 	    });
 
@@ -445,7 +445,7 @@ public class ResultData extends Composite {
 	    scrollBar.addSelectionListener(new SelectionAdapter() {
 	    	public void widgetSelected(SelectionEvent event) {
 	    		if(scrollBar.getSelection() + scrollBar.getThumb() == scrollBar.getMaximum()) {
-	    			loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, true, true);
+	    			loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, true, true, false);
 	    		}
 	    	}
 	    } );
@@ -457,7 +457,7 @@ public class ResultData extends Composite {
 	                e.doit = false;
 	            } else if(e.keyCode == SWT.CR || e.keyCode == SWT.KEYPAD_CR) {
 	            	sort_query = txt_squery.getText().trim();
-		    		loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, false, true);
+		    		loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, false, true, false);
 	            }
 	        }
 	    });
@@ -469,7 +469,7 @@ public class ResultData extends Composite {
 	                e.doit = false;
 	            } else if(e.keyCode == SWT.CR || e.keyCode == SWT.KEYPAD_CR) {
 	            	sort_query = txt_squery.getText().trim();
-		    		loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, false, true);
+		    		loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, false, true, false);
 	            }
 	        }
 	    });
@@ -477,58 +477,38 @@ public class ResultData extends Composite {
 	    cursor_data.addSelectionListener(new SelectionAdapter() {
 	        public void widgetSelected(SelectionEvent e) {
 	        	TableItem item_cursor = cursor_data.getRow();
+	        	String tooltipText = getToolTipTextFromTable(item_cursor, cursor_data.getColumn());
+	        	cursor_data.setToolTipText(tooltipText);
 	        	tbl_data.setSelection(new TableItem[]{item_cursor});
 	        	TableItem[] items = tbl_data.getItems();
 	        	if(items != null && items.length > 0 && item_cursor.equals(items[items.length-1])) {
-	    			loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, true, true);
+	    			loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, true, true, false);
 	        	}
 	        }
 	    });
+	    
 		cursor_data.addKeyListener(new KeyAdapter() {
 			public void keyPressed(KeyEvent e) {
 				if(e.stateMask == SWT.CTRL && e.keyCode == 'c') {
-					clipboard_data.setContents(new Object[]{cursor_data.getRow().getText(cursor_data.getColumn())}, Constant.TEXT_TRANSFER_TYPE);
+					clipboard_data.setContents(new Object[]{cursor_data.getToolTipText()}, Constant.TEXT_TRANSFER_TYPE);
 				}
 			}
 		});		
-		
+
 	    tbl_data.addListener(SWT.MouseHover, new Listener() {
 			public void handleEvent(Event event) {
 				Point point = new Point(event.x, event.y);
 				TableItem item = tbl_data.getItem(point);
-				if(item != null) {
-					int columnIdx = 0;
-					for(int i = 0; i < tbl_data.getColumnCount(); i++) {
-						if(item.getBounds(i) != null && item.getBounds(i).contains(point)) {
-							columnIdx = i;
-							break;
-						}
+				if(item == null) return;
+				int columnIdx = 0;
+				for(int i = 0; i < tbl_data.getColumnCount(); i++) {
+					if(item.getBounds(i) != null && item.getBounds(i).contains(point)) {
+						columnIdx = i;
+						break;
 					}
-					String itemValue = item.getText(columnIdx);
-					String column_name = tbl_data.getColumn(columnIdx).getText();
-					Object hidden_data = item.getData(column_name);
-					if(hidden_data != null && hidden_data instanceof TransactionEntryVO) {
-						tbl_data.setToolTipText(((TransactionEntryVO)hidden_data).toPrettyString());
-					} else if(itemValue.startsWith("[") && itemValue.endsWith("]")) {
-						String listValue = itemValue.substring(1, itemValue.length()-1);
-						if(listValue.length() > 0) {
-							String[] listArr = listValue.split(",");
-							int max = (listArr==null || listArr.length<1) ? 0 : ((listArr.length>5)?5:listArr.length);
-							StringBuffer buffer = new StringBuffer("");
-							for(int i = 0; i < max; i++) {
-								buffer.append(listArr[i].trim()).append("\n");
-							}
-							if(listArr.length > 5) {
-								buffer.append("\n... ").append((listArr.length-5)).append(" more");
-							}
-							tbl_data.setToolTipText(buffer.toString());
-						} else {
-							tbl_data.setToolTipText("");
-						}
-					} else {
-						tbl_data.setToolTipText(itemValue);
-					}					
-				}				
+				}
+				String tooltipText = getToolTipTextFromTable(item, columnIdx);
+				tbl_data.setToolTipText(tooltipText);
 			}
 		});
 	}
@@ -546,7 +526,7 @@ public class ResultData extends Composite {
 		btn_execute.setEnabled(true);
 		loadColumns(table_name);
 		sort_query = "";
-		loadDataFromDB(table_name, null, sort_query, false, true);
+		loadDataFromDB(table_name, null, sort_query, false, true, true);
 	}
 	
 	private void loadTables() throws Exception {
@@ -645,7 +625,7 @@ public class ResultData extends Composite {
 
 		
 	@SuppressWarnings("unchecked")
-	private <E extends EntryVO> void loadDataFromDB(String table_name, String condition_query, String sort_query, boolean append, boolean paging) {
+	private <E extends EntryVO> void loadDataFromDB(String table_name, String condition_query, String sort_query, boolean append, boolean paging, boolean refresh_column) {
 		lb_result_f.setToolTipText(null);
 		lb_result_s.setVisible(false);
 		lb_result_f.setVisible(false);
@@ -688,7 +668,9 @@ public class ResultData extends Composite {
 					}
 				}
 			}
-			uncheckUselessColumn(table_name);
+			if(refresh_column) {
+				uncheckUselessColumn(table_name);
+			}
 			lb_rows.setText("Row : " + tbl_data.getItemCount() + " / " + total_rows);
 			lb_rows.setVisible(true);
 			lb_elapsed.setText("Elapsed : " + elapsed_tm + " ms");
@@ -711,13 +693,16 @@ public class ResultData extends Composite {
 			if((item.getText().equals("request_date") && firstRow.getText(idx).isEmpty()) ||
 			   (item.getText().equals("response_date") && firstRow.getText(idx).isEmpty()) ||
 			   (item.getText().equals("request_uri") && !LogFieldMappingInfo.isMappedURI(settingVo.getLogMappingInfo())) ||
+			   (item.getText().equals("request_uri_pattern") && (!LogFieldMappingInfo.isMappedURI(settingVo.getLogMappingInfo()) || settingVo.getUriMappingPatterns().size()<1)) ||
 			   (item.getText().equals("request_ip") && !LogFieldMappingInfo.isMappedIP(settingVo.getLogMappingInfo())) ||
+			   (item.getText().equals("request_ip_country") && !LogFieldMappingInfo.isMappedIP(settingVo.getLogMappingInfo())) ||
 			   (item.getText().indexOf("response_time") > -1 && !LogFieldMappingInfo.isMappedElapsed(settingVo.getLogMappingInfo())) ||
 			   (item.getText().indexOf("response_byte") > -1 && !LogFieldMappingInfo.isMappedBytes(settingVo.getLogMappingInfo())) ||
 			   (item.getText().equals("response_code") && !LogFieldMappingInfo.isMappedCode(settingVo.getLogMappingInfo())) ||
 			   (item.getText().equals("request_method") && !LogFieldMappingInfo.isMappedMethod(settingVo.getLogMappingInfo())) ||
 			   (item.getText().equals("request_version") && !LogFieldMappingInfo.isMappedVersion(settingVo.getLogMappingInfo())) ||
 			   (item.getText().equals("request_ext") && !LogFieldMappingInfo.isMappedURI(settingVo.getLogMappingInfo())) ||
+			   (item.getText().equals("description") && (table_name.equals("IP Aggregation") && !settingVo.isCollectIP())) ||
 			   (item.getText().equals("description") && (!table_name.equals("IP Aggregation") && !table_name.equals("CODE Aggregation"))) ||
 			   (item.getText().equals("request_ip_count") && (table_name.equals("IP Aggregation") || !LogFieldMappingInfo.isMappedIP(settingVo.getLogMappingInfo()))) ||
 			   (item.getText().equals("request_ip_list")) ||
@@ -728,7 +713,7 @@ public class ResultData extends Composite {
 				item.setChecked(false);
 				toggleColumnVisible(tbl_data, item.getText(), false);
 			}
-		}		
+		}
 	}
 
 	private <E extends EntryVO> void bindDataToTable(List<E> results, boolean append) throws Exception {
@@ -777,7 +762,7 @@ public class ResultData extends Composite {
 				String sort_column = column.getText();
 				sort_query = "t." + sort_column + (tbl_data.getSortDirection() == SWT.DOWN ? " DESC" : "");
 				txt_squery.setText(sort_query);
-				loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, false, true);
+				loadDataFromDB(tbl_tables.getSelection()[0].getText(), txt_cquery.getText().trim(), sort_query, false, true, false);
 			}
 		};
 		for(TableColumn column : tbl_data.getColumns()) {
@@ -798,6 +783,33 @@ public class ResultData extends Composite {
 				break;
 			}
 		}
+	}
+	
+	private String getToolTipTextFromTable(TableItem item, int columnIdx) {
+		String itemValue = item.getText(columnIdx);
+		String column_name = tbl_data.getColumn(columnIdx).getText();
+		Object hidden_data = item.getData(column_name);
+		if(hidden_data != null && hidden_data instanceof TransactionEntryVO) {
+			return ((TransactionEntryVO)hidden_data).toPrettyString();
+		} else if(itemValue.startsWith("[") && itemValue.endsWith("]")) {
+			String listValue = itemValue.substring(1, itemValue.length()-1);
+			if(listValue.length() > 0) {
+				String[] listArr = listValue.split(",");
+				int max = (listArr==null || listArr.length<1) ? 0 : ((listArr.length>5)?5:listArr.length);
+				StringBuffer buffer = new StringBuffer("");
+				for(int i = 0; i < max; i++) {
+					buffer.append(listArr[i].trim()).append("\n");
+				}
+				if(listArr.length > 5) {
+					buffer.append("\n... ").append((listArr.length-5)).append(" more");
+				}
+				return buffer.toString();
+			} else {
+				return "";
+			}
+		} else {
+			return itemValue;
+		}					
 	}
 	
 	public void resize(Rectangle rect) {

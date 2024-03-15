@@ -30,7 +30,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
-import org.eclipse.swt.layout.RowLayout;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -50,6 +50,7 @@ import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.StringUtil;
 import dal.util.swt.FileDialogUtil;
+import dal.util.swt.ImageUtil;
 import dal.util.swt.MessageUtil;
 
 public class URIMappingManager extends Shell {
@@ -84,6 +85,8 @@ public class URIMappingManager extends Shell {
 	    forml_grp_setting.marginWidth = 10;
 	    setLayout(forml_grp_setting);
 		setSize(400, 500);
+		setMinimumSize(400, 500);
+		setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
 		setText("URI Mapping Manager");
 
 		FormData fd_btn_openFiles = new FormData();
@@ -121,7 +124,8 @@ public class URIMappingManager extends Shell {
 	    fd_grp_ftype.right = new FormAttachment(btn_removeSelected, -15, SWT.LEFT);
 	    fd_grp_ftype.top = new FormAttachment(btn_openFiles, -5, SWT.TOP);
 	    fd_grp_ftype.bottom = new FormAttachment(btn_openFiles, 0, SWT.BOTTOM);
-	    RowLayout forml_grp_ftype = new RowLayout();
+	    GridLayout forml_grp_ftype = new GridLayout();
+	    forml_grp_ftype.numColumns = 1;
 	    forml_grp_ftype.marginHeight = 2;
 	    forml_grp_ftype.marginWidth = 5;
 	    grp_ftype = new Group(this, SWT.NONE);
@@ -157,7 +161,6 @@ public class URIMappingManager extends Shell {
 		tblc_index.setWidth(35);
 		tblc_uri_mapping = new TableColumn(tbl_uri_mapping, SWT.LEFT);
 		tblc_uri_mapping.setWidth(320);
-		tblc_uri_mapping.setResizable(false);
 		tblc_uri_mapping.setText("URI Pattern");
 		tbl_editor = new TableEditor(tbl_uri_mapping);
 		tbl_editor.horizontalAlignment = SWT.LEFT;

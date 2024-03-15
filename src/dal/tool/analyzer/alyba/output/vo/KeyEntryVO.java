@@ -55,6 +55,10 @@ public class KeyEntryVO extends EntryVO {
 		this.key = key;
 	}
 
+	public String getType() {
+		return type;
+	}
+	
 	public String getKey() {
 		return key;
 	}
@@ -113,7 +117,7 @@ public class KeyEntryVO extends EntryVO {
 		req_ratio = ((float)req_count / total) * 100;
 	}
 
-	public void setFilteredTotal(int total) {
+	public void setFilteredTotal(long total) {
 		filter_req_total = total;
 		filter_req_ratio = ((float)req_count / total) * 100;
 		filter_err_ratio = ((float)err_count / total) * 100;
@@ -270,6 +274,29 @@ public class KeyEntryVO extends EntryVO {
 		if(subVO.getRequestIPList() != null) {
 			vo.addRequestIPList(subVO.getRequestIPList());
 		}
+		return vo;
+	}
+	
+	public KeyEntryVO copy() {
+		KeyEntryVO vo = new KeyEntryVO(type, key);
+		vo.description = description;
+		vo.req_total = req_total;
+		vo.filter_req_total = filter_req_total;
+		vo.req_count = req_count;
+		vo.req_ratio = req_ratio;
+		vo.filter_req_ratio = filter_req_ratio;
+		vo.avg_response_time = avg_response_time;
+		vo.avg_response_byte = avg_response_byte;
+		vo.err_count = err_count;
+		vo.filter_err_ratio = filter_err_ratio;
+		vo.entry_err_ratio = entry_err_ratio;
+		vo.request_ip_count = request_ip_count; 
+		vo.max_response_time = max_response_time == null ? null : max_response_time.copy();
+		vo.max_response_byte = max_response_byte == null ? null : max_response_byte.copy();
+		vo.last_error = last_error == null ? null : last_error.copy();
+		for(String s : request_ip_list) {
+            vo.request_ip_list.add(s);
+        }
 		return vo;
 	}
 

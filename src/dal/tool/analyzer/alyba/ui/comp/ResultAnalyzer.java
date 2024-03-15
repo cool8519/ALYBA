@@ -52,12 +52,14 @@ public class ResultAnalyzer extends Shell {
 	public static ResultAnalyzer instance;
 	public static DebugConsole debugConsole = null;
 
+	public HistoryView historyView = null;
 	public Display display;
 	private int isLoaded = -1;
 	
 	private Label lb_notloaded;
 	private Label hline_top;
 	private Text txt_title;
+	private Button btn_history;
 	private Button btn_console;
 	private Button btn_openDB;
 	private TabFolder tbf_view;
@@ -167,7 +169,6 @@ public class ResultAnalyzer extends Shell {
                 if(debugConsole == null) {
         			debugConsole = new DebugConsole(display, SWT.SHELL_TRIM);
         			debugConsole.setLocation(0, 0);
-        			debugConsole.setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
                 }
             }
 		}
@@ -216,6 +217,7 @@ public class ResultAnalyzer extends Shell {
 		
 		setSize(1280, 815);
 		setMinimumSize(1100, 815);
+		setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
 		setText(title_prefix);
 		Rectangle dispRect = getDisplay().getMonitors()[0].getBounds();
 		Rectangle shellRect = getBounds();
@@ -248,6 +250,27 @@ public class ResultAnalyzer extends Shell {
 		txt_title.setFont(Utility.getFont());
 		txt_title.setEnabled(false);		
 
+		FormData fd_btn_history = new FormData();
+		fd_btn_history.top = new FormAttachment(txt_title, -4, SWT.TOP);
+		fd_btn_history.left = new FormAttachment(txt_title, 20);
+		fd_btn_history.width = 100;
+		fd_btn_history.height = 28;
+		btn_history = new Button(this, SWT.NONE);
+		btn_history.setLayoutData(fd_btn_history);
+		btn_history.setText("History View");
+		btn_history.setFont(Utility.getFont());
+
+		FormData fd_btn_console = new FormData();
+		fd_btn_console.top = new FormAttachment(btn_history, 0, SWT.TOP);
+		fd_btn_console.left = new FormAttachment(btn_history, 25);
+		fd_btn_console.width = 100;
+		fd_btn_console.height = 28;
+		btn_console = new Button(this, SWT.NONE);
+		btn_console.setLayoutData(fd_btn_console);
+		btn_console.setText("Hide Console");
+		btn_console.setFont(Utility.getFont());
+		btn_console.setVisible(AlybaGUI.debugMode && AlybaGUI.instance==null);
+		
 		FormData fd_btn_openDB = new FormData();
 		fd_btn_openDB.right = new FormAttachment(100);
 		fd_btn_openDB.top = new FormAttachment(0);
@@ -281,17 +304,6 @@ public class ResultAnalyzer extends Shell {
 		pbar_loading.setMaximum(6);
 		pbar_loading.setSelection(0);
 		pbar_loading.setVisible(false);
-		
-		FormData fd_btn_console = new FormData();
-		fd_btn_console.top = new FormAttachment(0);
-		fd_btn_console.right = new FormAttachment(pbar_loading, -20);
-		fd_btn_console.width = 100;
-		fd_btn_console.height = 28;
-		btn_console = new Button(this, SWT.NONE);
-		btn_console.setLayoutData(fd_btn_console);
-		btn_console.setText("Hide Console");
-		btn_console.setFont(Utility.getFont());
-		btn_console.setVisible(AlybaGUI.debugMode && AlybaGUI.instance==null);
 		
 		FormData fd_hline_top = new FormData();
 		fd_hline_top.left = new FormAttachment(0);
@@ -376,6 +388,12 @@ public class ResultAnalyzer extends Shell {
 			});
 		}
 
+		btn_history.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				openHistoryView();
+			}
+		});
+
 		btn_openDB.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
 				if("Open DB".equals(btn_openDB.getText())) {
@@ -455,7 +473,23 @@ public class ResultAnalyzer extends Shell {
 		return isLoaded==0 ? true : false;
 	}
 	
+	public void openHistoryView() {
+		if(historyView == null) {
+			historyView = new HistoryView(display, SWT.SHELL_TRIM, this);
+			historyView.setVisible(false);
+		}
+		historyView.setVisible(true);
+		if(!historyView.hasLoaded()) {
+			historyView.loadHistoryList();
+		}
+		historyView.forceActive();
+	}
+
 	public void loadDBFile(String fileName) {
+		loadDBFile(fileName, true);
+	}
+
+	public void loadDBFile(String fileName, boolean addHistory) {
 		isLoaded = -1;
 		try {
 			closeDatabase();
@@ -491,12 +525,17 @@ public class ResultAnalyzer extends Shell {
 				btn_openDB.setText("Close DB");
 				setText(title_prefix + " (" + fileName + ")");
 				isLoaded = 1;
-				addToHistoryView(fileName);
+				if(addHistory) {
+					addToHistoryView(fileName);
+				}
 			} else {
 				isLoaded = -1;
-				addToHistoryView(fileName);
+				if(addHistory) {
+					addToHistoryView(fileName);
+				}
 				closeDatabase();
 			}
+			setVisible(true);
 		} catch(Exception e) {
 			Logger.debug("Failed to load the database : " + fileName);
 			Logger.error(e);
@@ -541,13 +580,13 @@ public class ResultAnalyzer extends Shell {
 		historyVo.setVersion(summaryVo.getVersion());
 		historyVo.setFileSize(dbfile.length());
 		historyVo.setTitle(summaryVo.getTitle());
-		if(AlybaGUI.instance != null && AlybaGUI.getInstance().historyView != null) {
-			AlybaGUI.getInstance().historyView.addHistoryItem(historyVo, false);
+		if(historyView != null) {
+			historyView.addHistoryItem(historyVo, false);
 		} else {
 			HistoryManager hm = null;
 			try {
 				hm = new HistoryManager();
-				if(hm.getHistory(historyVo.getKey()) == null) {
+				if(hm.getHistoryByKey(historyVo.getKey()) == null) {
 					hm.addHistory(historyVo);
 				}
 			} catch(Exception e) {

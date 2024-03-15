@@ -16,13 +16,13 @@ public class HistoryVO {
 	private String fileName;
 	private String filePath;
 	
-	public HistoryVO(String fileName, String filePath) {
+	public HistoryVO(String fileName, String filePath) throws Exception {
 		this.fileName = fileName;
-		this.filePath = filePath;
 		title = "";
 		created = -1L;
 		version = "";
-		File file = new File(filePath, fileName);
+		File file = new File(filePath, fileName).getCanonicalFile();
+		this.filePath = file.getParent();
 		fileExists = file.exists();
 		fileSize = fileExists ? file.length() : -1L;
 	}
@@ -84,9 +84,15 @@ public class HistoryVO {
 	}
 
 	public String toEncodedString() {
+		return toEncodedString(true);
+	}
+	
+	public String toEncodedString(boolean includeTime) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(title).append("|");
-		sb.append(created).append("|");
+		if(includeTime) {
+			sb.append(created).append("|");
+		}
 		sb.append(version).append("|");
 		sb.append(fileSize).append("|");
 		sb.append(fileName).append("|");

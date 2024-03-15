@@ -1,6 +1,7 @@
 package dal.tool.analyzer.alyba.output.vo;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +44,7 @@ public class SettingEntryVO implements Serializable {
 	public float mappingOffsetHour;
 	public int mappingFieldCount;
 	public HashMap<String, String> logMappingInfo = new HashMap<String, String>();
+	public List<String> uriMappingPatterns = new ArrayList<String>();
 	
 	public boolean dateFilterEnable;
 	public Date dateFilterFromRange;
@@ -298,6 +300,14 @@ public class SettingEntryVO implements Serializable {
 
 	public void setLogMappingInfo(HashMap<String, String> mapping_info) {
 		this.logMappingInfo = mapping_info;
+	}
+	
+	public List<String> getUriMappingPatterns() {
+		return uriMappingPatterns;
+	}
+	
+	public void setUriMappingPatterns(List<String> pattern_list) {
+		this.uriMappingPatterns = pattern_list;
 	}
 	
 	

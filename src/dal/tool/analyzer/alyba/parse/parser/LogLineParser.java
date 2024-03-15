@@ -293,7 +293,7 @@ public abstract class LogLineParser extends FileLineParser {
 			last_time = dt;
 		}
 
-		TransactionEntryVO vo = new TransactionEntryVO(dt, uri_result, uri_result_pattern, ip, rtime, rbyte, code, method, version, ext, "Res".equals(setting.getFieldMapping().getTimestampType()));
+		TransactionEntryVO vo = new TransactionEntryVO(dt, uri_result, uri_result_pattern, ip, rtime, rbyte, code, method, version, ext, "Res".equals(setting.getFieldMapping().getTimestampType()), isError);
 		aggregate(vo);
 	}
 	

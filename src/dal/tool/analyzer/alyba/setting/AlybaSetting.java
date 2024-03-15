@@ -35,6 +35,7 @@ public class AlybaSetting implements Serializable {
 	private boolean optionAllowErrorsChecked;
 	private int optionAllowErrorCount;
 	private boolean optionURLIncludeParamsChecked;
+	private boolean optionJoinURIAndMethodChecked;
 	private boolean optionCheckFileEncodingChecked;
 	private boolean optionCollectTPMChecked;
 	private int optionTPMUnitMinutes;
@@ -147,6 +148,10 @@ public class AlybaSetting implements Serializable {
 
 	public boolean isOptionURLIncludeParamsChecked() {
 		return optionURLIncludeParamsChecked;
+	}
+	
+	public boolean isOptionJoinURIAndMethodChecked() {
+		return optionJoinURIAndMethodChecked;
 	}
 	
 	public boolean isOptionCheckFileEncodingChecked() {
@@ -316,6 +321,10 @@ public class AlybaSetting implements Serializable {
 
 	public void setOptionURLIncludeParamsChecked(boolean optionURLIncludeParamsChecked) {
 		this.optionURLIncludeParamsChecked = optionURLIncludeParamsChecked;
+	}
+	
+	public void setOptionJoinURIAndMethodChecked(boolean optionJoinURIAndMethodChecked) {
+		this.optionJoinURIAndMethodChecked = optionJoinURIAndMethodChecked;
 	}
 	
 	public void setOptionCheckFileEncodingChecked(boolean optionCheckFileEncodingChecked) {

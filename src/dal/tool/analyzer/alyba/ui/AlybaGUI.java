@@ -68,7 +68,6 @@ import dal.tool.analyzer.alyba.ui.comp.ContentView;
 import dal.tool.analyzer.alyba.ui.comp.DebugConsole;
 import dal.tool.analyzer.alyba.ui.comp.FieldMapping;
 import dal.tool.analyzer.alyba.ui.comp.FilterSetting;
-import dal.tool.analyzer.alyba.ui.comp.HistoryView;
 import dal.tool.analyzer.alyba.ui.comp.OptionSetting;
 import dal.tool.analyzer.alyba.ui.comp.OutputSetting;
 import dal.tool.analyzer.alyba.ui.comp.ResultAnalyzer;
@@ -95,7 +94,6 @@ public class AlybaGUI {
 	public static DebugConsole debugConsole = null;
 	public static ObjectDBUtil inProgressDbUtil = null;
 	
-	public HistoryView historyView = null;
 	public TPMAnalyzer tpmAnalyzer = null;
 	public ResultAnalyzer resultAnalyzer = null;
 
@@ -119,7 +117,6 @@ public class AlybaGUI {
 	private TabItem tbi_filter;
 	private TabItem tbi_option;
 	private TabItem tbi_output;
-	private Button btn_history;
 	private Button btn_console;
 	private Button btn_resetAll;
 	private Button btn_openFiles;
@@ -226,7 +223,6 @@ public class AlybaGUI {
                 if(debugConsole == null) {
         			debugConsole = new DebugConsole(display, SWT.SHELL_TRIM);
         			debugConsole.setLocation(0, 0);
-        			debugConsole.setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
                 }
             }
 		}
@@ -282,11 +278,6 @@ public class AlybaGUI {
 		txt_title.setFont(Utility.getFont());
 		txt_title.setText(Constant.OUTPUT_DEFAULT_TITLE);
 
-		btn_history = new Button(shell, SWT.NONE);
-		btn_history.setFont(Utility.getFont());
-		btn_history.setText("History View");
-		btn_history.setBounds(300, 8, 100, 23);
-		
 		btn_console = new Button(shell, SWT.NONE);
 		btn_console.setFont(Utility.getFont());
 		btn_console.setText("Hide Console");
@@ -423,12 +414,6 @@ public class AlybaGUI {
 						ObjectDBUtil.getInstance().closeAll();
 					}
 				}
-			}
-		});
-
-		btn_history.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				openHistoryView();
 			}
 		});
 
@@ -672,18 +657,6 @@ public class AlybaGUI {
 		tbf_setting.setSelection(0);
 	}
 	
-	public void openHistoryView() {
-		if(historyView == null) {
-			historyView = new HistoryView(display, SWT.SHELL_TRIM);
-			historyView.setVisible(false);
-		}
-		historyView.setVisible(true);
-		if(!historyView.hasLoaded()) {
-			historyView.loadHistoryList();
-		}
-		historyView.forceActive();
-	}
-
 	public void toggleDebugConsole() {
 		debugConsole.setVisible(!debugConsole.getVisible());
 		if(btn_console.getText().equals("Hide Console")) {
@@ -1059,6 +1032,7 @@ public class AlybaGUI {
 			optionSetting.spn_allowErrors.setEnabled(guiSetting.isOptionAllowErrorsChecked());
 			optionSetting.spn_allowErrors.setSelection(guiSetting.getOptionAllowErrorCount());
 			optionSetting.chk_includeParams.setSelection(guiSetting.isOptionURLIncludeParamsChecked());
+			optionSetting.chk_joinUriAndMethod.setSelection(guiSetting.isOptionJoinURIAndMethodChecked());
 			optionSetting.chk_checkFileEncoding.setSelection(guiSetting.isOptionCheckFileEncodingChecked());
 			optionSetting.chk_collectTPM.setSelection(guiSetting.isOptionCollectTPMChecked());
 			optionSetting.spn_tpmUnit.setEnabled(guiSetting.isOptionCollectTPMChecked());
@@ -1089,14 +1063,14 @@ public class AlybaGUI {
 				fieldMapping.spn_offset.setSelection((int)(mappingInfo.getOffsetHour()*10));
 				fieldMapping.setTimeLocale(mappingInfo.getTimeLocale());
 				fieldMapping.cb_elapsedUnit.setText(mappingInfo.getElapsedUnit());
+				fieldMapping.cb_timeFormat.setText(mappingInfo.getTimeFormat());
 				if(tbl_files.getItemCount() > 0) {
 					fieldMapping.uriMappingManager.resetURIPatterns(guiSetting.getURIMappingPatterns());
 					fieldMapping.cb_logType.setText(mappingInfo.getLogType());
-					fieldMapping.autoMapping(mappingInfo);
+					fieldMapping.autoMapping(mappingInfo, true);
 				} else {
 					MessageUtil.showWarningMessage(shell, "Fields can not be mapped without a log file.\nOpen the log file first.\n\nMapping data is ignored.");
 				}
-				fieldMapping.cb_timeFormat.setText(mappingInfo.getTimeFormat());
 			}
 		} catch(Exception e) {
 			Logger.debug("Failed to load setting from the file.");
@@ -1135,6 +1109,7 @@ public class AlybaGUI {
 			guiSetting.setOptionAllowErrorsChecked(optionSetting.checkAllowErrors());
 			guiSetting.setOptionAllowErrorCount(Integer.parseInt(StringUtil.NVL(optionSetting.getAllowErrorCount(), "5")));
 			guiSetting.setOptionURLIncludeParamsChecked(optionSetting.checkIncludeParams());
+			guiSetting.setOptionJoinURIAndMethodChecked(optionSetting.checkJoinUriAndMethod());
 			guiSetting.setOptionCheckFileEncodingChecked(optionSetting.checkCheckFileEncoding());
 			guiSetting.setOptionCollectTPMChecked(optionSetting.checkCollectTPM());
 			guiSetting.setOptionTPMUnitMinutes(Integer.parseInt(StringUtil.NVL(optionSetting.getTPMUnitMinutes(), "1")));
@@ -1352,7 +1327,9 @@ public class AlybaGUI {
 				history.setTitle(setting.getTitle()); 
 				history.setCreated(setting.getAnalyzeDate().getTime());
 				history.setVersion(Constant.PROGRAM_VERSION);
-				if(historyView == null) {
+				if(resultAnalyzer != null && resultAnalyzer.historyView != null) {
+					resultAnalyzer.historyView.addHistoryItem(history, true);
+				} else {
 					HistoryManager hm = null;
 					try {
 						hm = new HistoryManager();
@@ -1364,8 +1341,6 @@ public class AlybaGUI {
 							try { hm.close(); } catch(Exception ex) {}
 						}
 					}
-				} else {
-					historyView.addHistoryItem(history, true);
 				}
 			} catch(Exception e) {
 				Logger.debug("Failed to add the result to the history : " + e.getMessage());
@@ -1460,6 +1435,7 @@ public class AlybaGUI {
 		setting.setAllowErrors(optionSetting.checkAllowErrors());
 		setting.setAllowErrorCount(Integer.parseInt(optionSetting.getAllowErrorCount()));
 		setting.setUriIncludeParams(optionSetting.checkIncludeParams());
+		setting.setJoinUriAndMethod(optionSetting.checkJoinUriAndMethod());
 		setting.setCollectTPM(optionSetting.checkCollectTPM());
 		setting.setTPMUnitMinutes(Integer.parseInt(optionSetting.getTPMUnitMinutes()));
 		setting.setCollectElapsedTime(optionSetting.checkCollectElaspsedTime());

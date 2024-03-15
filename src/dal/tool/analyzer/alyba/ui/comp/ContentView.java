@@ -9,7 +9,9 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import dal.tool.analyzer.alyba.Constant;
 import dal.tool.analyzer.alyba.util.Utility;
+import dal.util.swt.ImageUtil;
 
 public class ContentView extends Shell {
 
@@ -33,6 +35,7 @@ public class ContentView extends Shell {
 	protected void createContents() {
 
 		setSize(min_width, min_height);
+		setImage(ImageUtil.getImage(Constant.IMAGE_PATH_TRAYICON));
 		setText("Content View");
 		setLayout(new GridLayout());
 

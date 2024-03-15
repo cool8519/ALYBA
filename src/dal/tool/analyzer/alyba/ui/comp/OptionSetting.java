@@ -26,8 +26,9 @@ public class OptionSetting extends Composite {
 	public Button chk_fixedFields;
 	public Button chk_strictCheck;
 	public Button chk_allowErrors;
-	public Button chk_includeParams;
 	public Button chk_checkFileEncoding;
+	public Button chk_includeParams;
+	public Button chk_joinUriAndMethod;
 	public Button chk_collectTPM;
 	public Button chk_collectElapsed;
 	public Button chk_collectBytes;
@@ -67,6 +68,10 @@ public class OptionSetting extends Composite {
 
 	public boolean checkIncludeParams() {
 		return chk_includeParams.getSelection();
+	}
+	
+	public boolean checkJoinUriAndMethod() {
+		return chk_joinUriAndMethod.getSelection();
 	}
 	
 	public boolean checkCheckFileEncoding() {
@@ -148,18 +153,24 @@ public class OptionSetting extends Composite {
 		lb_allowErrors.setText("error(s) per file");
 		lb_allowErrors.setBounds(154, 110, 110, 15);
 
-		chk_includeParams = new Button(this, SWT.CHECK);
-		chk_includeParams.setFont(Utility.getFont());
-		chk_includeParams.setText("URI includes parameters");
-		chk_includeParams.setToolTipText("Check if the URI contains a query string.\nIt will be aggregated into a URI without the query string.");
-		chk_includeParams.setBounds(24, 140, 226, 16);
-		
 		chk_checkFileEncoding = new Button(this, SWT.CHECK);
 		chk_checkFileEncoding.setFont(Utility.getFont());
 		chk_checkFileEncoding.setText("Check encoding of files");
 		chk_checkFileEncoding.setToolTipText("Check what encoding the text in the files is in.\nThis may delay the start of log analysis, so it is recommended to check it only if the log contains special characters such as Korean.");
-		chk_checkFileEncoding.setBounds(24, 170, 226, 16);
+		chk_checkFileEncoding.setBounds(24, 140, 226, 16);
 
+		chk_includeParams = new Button(this, SWT.CHECK);
+		chk_includeParams.setFont(Utility.getFont());
+		chk_includeParams.setText("URI includes parameters");
+		chk_includeParams.setToolTipText("Check if the URI contains a query string.\nIt will be aggregated into a URI without the query string.");
+		chk_includeParams.setBounds(24, 170, 226, 16);
+
+		chk_joinUriAndMethod = new Button(this, SWT.CHECK);
+		chk_joinUriAndMethod.setFont(Utility.getFont());
+		chk_joinUriAndMethod.setText("Join URI and Method");
+		chk_joinUriAndMethod.setToolTipText("Check to combine URI and Method.\nAs a URI key, it will be aggregated into 'URI<Method>'.");
+		chk_joinUriAndMethod.setBounds(24, 200, 226, 16);
+		
 		Label lb_verticalSeparator = new Label(this, SWT.SEPARATOR | SWT.VERTICAL);
 		lb_verticalSeparator.setBounds(280, 18, 2, 220);
 
@@ -259,8 +270,9 @@ public class OptionSetting extends Composite {
 								   chk_fixedFields,
 								   chk_strictCheck,
 								   chk_allowErrors, spn_allowErrors,
-								   chk_includeParams,
 								   chk_checkFileEncoding,
+								   chk_includeParams,
+								   chk_joinUriAndMethod,
 								   chk_collectTPM, spn_tpmUnit,
 								   chk_collectElapsed, spn_collectElapsed,
 								   chk_collectBytes, spn_collectBytes,
