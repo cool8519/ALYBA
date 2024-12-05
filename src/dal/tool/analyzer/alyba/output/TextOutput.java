@@ -348,6 +348,9 @@ public class TextOutput extends ResultOutput {
 				fields.addField(vo.getRequestExt());
 			} else if(type == Type.TPM || type == Type.DAY || type == Type.HOUR) {
 				DateEntryVO vo = (DateEntryVO)data.get(i);
+				if(vo.getRequestCount() < 0) {
+					continue;
+				}
 				if(type == Type.TPM) {
 					fields.addField(DateUtil.dateToString(vo.getUnitDate(), SDF_DateMinute) + " ~ " + DateUtil.dateToString(DateUtil.addDateUnit(vo.getUnitDate(), Calendar.MINUTE, setting.tpmUnitMinutes), SDF_NoDateMinute));
 				} else if(type == Type.DAY) {

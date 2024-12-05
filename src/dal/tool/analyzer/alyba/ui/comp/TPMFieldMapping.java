@@ -411,6 +411,8 @@ public class TPMFieldMapping extends Composite {
 		cb_fileType.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				resetMappings();
+				spn_offset.setEnabled(false);
+				cb_timeFormat.setEnabled(false);
 			}
 		});
 
@@ -461,6 +463,7 @@ public class TPMFieldMapping extends Composite {
 				spn_offset.setEnabled(timeStr.length() > 0);
 				cb_timeFormat.setEnabled(timeStr.length() > 0);
 				if(timeStr.length() > 0) {
+					Logger.debug("Check TimeFormat : " + timeStr + ", " + cb_timeFormat.getText());
 					checkTimeString(new String[] { cb_timeFormat.getText() }, timeStr);
 					if(!lb_resultTimeChk.getText().equals("OK")) {
 						checkTimeString(cb_timeFormat.getItems(), timeStr);
@@ -482,8 +485,7 @@ public class TPMFieldMapping extends Composite {
 			}
 		});
 
-		addDragAndDropListeners();
-		
+		addDragAndDropListeners();		
 		addKeyListeners();
 
 	}
@@ -758,20 +760,34 @@ public class TPMFieldMapping extends Composite {
 			Logger.debug("Failed to sample a file.");
 			return null;
 		} else {
-			int bound = 100 * 2;
 			int line_number = 0;
 			String line = null;
 			cnt = 0;
+			int line_number_from = 1;
 			do {
-				if(cnt == Constant.MAX_SAMPLING_COUNT)
+				line = FileUtil.readFileLine(file, line_number_from++, null);
+				if(!(line.trim().equals("") || line.startsWith("#"))) {
 					break;
-				int temp = (int)(bound / 2);
-				bound = (temp < 1) ? 1 : temp;
-				line_number = NumberUtil.getRandomNumber(bound) + 1;
-				line = FileUtil.readFileLine(file, line_number, null);
-				cnt++;
-				Logger.debug("sample a line(" + line_number + ") : " + line);
-			} while(line == null || line.trim().equals("") || line.startsWith("#"));
+				}
+			} while(line != null);
+			if(line == null) {
+				cnt = Constant.MAX_SAMPLING_COUNT;
+			} else {
+				line_number_from--;
+				int line_number_to = line_number_from + 200;
+				do {
+					if(cnt == Constant.MAX_SAMPLING_COUNT || line_number_from == line_number_to)
+						break;
+					if(line == null) {
+						int temp = (int)(line_number_to / 2);
+						line_number_to = (temp < line_number_from) ? line_number_from : temp;
+					}
+					line_number = NumberUtil.getRandomNumber(line_number_from, line_number_to);
+					line = FileUtil.readFileLine(file, line_number, null);
+					cnt++;
+					Logger.debug("sample a line(" + line_number + ") : " + line);
+				} while(line == null || line.trim().equals("") || line.startsWith("#"));
+			}
 			if(cnt == Constant.MAX_SAMPLING_COUNT) {
 				Logger.debug("Failed to sample a line : " + file.getCanonicalPath());
 				return null;
@@ -881,6 +897,7 @@ public class TPMFieldMapping extends Composite {
 		if(!mappingData.containsKey("TIME") || !lb_resultTimeChk.getText().equals("OK") || mappingData.keySet().size() < 2) {
 			return false;
 		} else {
+			spn_offset.setEnabled(true);
 			return true;
 		}
 	}

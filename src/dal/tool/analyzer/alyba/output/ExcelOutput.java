@@ -439,6 +439,9 @@ public class ExcelOutput extends ResultOutput {
 				row.add(entryVO.getRequestExt());
 			} else if(type == Type.TPM || type == Type.DAY || type == Type.HOUR) {
 				DateEntryVO entryVO = (DateEntryVO)data.get(i);
+				if(entryVO.getRequestCount() < 0) {
+					continue;
+				}
 				row.add(entryVO.getUnitDate());
 				if(setting.fieldMapping.isMappedIP()) {
 					row.add(entryVO.getRequestIPCount());

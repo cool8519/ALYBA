@@ -154,7 +154,9 @@ public class RegressionAnalysisChart extends DistributionChart {
 				RegressionEntryVO vo = (RegressionEntryVO)data;
 				x = RegressionChart.getVariableData(vo, label_x);
 				y = RegressionChart.getVariableData(vo, label_y);
-				xy_series.addOrUpdate(x, y);
+				if(x != null && y != null) {
+					xy_series.addOrUpdate(x, y);
+				}
 			}
     		xy_collection.addSeries(xy_series);
 		} else {

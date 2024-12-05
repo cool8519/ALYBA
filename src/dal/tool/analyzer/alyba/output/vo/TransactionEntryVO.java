@@ -103,7 +103,7 @@ public class TransactionEntryVO extends EntryVO {
 	}
 	
 	protected void resolveRequestIPCountry() {
-		if(request_ip != null) {
+		if(request_ip != null && (request_ip.contains(":") || Character.isDigit(request_ip.charAt(0)))) {
 			request_ip_country = Utility.getCountryFromIP(request_ip);
 			request_ip_country = request_ip_country==null||"UNKNOWN".equals(request_ip_country) ? "#UNKNOWN#" : request_ip_country;
 		}

@@ -151,9 +151,7 @@ public abstract class KeyValueChart extends Chart {
 				} else {
 					int error = vo.getErrorCount();
 					int success = vo.getRequestCount() - error;
-					if(success > 0) {
-						categoryDataset.addValue(success, "Success", vo.getKey());
-					}
+					categoryDataset.addValue(success, "Success", vo.getKey());
 					if(error > 0) {
 						categoryDataset.addValue(error, "Error", vo.getKey());
 					}

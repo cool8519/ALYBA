@@ -62,7 +62,7 @@ public class TxDailyPerMinChart extends TimeSeriesChart {
 						cal.set(Calendar.YEAR, 2000);
 						cal.set(Calendar.MONTH, 0);
 						cal.set(Calendar.DATE, 1);
-				    	ts.add(new Minute(cal.getTime()), mergedVO.getRequestCount());
+				    	ts.add(new Minute(cal.getTime()), mergedVO.getRequestCount()<0?null:mergedVO.getRequestCount());
 		    			count = 0;
 		    			mergedVO = null;
 		    		}
@@ -79,13 +79,13 @@ public class TxDailyPerMinChart extends TimeSeriesChart {
 		    		}
 		    		ts = new TimeSeries(str_date);
 		    		str_date_prev = str_date;
-		    	}		    	
+		    	}
 				Calendar cal = Calendar.getInstance();
 				cal.setTime(dt);
 				cal.set(Calendar.YEAR, 2000);
 				cal.set(Calendar.MONTH, 0);
 				cal.set(Calendar.DATE, 1);
-		    	ts.add(new Minute(cal.getTime()), vo.getRequestCount());
+		    	ts.add(new Minute(cal.getTime()), vo.getRequestCount()<0?null:vo.getRequestCount());
 		    }
 	    }
 	    

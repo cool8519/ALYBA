@@ -331,7 +331,10 @@ public class RegressionAnalysisChartSetting extends ChartSetting {
 		cb_var_y.select(0);
 		cb_reg_type.select(0);			
 		btn_aggr_byname.setSelection(true);
+		btn_aggr_bygroup.setSelection(false);
+		btn_aggr_allinone.setSelection(false);
 		btn_merge_avg.setSelection(true);
+		btn_merge_sum.setSelection(false);
 		chk_reg_line.setSelection(true);
 		chk_reg_equation.setSelection(true);
 		chk_reg_equation.setEnabled(true);

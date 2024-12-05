@@ -24,7 +24,7 @@ public abstract class DateEntryVO extends EntryVO {
 
 	private long req_total = 0;
 	private long filter_req_total = 0;
-	private int req_count = 0;
+	private int req_count = -1;
 	private float req_ratio = 0F;
 	private float filter_req_ratio = 0F;
 	private double avg_response_time = 0D;
@@ -58,11 +58,14 @@ public abstract class DateEntryVO extends EntryVO {
 	}
 	
 	public void addData() {
+		if(req_count<0) {
+			req_count = 0;
+		}
 		req_count++;
 	}
 
 	public void addData(TransactionEntryVO vo, LogAnalyzerSetting setting) {
-		req_count++;
+		addData();
 		if(setting.fieldMapping.isMappedIP()) {
 			if(vo.getRequestIP() != null) {
 				if(request_ip_list.contains(vo.getRequestIP()) == false) {
@@ -99,18 +102,24 @@ public abstract class DateEntryVO extends EntryVO {
 	}
 	
 	public void setErrorRatio() {
-		entry_err_ratio = ((float)err_count / req_count) * 100;
+		if(req_count >= 0) {  
+			entry_err_ratio = ((float)err_count / req_count) * 100;
+		}
 	}
 
 	public void setTotal(long total) {
 		req_total = total;
-		req_ratio = ((float)req_count / total) * 100;
+		if(req_count >= 0) {
+			req_ratio = ((float)req_count / total) * 100;
+		}
 	}
 
 	public void setFilteredTotal(long total) {
 		filter_req_total = total;
-		filter_req_ratio = ((float)req_count / total) * 100;
-		filter_err_ratio = ((float)err_count / total) * 100;
+		if(req_count >= 0) {
+			filter_req_ratio = ((float)req_count / total) * 100;
+			filter_err_ratio = ((float)err_count / total) * 100;
+		}
 	}
 
 	public long getTotal() {
@@ -215,7 +224,15 @@ public abstract class DateEntryVO extends EntryVO {
 	
 	public <E extends DateEntryVO> E merge(E subVO) {
 		E vo = createEntryVO();
-		vo.setRequestCount(getRequestCount() + subVO.getRequestCount());
+		int req_cnt_sum;
+		if(getRequestCount() >= 0 && subVO.getRequestCount() >= 0) {
+			req_cnt_sum = getRequestCount() + subVO.getRequestCount();
+		} else if(getRequestCount() >= 0) {
+			req_cnt_sum = getRequestCount();
+		} else {
+			req_cnt_sum = subVO.getRequestCount();
+		}
+		vo.setRequestCount(req_cnt_sum);
 		vo.setErrorCount(getErrorCount() + subVO.getErrorCount());
 		if(getLastError().getDate() == null) {
 			vo.setLastError(subVO.getLastError());

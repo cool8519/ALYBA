@@ -50,6 +50,7 @@ public abstract class Chart {
 			chartPanel.setMaximumSize(new Dimension(2048, 1080));
 			chartPanel.setMouseWheelEnabled(true);
 			chartPanel.setMouseZoomable(true);
+			chartPanel.setDoubleBuffered(true);
 			afterCreateChartPanel(chartPanel);
 		}
 		return chartPanel;

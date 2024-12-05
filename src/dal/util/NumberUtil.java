@@ -92,10 +92,20 @@ public class NumberUtil {
     }
 
 	public static int getRandomNumber(int bound) {
-		if(bound < 0)
+		if(bound <= 0)
 			return -1;
 		Random rand = new Random();
 		return rand.nextInt(bound);
+	}
+
+	public static int getRandomNumber(int from, int to) {
+		if(from > to)
+			return -1;
+		else if(from == to) {
+			return from;
+		}
+		Random rand = new Random();
+		return rand.nextInt(to-from+1) + from;
 	}
 
 	public static String getTwoDigitNumber(int num) {

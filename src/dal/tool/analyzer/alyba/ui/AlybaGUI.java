@@ -133,6 +133,7 @@ public class AlybaGUI {
 			boolean isResultAnalyzer = false;
 			String dbFileName = null;
 			
+			System.getProperties().setProperty("sun.java2d.opengl", "true");
 			String[] commandlineOptions = { "-help", "-version", "-debug", "-result" };
 			CommandLineArguments cmdArgs = new CommandLineArguments(commandlineOptions, false);
 			cmdArgs.setNonOptionArguments(0, 1);

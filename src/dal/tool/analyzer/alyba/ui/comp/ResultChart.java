@@ -743,29 +743,22 @@ public class ResultChart extends Composite {
 				List<Object[]> tempList = db.selectList(em, query.toString(), Object[].class, null);
 				dataList = new ArrayList<RegressionEntryVO>(tempList.size());
 				RegressionEntryVO vo = null;
-				int sumTxCount = 0;
 				for(Object[] row : tempList) {
-					String nameTag = (String)row[2] + ":" + (String)row[1];
-					if(vo != null && !vo.getNameTag().equals(nameTag)) {
-						// changed data set. reset sum data.
-						sumTxCount = 0;
-					}						
-					if((Integer)row[11] == 0) {
-						// previous data
-						sumTxCount += (Integer)row[3];
+					vo = new RegressionEntryVO((Date)row[0], (String)row[1], (String)row[2]);
+					vo.setRequestTxCount((Integer)row[3]);
+					vo.setRequestIpCount((Integer)row[4]);
+					vo.setAverageResponseTimeMS((Double)row[5]);
+					vo.setErrorCount((Integer)row[6]);
+					vo.setCpuUsage((Double)row[7]);
+					vo.setMemoryUsage((Double)row[8]);
+					vo.setDiskUsage((Double)row[9]);
+					vo.setNetworkUsage((Double)row[10]);
+					if(vo.getCpuUsage() != -1D || vo.getMemoryUsage() != -1D || vo.getDiskUsage() != -1D || vo.getNetworkUsage() != -1D) {
+						vo.setDataCount(1);
 					} else {
-						vo = new RegressionEntryVO((Date)row[0], (String)row[1], (String)row[2]);
-						vo.setRequestTxCount(sumTxCount + (Integer)row[3]);
-						vo.setRequestIpCount((Integer)row[4]);
-						vo.setAverageResponseTimeMS((Double)row[5]);
-						vo.setErrorCount((Integer)row[6]);
-						vo.setCpuUsage((Double)row[7]);
-						vo.setMemoryUsage((Double)row[8]);
-						vo.setDiskUsage((Double)row[9]);
-						vo.setNetworkUsage((Double)row[10]);
-						dataList.add(vo);
-						sumTxCount = 0;						
+						vo.setFailed(true);
 					}
+					dataList.add(vo);
 				}
 			}
 			if(dataList == null || dataList.size() < 1) {

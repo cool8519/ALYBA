@@ -693,7 +693,7 @@ public class ResultData extends Composite {
 			if((item.getText().equals("request_date") && firstRow.getText(idx).isEmpty()) ||
 			   (item.getText().equals("response_date") && firstRow.getText(idx).isEmpty()) ||
 			   (item.getText().equals("request_uri") && !LogFieldMappingInfo.isMappedURI(settingVo.getLogMappingInfo())) ||
-			   (item.getText().equals("request_uri_pattern") && (!LogFieldMappingInfo.isMappedURI(settingVo.getLogMappingInfo()) || settingVo.getUriMappingPatterns().size()<1)) ||
+			   (item.getText().equals("request_uri_pattern") && (!LogFieldMappingInfo.isMappedURI(settingVo.getLogMappingInfo()) || settingVo.getUriMappingPatterns()==null || settingVo.getUriMappingPatterns().size()<1)) ||
 			   (item.getText().equals("request_ip") && !LogFieldMappingInfo.isMappedIP(settingVo.getLogMappingInfo())) ||
 			   (item.getText().equals("request_ip_country") && !LogFieldMappingInfo.isMappedIP(settingVo.getLogMappingInfo())) ||
 			   (item.getText().indexOf("response_time") > -1 && !LogFieldMappingInfo.isMappedElapsed(settingVo.getLogMappingInfo())) ||

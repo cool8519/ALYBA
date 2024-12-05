@@ -55,11 +55,18 @@ public class TxHourlyChart extends TimeSeriesChart {
 	    			}
 	    		}
 		    	if(merge_item_count == count) {
-			    	exist_error = exist_error==true ? true : mergedVO.getErrorCount()>0;
-			    	ts_total.add(new Hour(mergedVO.getUnitDate()), mergedVO.getRequestCount());
-			    	ts_success.add(new Hour(mergedVO.getUnitDate()), mergedVO.getRequestCount()-mergedVO.getErrorCount());
-			    	ts_error.add(new Hour(mergedVO.getUnitDate()), mergedVO.getErrorCount());
-	    			ts2.add(new Hour(mergedVO.getUnitDate()), mergedVO.getRequestIPCount());	    	
+		    		if(mergedVO.getRequestCount() >= 0) {
+				    	exist_error = exist_error==true ? true : mergedVO.getErrorCount()>0;
+				    	ts_total.add(new Hour(mergedVO.getUnitDate()), mergedVO.getRequestCount());
+				    	ts_success.add(new Hour(mergedVO.getUnitDate()), mergedVO.getRequestCount()-mergedVO.getErrorCount());
+				    	ts_error.add(new Hour(mergedVO.getUnitDate()), mergedVO.getErrorCount());
+		    			ts2.add(new Hour(mergedVO.getUnitDate()), mergedVO.getRequestIPCount());
+		    		} else {
+				    	ts_total.add(new Hour(mergedVO.getUnitDate()), null);
+				    	ts_success.add(new Hour(mergedVO.getUnitDate()), null);
+				    	ts_error.add(new Hour(mergedVO.getUnitDate()), null);
+		    			ts2.add(new Hour(mergedVO.getUnitDate()), null);
+		    		}
 	    			count = 0;
 	    			mergedVO = null;
 	    		}
@@ -67,11 +74,18 @@ public class TxHourlyChart extends TimeSeriesChart {
 	    } else {	    
 		    for(Object data : dataList) {
 		    	TimeAggregationEntryVO vo = (TimeAggregationEntryVO) data;
-		    	exist_error = exist_error==true ? true : vo.getErrorCount()>0;
-		    	ts_total.add(new Hour(vo.getUnitDate()), vo.getRequestCount());
-		    	ts_success.add(new Hour(vo.getUnitDate()), vo.getRequestCount()-vo.getErrorCount());
-		    	ts_error.add(new Hour(vo.getUnitDate()), vo.getErrorCount());
-	    		ts2.add(new Hour(vo.getUnitDate()), vo.getRequestIPCount());
+		    	if(vo.getRequestCount() >= 0) {
+			    	exist_error = exist_error==true ? true : vo.getErrorCount()>0;
+			    	ts_total.add(new Hour(vo.getUnitDate()), vo.getRequestCount());
+			    	ts_success.add(new Hour(vo.getUnitDate()), vo.getRequestCount()-vo.getErrorCount());
+			    	ts_error.add(new Hour(vo.getUnitDate()), vo.getErrorCount());
+		    		ts2.add(new Hour(vo.getUnitDate()), vo.getRequestIPCount());
+	    		} else {
+			    	ts_total.add(new Hour(vo.getUnitDate()), null);
+			    	ts_success.add(new Hour(vo.getUnitDate()), null);
+			    	ts_error.add(new Hour(vo.getUnitDate()), null);
+	    			ts2.add(new Hour(vo.getUnitDate()), null);
+		    	}
 		    }
 	    }
 
@@ -101,7 +115,9 @@ public class TxHourlyChart extends TimeSeriesChart {
 		}
 		if(show_secondary_axis) {
 			renderer = (XYLineAndShapeRenderer)plot.getRenderer(1);
-			renderer.setSeriesPaint(0, Color.DARK_GRAY);
+			if(renderer != null) {
+				renderer.setSeriesPaint(0, Color.DARK_GRAY);
+			}
 		}
 	}
 	

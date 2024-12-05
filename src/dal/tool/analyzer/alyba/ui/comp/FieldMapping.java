@@ -405,9 +405,9 @@ public class FieldMapping extends Composite {
 
 		cb_logType.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
-				//resetMappings();
-				//boolean isCustomize = isCustomizeType() || isJsonType();
-				//grp_customizeMapping.setEnabled(true);
+				resetMappings();
+				boolean isCustomize = isCustomizeType() || isJsonType();
+				setMappingControlsEnabled(isCustomize);
 				LogFieldMappingInfo info = getDefaultMappingInfo(cb_logType.getText());
 				if(info == null) {
 					txt_delimeter.setText(StringUtil.replaceMetaCharacter(Constant.LOG_DEFAULT_DELIMETER, true));
@@ -477,11 +477,18 @@ public class FieldMapping extends Composite {
 		txt_time.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				String timeStr = txt_time.getText();
-				cb_timestampType.setEnabled(timeStr.length() > 0);
-				spn_offset.setEnabled(timeStr.length() > 0);
-				cb_timeFormat.setEnabled(timeStr.length() > 0);
+				boolean isCustomize = isCustomizeType() || isJsonType();
+				if(isCustomize) {
+					cb_timestampType.setEnabled(timeStr.length() > 0);
+					spn_offset.setEnabled(timeStr.length() > 0);
+					cb_timeFormat.setEnabled(timeStr.length() > 0);
+				}
 				if(timeStr.length() > 0) {
-					checkTimeString(cb_timeFormat.getItems(), timeStr);
+					Logger.debug("Check TimeFormat : " + timeStr + ", " + cb_timeFormat.getText());
+					checkTimeString(new String[] { cb_timeFormat.getText() }, timeStr);
+					if(!lb_resultTimeChk.getText().equals("OK") && isCustomize) {
+						checkTimeString(cb_timeFormat.getItems(), timeStr);
+					}
 				} else {
 					lb_resultTimeChk.setText("Not checked");
 					lb_resultTimeChk.setForeground(SWTResourceManager.getColor(SWT.COLOR_BLACK));
@@ -499,8 +506,7 @@ public class FieldMapping extends Composite {
 			}
 		});
 
-		addDragAndDropListeners();
-		
+		addDragAndDropListeners();		
 		addKeyListeners();
 
 	}
@@ -663,6 +669,21 @@ public class FieldMapping extends Composite {
 			}
 		});
 		
+	}
+
+	private void setMappingControlsEnabled(boolean flag) {
+		txt_uri.setEnabled(flag);
+		cb_timestampType.setEnabled(flag);
+		txt_time.setEnabled(flag);		
+		spn_offset.setEnabled(flag);
+		cb_timeFormat.setEnabled(flag);
+		txt_ip.setEnabled(flag);
+		txt_method.setEnabled(flag);
+		txt_version.setEnabled(flag);
+		txt_code.setEnabled(flag);
+		txt_bytes.setEnabled(flag);
+		txt_elapsed.setEnabled(flag);
+		cb_elapsedUnit.setEnabled(flag);	
 	}
 
 	protected boolean mappingDataByDND(String key, Text txtCtrl) {
@@ -1022,20 +1043,34 @@ public class FieldMapping extends Composite {
 			return null;
 		} else {
 			String logfile_encoding = AlybaGUI.getInstance().getFileEncoding(logfile);
-			int bound = 100 * 2;
 			int line_number = 0;
 			String line = null;
 			cnt = 0;
+			int line_number_from = 1;
 			do {
-				if(cnt == Constant.MAX_SAMPLING_COUNT)
+				line = FileUtil.readFileLine(logfile, line_number_from++, logfile_encoding);
+				if(!(line.trim().equals("") || line.startsWith("#") || line.startsWith("format="))) {
 					break;
-				int temp = (int)(bound / 2);
-				bound = (temp < 1) ? 1 : temp;
-				line_number = NumberUtil.getRandomNumber(bound) + 1;
-				line = FileUtil.readFileLine(logfile, line_number, logfile_encoding);
-				cnt++;
-				Logger.debug("sample a line(" + line_number + ") : " + line);
-			} while(line == null || line.trim().equals("") || line.startsWith("#") || line.startsWith("format="));
+				}
+			} while(line != null);
+			if(line == null) {
+				cnt = Constant.MAX_SAMPLING_COUNT;
+			} else {
+				line_number_from--;
+				int line_number_to = line_number_from + 200;
+				do {
+					if(cnt == Constant.MAX_SAMPLING_COUNT || line_number_from == line_number_to)
+						break;
+					if(line == null) {
+						int temp = (int)(line_number_to / 2);
+						line_number_to = (temp < line_number_from) ? line_number_from : temp;
+					}
+					line_number = NumberUtil.getRandomNumber(line_number_from, line_number_to);
+					line = FileUtil.readFileLine(logfile, line_number, logfile_encoding);
+					cnt++;
+					Logger.debug("sample a line(" + line_number + ") : " + line);
+				} while(line == null || line.trim().equals("") || line.startsWith("#") || line.startsWith("format="));
+			}
 			if(cnt == Constant.MAX_SAMPLING_COUNT) {
 				Logger.debug("Failed to sample a line : " + logfile.getCanonicalPath());
 				return null;
@@ -1243,14 +1278,6 @@ public class FieldMapping extends Composite {
 				Logger.debug("[" + cnt + "] idx : " + idx_str + ", data : " + data);
 				cnt++;
 			}
-			if(!txt_time.getText().isEmpty()) {
-				cb_timestampType.setEnabled(isCustomizeType() || isJsonType());
-				spn_offset.setEnabled(isCustomizeType() || isJsonType());
-				cb_timeFormat.setEnabled(isCustomizeType() || isJsonType());
-			}
-			if(!txt_elapsed.getText().isEmpty()) {
-				cb_elapsedUnit.setEnabled(isCustomizeType() || isJsonType());
-			}
 			if(!lb_resultTimeChk.getText().equals("OK")) {
 				MessageUtil.showErrorMessage(getShell(), "Time format is invalid.");
 				if(!fromSetting) {
@@ -1295,6 +1322,7 @@ public class FieldMapping extends Composite {
 		if(!mappingData.containsKey("TIME") || !lb_resultTimeChk.getText().equals("OK")) {
 			return false;
 		} else {
+			spn_offset.setEnabled(true);
 			return true;
 		}
 	}

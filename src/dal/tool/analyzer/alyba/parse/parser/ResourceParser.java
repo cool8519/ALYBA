@@ -117,18 +117,22 @@ public class ResourceParser extends FileLineParser {
 		if(setting.getFieldMapping().getFileType().equals("sar")) {
 			if(line.indexOf("%idle") > -1) {
 				// CPU Header
+				if(!meetHeader[0]) prev_cal = null;
 				meetHeader[0] = true; meetHeader[1] = false; meetHeader[2] = false; meetHeader[3] = false;
 				return;
 			} else if(line.indexOf("%memused") > -1) {
 				// Memroy Header
+				if(!meetHeader[1]) prev_cal = null;
 				meetHeader[0] = false; meetHeader[1] = true; meetHeader[2] = false; meetHeader[3] = false;
 				return;
 			} else if(line.indexOf("%util") > -1) {
 				// Disk Header
+				if(!meetHeader[2]) prev_cal = null;
 				meetHeader[0] = false; meetHeader[1] = false; meetHeader[2] = true; meetHeader[3] = false;
 				return;
 			} else if(line.indexOf("rxkB/s") > -1) {
 				// Network Header
+				if(!meetHeader[3]) prev_cal = null;
 				meetHeader[0] = false; meetHeader[1] = false; meetHeader[2] = false; meetHeader[3] = true;
 				return;
 			} else if(line.startsWith("Average:") || line.indexOf("RESTART") > -1) {
@@ -293,9 +297,11 @@ public class ResourceParser extends FileLineParser {
 			}
 			if(prev_cal == null) {
 				prev_cal = Calendar.getInstance();
+				prev_cal.setTimeInMillis(0);
 			}
 			if(curr_cal == null) {
 				curr_cal = Calendar.getInstance();
+				curr_cal.setTimeInMillis(0);
 			}
 			curr_cal.setTime(dt);			
 			if(curr_cal.get(Calendar.MONTH) == prev_cal.get(Calendar.MONTH) && curr_cal.get(Calendar.DATE) == prev_cal.get(Calendar.DATE) && 

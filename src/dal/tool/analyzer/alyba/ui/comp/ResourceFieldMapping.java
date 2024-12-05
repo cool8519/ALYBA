@@ -499,7 +499,7 @@ public class ResourceFieldMapping extends Composite {
 			public void modifyText(ModifyEvent e) {
 				resetMappings();
 				boolean isCustomize = cb_fileType.getText().equals(Constant.FILE_TYPES[0]);
-				grp_customizeMapping.setEnabled(isCustomize);
+				setMappingControlsEnabled(isCustomize);
 				ResourceFieldMappingInfo[] info = getDefaultMappingInfo(cb_fileType.getText());
 				if(info == null || info.length == 0) {
 					txt_delimeter.setText(StringUtil.replaceMetaCharacter(Constant.FILE_DEFAULT_DELIMETER, true));
@@ -563,11 +563,15 @@ public class ResourceFieldMapping extends Composite {
 		txt_time.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				String timeStr = txt_time.getText();
-				spn_offset.setEnabled(timeStr.length() > 0);
-				cb_timeFormat.setEnabled(timeStr.length() > 0);
+				boolean isCustomize = cb_fileType.getText().equals(Constant.FILE_TYPES[0]);
+				if(isCustomize) {
+					spn_offset.setEnabled(timeStr.length() > 0);
+					cb_timeFormat.setEnabled(timeStr.length() > 0);
+				}
 				if(timeStr.length() > 0) {
+					Logger.debug("Check TimeFormat : " + timeStr + ", " + cb_timeFormat.getText());
 					checkTimeString(new String[] { cb_timeFormat.getText() }, timeStr);
-					if(!lb_resultTimeChk.getText().equals("OK")) {
+					if(!lb_resultTimeChk.getText().equals("OK") && isCustomize) {
 						checkTimeString(cb_timeFormat.getItems(), timeStr);
 					}
 				} else {
@@ -587,8 +591,7 @@ public class ResourceFieldMapping extends Composite {
 			}
 		});
 
-		addDragAndDropListeners();
-		
+		addDragAndDropListeners();		
 		addKeyListeners();
 		addDoubleClickListeners();
 
@@ -723,6 +726,20 @@ public class ResourceFieldMapping extends Composite {
 			}
 		});
 
+	}
+	
+	private void setMappingControlsEnabled(boolean flag) {
+		spn_offset.setEnabled(flag);
+		cb_timeFormat.setEnabled(flag);
+		txt_time.setEnabled(flag);
+		txt_cpu.setEnabled(flag);
+		txt_mem.setEnabled(flag);
+		txt_disk.setEnabled(flag);
+		txt_network.setEnabled(flag);
+		chk_cpu_isIdle.setEnabled(flag);
+		chk_mem_isIdle.setEnabled(flag);
+		chk_disk_isIdle.setEnabled(flag);
+		chk_network_isIdle.setEnabled(flag);
 	}
 	
 	protected boolean mappingDataByDND(String key, Text txtCtrl) {
@@ -1058,26 +1075,40 @@ public class ResourceFieldMapping extends Composite {
 			Logger.debug("Failed to sample a file.");
 			return null;
 		} else {
-			int bound = 100 * 2;
 			int line_number = 0;
 			String line = null;
 			boolean read_header = false;
 			cnt = 0;
+			int line_number_from = 1;
 			do {
-				if(cnt == Constant.MAX_SAMPLING_COUNT)
+				line = FileUtil.readFileLine(file, line_number_from++, null);
+				if(!(line.trim().equals("") || line.startsWith("#") || headerOfVmstat(line) || headerOfSar(line))) {
 					break;
-				int temp = (int)(bound / 2);
-				bound = (temp < 1) ? 1 : temp;
-				line_number = NumberUtil.getRandomNumber(bound) + 1;
-				line = FileUtil.readFileLine(file, line_number, null);
-				if(!read_header) {
-					List<String> headers = FileUtil.head(file, 1, null);
-					header = (headers == null || headers.size() < 1) ? null : headers.get(0);
-					read_header = true;
 				}
-				cnt++;
-				Logger.debug("sample a line(" + line_number + ") : " + line);
-			} while(line == null || line.trim().equals("") || line.startsWith("#") || headerOfVmstat(line) || headerOfSar(line));
+			} while(line != null);
+			if(line == null) {
+				cnt = Constant.MAX_SAMPLING_COUNT;
+			} else {
+				line_number_from--;
+				int line_number_to = line_number_from + 200;
+				do {
+					if(cnt == Constant.MAX_SAMPLING_COUNT || line_number_from == line_number_to)
+						break;
+					if(line == null) {
+						int temp = (int)(line_number_to / 2);
+						line_number_to = (temp < line_number_from) ? line_number_from : temp;
+					}
+					line_number = NumberUtil.getRandomNumber(line_number_from, line_number_to);
+					line = FileUtil.readFileLine(file, line_number, null);
+					if(!read_header) {
+						List<String> headers = FileUtil.head(file, 1, null);
+						header = (headers == null || headers.size() < 1) ? null : headers.get(0);
+						read_header = true;
+					}
+					cnt++;
+					Logger.debug("sample a line(" + line_number + ") : " + line);
+				} while(line == null || line.trim().equals("") || line.startsWith("#") || headerOfVmstat(line) || headerOfSar(line));
+			}
 			if(cnt == Constant.MAX_SAMPLING_COUNT) {
 				Logger.debug("Failed to sample a line : " + file.getCanonicalPath());
 				return null;
@@ -1231,8 +1262,6 @@ public class ResourceFieldMapping extends Composite {
 				if("DEVICE".equals(key)) continue;
 				getFieldDataByAutoMapping(key, info);
 			}
-			spn_offset.setEnabled(false);
-			cb_timeFormat.setEnabled(false);
 			chk_cpu_isIdle.setSelection(info.isCpuIdle());
 			chk_mem_isIdle.setSelection(info.isMemoryIdle());
 			chk_disk_isIdle.setSelection(info.isDiskIdle());
@@ -1319,8 +1348,6 @@ public class ResourceFieldMapping extends Composite {
 				} catch(Exception e2) {
 				}
 			}
-			spn_offset.setEnabled(false);
-			cb_timeFormat.setEnabled(false);
 			chk_cpu_isIdle.setSelection(info.isCpuIdle());
 			chk_mem_isIdle.setSelection(info.isMemoryIdle());
 			chk_disk_isIdle.setSelection(info.isDiskIdle());
@@ -1417,19 +1444,24 @@ public class ResourceFieldMapping extends Composite {
 		} else if(type.equals(Constant.FILE_TYPES[2])) {
 			infos.add(DefaultMapping.SAR_KO.copy());
 			infos.add(DefaultMapping.SAR_EN.copy());
+			infos.add(DefaultMapping.SAR_EN2.copy());
 			infos.add(DefaultMapping.SAR_C.copy());			
 		}
 		return infos.toArray(new ResourceFieldMappingInfo[infos.size()]);
 	}
 
 	protected boolean checkParsingAvailable() {
-		chk_cpu_isIdle.setEnabled(mappingData.containsKey("CPU"));
-		chk_mem_isIdle.setEnabled(mappingData.containsKey("MEM"));
-		chk_disk_isIdle.setEnabled(mappingData.containsKey("DISK"));
-		chk_network_isIdle.setEnabled(mappingData.containsKey("NETWORK"));
+		boolean isCustomize = cb_fileType.getText().equals(Constant.FILE_TYPES[0]);
+		if(isCustomize) {
+			chk_cpu_isIdle.setEnabled(mappingData.containsKey("CPU"));
+			chk_mem_isIdle.setEnabled(mappingData.containsKey("MEM"));
+			chk_disk_isIdle.setEnabled(mappingData.containsKey("DISK"));
+			chk_network_isIdle.setEnabled(mappingData.containsKey("NETWORK"));
+		}
 		if(!mappingData.containsKey("TIME") || !lb_resultTimeChk.getText().equals("OK") || mappingData.keySet().size() < 2) {
 			return false;
 		} else {
+			spn_offset.setEnabled(true);
 			return true;
 		}
 	}
@@ -1448,41 +1480,36 @@ public class ResourceFieldMapping extends Composite {
 		int deviceIdx = Integer.parseInt(mappingData.get("DEVICE")) - 1;
 		List<String> deviceList = new ArrayList<String>();
 		String line = null;
-		int cnt = 0;
-		int line_number = 1;
 		boolean found = false;
-		do {
-			if(cnt == Constant.MAX_SAMPLING_COUNT) {
-				break;
+		BufferedReader br = null;
+		try {
+			FileInputStream fis = new FileInputStream(file);
+			br = new BufferedReader(new InputStreamReader(fis));
+			while((line = br.readLine()) != null) {
+				if(("CPU".equals(type) && line.indexOf("%idle")>-1) || ("MEM".equals(type) && line.indexOf("%memused")>-1) || ("DISK".equals(type) && line.indexOf("%util")>-1) || ("NETWORK".equals(type) && line.indexOf("rxkB/s")>-1)) {
+					found = true;
+					continue;
+				}
+				if(!found || line.trim().equals("") || !Character.isDigit(line.charAt(line.length()-1)) || line.startsWith("#") || headerOfSar(line)) {
+					continue;
+				}
+				String delimeter = StringUtil.replaceMetaCharacter(getDelimeter(), false);
+				String[] bracelets = StringUtil.getArrayFromString(getBracelet(), " ");
+				List<String> tokenList = ParserUtil.getTokenList(line, delimeter, bracelets);
+				String deviceName = tokenList.get(deviceIdx);
+				if(deviceList.contains(deviceName)) {
+					break;
+				} else {
+					deviceList.add(deviceName);
+				}
 			}
-			line = FileUtil.readFileLine(file, line_number++, null);
-			if(line == null) {
-				break;
-			}
-			if(("CPU".equals(type) && line.indexOf("%idle")>-1) || ("MEM".equals(type) && line.indexOf("%memused")>-1) || ("DISK".equals(type) && line.indexOf("%util")>-1) || ("NETWORK".equals(type) && line.indexOf("rxkB/s")>-1)) {
-				found = true;
-				continue;
-			}
-			if(!found || line.trim().equals("") || !Character.isDigit(line.charAt(line.length()-1)) || line.startsWith("#") || headerOfSar(line)) {
-				continue;
-			}
-			String delimeter = StringUtil.replaceMetaCharacter(getDelimeter(), false);
-			String[] bracelets = StringUtil.getArrayFromString(getBracelet(), " ");
-			List<String> tokenList = ParserUtil.getTokenList(line, delimeter, bracelets);
-			String deviceName = tokenList.get(deviceIdx);
-			if(deviceList.contains(deviceName)) {
-				break;
-			} else {
-				deviceList.add(deviceName);
-			}
-			cnt++;			
-		} while(true);
-		if(cnt == Constant.MAX_SAMPLING_COUNT) {
-			Logger.debug("Failed to sample a line : " + file.getCanonicalPath());
-			return null;
-		} else {
 			Logger.debug("Sampled Devices(" + file.getCanonicalPath() + ") : " + deviceList);
 			return deviceList.toArray(new String[deviceList.size()]);
+		} finally {
+			try {
+				br.close();
+			} catch(Exception e2) {
+			}
 		}
 	}
 

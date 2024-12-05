@@ -27,7 +27,15 @@ public class TimeAggregationEntryVO extends DateEntryVO {
 	}
 	
 	public void addData(int count) {
-		setData(getRequestCount() + count);
+		int req_cnt_sum;
+		if(getRequestCount() >= 0 && count >= 0) {
+			req_cnt_sum = getRequestCount() + count;
+		} else if(getRequestCount() >= 0) {
+			req_cnt_sum = getRequestCount();
+		} else {
+			req_cnt_sum = count;
+		}
+		setData(req_cnt_sum);
 	}
 
 	@SuppressWarnings("unchecked")

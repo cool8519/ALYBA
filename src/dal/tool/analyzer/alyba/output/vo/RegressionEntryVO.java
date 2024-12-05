@@ -15,16 +15,21 @@ public class RegressionEntryVO extends ResourceUsageEntryVO {
 	protected int request_ip_count = 0; 
 	protected double avg_response_time = 0D;
 	protected int err_count = 0;
+	protected ResourceMergeType mergeType = ResourceMergeType.AVG;
+	protected boolean failed = false;
 	
 
 	public RegressionEntryVO(Date dt) {
 		super(dt);
-		this.item_count = 1;
 	}
 
 	public RegressionEntryVO(Date dt, String name, String group) {
 		super(dt, name, group);
-		this.item_count = 1;
+	}
+
+	public RegressionEntryVO(Date dt, String name, String group, ResourceMergeType mergeType) {
+		super(dt, name, group);
+		this.mergeType = mergeType;
 	}
 
 	public int getRequestTxCount() {
@@ -58,64 +63,99 @@ public class RegressionEntryVO extends ResourceUsageEntryVO {
 	public void setErrorCount(int err_count) {
 		this.err_count = err_count;
 	}
+	
+	public ResourceMergeType getMergeType() {
+		return mergeType;
+	}
+	
+	public boolean getFailed() {
+		return failed;
+	}
+	
+	public void setFailed(boolean failed) {
+		this.failed = failed;
+	}
 
 	public RegressionEntryVO merge(RegressionEntryVO subVO, ResourceMergeType resourceMergeType) {
-		RegressionEntryVO vo = new RegressionEntryVO(getUnitDate(), (subVO.getServerName().equals(getServerName())?getServerName():null), (subVO.getServerGroup().equals(getServerGroup())?getServerGroup():null));
+		RegressionEntryVO vo = new RegressionEntryVO(getUnitDate(), (subVO.getServerName().equals(getServerName())?getServerName():null), (subVO.getServerGroup().equals(getServerGroup())?getServerGroup():null), resourceMergeType);
 		vo.setRequestTxCount(request_tx_count);
 		vo.setRequestIpCount(request_ip_count);
 		vo.setAverageResponseTimeMS(avg_response_time);
 		vo.setErrorCount(err_count);
+		vo.setFailed(failed);
+		double subvo_total = -1D;
+		double myvo_total = -1D; 
 		if(subVO.getCpuUsage() != -1D) {
+			subvo_total = (subVO.getMergeType() == ResourceMergeType.AVG) ? subVO.getCpuUsage()*subVO.getDataCount() : subVO.getCpuUsage();
 			if(cpu != -1D) {
-				if(resourceMergeType == ResourceMergeType.AVG) {
-					vo.setCpuUsage((cpu*item_count + subVO.getCpuUsage()*subVO.getDataCount()) / (item_count+subVO.getDataCount()));
-				} else {
-					vo.setCpuUsage(cpu*item_count + subVO.getCpuUsage()*subVO.getDataCount());
-				}
+				myvo_total = (mergeType == ResourceMergeType.AVG) ? cpu*item_count : cpu;
+				vo.setCpuUsage((resourceMergeType == ResourceMergeType.AVG) ? ((myvo_total+subvo_total)/(item_count+subVO.getDataCount())) : (myvo_total+subvo_total));
 			} else {
-				vo.setCpuUsage(subVO.getCpuUsage());
+				vo.setCpuUsage((resourceMergeType == ResourceMergeType.AVG) ? (subvo_total/subVO.getDataCount()) : subvo_total);
+				vo.setFailed(true);
 			}
 		} else {
-			vo.setCpuUsage(cpu);
+			if(cpu != -1D) {
+				myvo_total = (mergeType == ResourceMergeType.AVG) ? cpu*item_count : cpu;
+				vo.setCpuUsage((resourceMergeType == ResourceMergeType.AVG) ? (myvo_total/item_count) : myvo_total);
+				vo.setFailed(true);
+			} else {
+				vo.setCpuUsage(cpu);
+			}
 		}
 		if(subVO.getMemoryUsage() != -1D) {
+			subvo_total = (subVO.getMergeType() == ResourceMergeType.AVG) ? subVO.getMemoryUsage()*subVO.getDataCount() : subVO.getMemoryUsage();
 			if(memory != -1D) {
-				if(resourceMergeType == ResourceMergeType.AVG) {
-					vo.setMemoryUsage((memory*item_count + subVO.getMemoryUsage()*subVO.getDataCount()) / (item_count+subVO.getDataCount()));
-				} else {
-					vo.setMemoryUsage(memory*item_count + subVO.getMemoryUsage()*subVO.getDataCount());
-				}
+				myvo_total = (mergeType == ResourceMergeType.AVG) ? memory*item_count : memory;
+				vo.setMemoryUsage((resourceMergeType == ResourceMergeType.AVG) ? ((myvo_total+subvo_total)/(item_count+subVO.getDataCount())) : (myvo_total+subvo_total)); 
 			} else {
-				vo.setMemoryUsage(subVO.getMemoryUsage());
+				vo.setMemoryUsage((resourceMergeType == ResourceMergeType.AVG) ? (subvo_total/subVO.getDataCount()) : subvo_total);
+				vo.setFailed(true);
 			}
 		} else {
-			vo.setMemoryUsage(memory);
+			if(memory != -1D) {
+				myvo_total = (mergeType == ResourceMergeType.AVG) ? memory*item_count : memory;
+				vo.setMemoryUsage((resourceMergeType == ResourceMergeType.AVG) ? (myvo_total/item_count) : myvo_total);
+				vo.setFailed(true);
+			} else {
+				vo.setMemoryUsage(memory);
+			}
 		}
 		if(subVO.getDiskUsage() != -1D) {
+			subvo_total = (subVO.getMergeType() == ResourceMergeType.AVG) ? subVO.getDiskUsage()*subVO.getDataCount() : subVO.getDiskUsage();
 			if(disk != -1D) {
-				if(resourceMergeType == ResourceMergeType.AVG) {
-					vo.setDiskUsage((disk*item_count + subVO.getDiskUsage()*subVO.getDataCount()) / (item_count+subVO.getDataCount()));
-				} else {
-					vo.setDiskUsage(disk*item_count + subVO.getDiskUsage()*subVO.getDataCount());
-				}
+				myvo_total = (mergeType == ResourceMergeType.AVG) ? disk*item_count : disk;
+				vo.setDiskUsage((resourceMergeType == ResourceMergeType.AVG) ? ((myvo_total+subvo_total)/(item_count+subVO.getDataCount())) : (myvo_total+subvo_total)); 
 			} else {
-				vo.setDiskUsage(subVO.getDiskUsage());
+				vo.setDiskUsage((resourceMergeType == ResourceMergeType.AVG) ? (subvo_total/subVO.getDataCount()) : subvo_total);
+				vo.setFailed(true);
 			}
 		} else {
-			vo.setDiskUsage(disk);
+			if(disk != -1D) {
+				myvo_total = (mergeType == ResourceMergeType.AVG) ? disk*item_count : disk;
+				vo.setDiskUsage((resourceMergeType == ResourceMergeType.AVG) ? (myvo_total/item_count) : myvo_total);
+				vo.setFailed(true);
+			} else {
+				vo.setDiskUsage(disk);
+			}
 		}
 		if(subVO.getNetworkUsage() != -1D) {
+			subvo_total = (subVO.getMergeType() == ResourceMergeType.AVG) ? subVO.getNetworkUsage()*subVO.getDataCount() : subVO.getNetworkUsage();
 			if(network != -1D) {
-				if(resourceMergeType == ResourceMergeType.AVG) {
-					vo.setNetworkUsage((network*item_count + subVO.getNetworkUsage()*subVO.getDataCount()) / (item_count+subVO.getDataCount()));
-				} else {
-					vo.setNetworkUsage(network*item_count + subVO.getNetworkUsage()*subVO.getDataCount());
-				}
+				myvo_total = (mergeType == ResourceMergeType.AVG) ? network*item_count : network;
+				vo.setNetworkUsage((resourceMergeType == ResourceMergeType.AVG) ? ((myvo_total+subvo_total)/(item_count+subVO.getDataCount())) : (myvo_total+subvo_total)); 
 			} else {
-				vo.setNetworkUsage(subVO.getNetworkUsage());
+				vo.setNetworkUsage((resourceMergeType == ResourceMergeType.AVG) ? (subvo_total/subVO.getDataCount()) : subvo_total);
+				vo.setFailed(true);
 			}
 		} else {
-			vo.setNetworkUsage(network);
+			if(network != -1D) {
+				myvo_total = (mergeType == ResourceMergeType.AVG) ? network*item_count : network;
+				vo.setNetworkUsage((resourceMergeType == ResourceMergeType.AVG) ? (myvo_total/item_count) : myvo_total);
+				vo.setFailed(true);
+			} else {
+				vo.setNetworkUsage(network);
+			}
 		}
 		vo.setDataCount(item_count+subVO.getDataCount());
 		return vo;
@@ -132,10 +172,12 @@ public class RegressionEntryVO extends ResourceUsageEntryVO {
 		buffer.append("ip=").append(request_ip_count).append(", ");
 		buffer.append("resp=").append(avg_response_time).append(", ");
 		buffer.append("error=").append(err_count).append(", ");		
+		buffer.append("merge=").append(mergeType).append(", ");		
 		buffer.append("cpu=").append(cpu).append(", ");
 		buffer.append("memory=").append(memory).append(", ");
 		buffer.append("disk=").append(disk).append(", ");
-		buffer.append("network=").append(network);
+		buffer.append("network=").append(network).append(", ");
+		buffer.append("count=").append(item_count);
 		buffer.append("]");
 		return buffer.toString();
 	}

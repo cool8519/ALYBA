@@ -80,6 +80,8 @@ public class RegressionVariablesChart extends TimeSeriesChart {
     private Range autoValueRange = null;
     private Range resetValueRangeP = null;
     private Range resetValueRangeS = null;
+    private Date firstDate = null;
+    private Date lastDate = null;
     
 	public RegressionVariablesChart(RegressionChart parent, String title, VariableX varX, VariableY varY, AggregationType aggregationType, ResourceMergeType resourceMergeType, boolean axisYto100) {
 		super(title);
@@ -105,8 +107,14 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 			ts_var2 = new TimeSeries(label_y2);
 			for(Object data : dataList) {
 				RegressionEntryVO vo = (RegressionEntryVO)data;
-	    		ts_var1.addOrUpdate(new Minute(vo.getUnitDate()), RegressionChart.getVariableData(vo, label_y));
-	    		ts_var2.addOrUpdate(new Minute(vo.getUnitDate()), RegressionChart.getVariableData(vo, label_y2));
+				value = RegressionChart.getVariableData(vo, label_y);
+				if(value != null) {
+		    		ts_var1.addOrUpdate(new Minute(vo.getUnitDate()), value);
+				}
+				value = RegressionChart.getVariableData(vo, label_y2);
+				if(value != null) {
+		    		ts_var2.addOrUpdate(new Minute(vo.getUnitDate()), value);
+				}
 			}
 		    tsc_var2.addSeries(ts_var2);	    
 		    tsc_var1.addSeries(ts_var1);			
@@ -125,8 +133,10 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		    			}
 		    			ts_var2 = new TimeSeries(str_name);
 		    			str_name_prev = str_name;
-		    		}		    	
-		    		ts_var1.addOrUpdate(new Minute(vo.getUnitDate()), RegressionChart.getVariableData(vo, label_y));
+		    		}
+		    		value = RegressionChart.getVariableData(vo, label_y);
+		    		setFirstAndLastDateByValue(value, vo.getUnitDate());
+	    			ts_var1.addOrUpdate(new Minute(vo.getUnitDate()), value);
 		    		value = RegressionChart.getVariableData(vo, label_y2);
 		    		if(value != null) {
 		    			ts_var2.add(new Minute(vo.getUnitDate()), value);
@@ -158,18 +168,22 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		    		} else if(dt_prev.equals(dt)) {
 	    				mergedVO = mergedVO.merge(vo, resource_merge_type);
 		    		} else {
-			    		ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), RegressionChart.getVariableData(mergedVO, label_y));
+		    			value = RegressionChart.getVariableData(mergedVO, label_y);
+			    		setFirstAndLastDateByValue(value, mergedVO.getUnitDate());
+	    				ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), value);
 			    		value = RegressionChart.getVariableData(mergedVO, label_y2);
-			    		if(value != null) {
+			    		if(value != null && !mergedVO.getFailed()) {
 			    			ts_var2.add(new Minute(mergedVO.getUnitDate()), value);
 			    		}
 			    		mergedVO = vo;
 		    		}
 		    		dt_prev = dt;
 			    }
-	    		ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), RegressionChart.getVariableData(mergedVO, label_y));
+			    value = RegressionChart.getVariableData(mergedVO, label_y);
+			    setFirstAndLastDateByValue(value, mergedVO.getUnitDate());
+				ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), value);
 	    		value = RegressionChart.getVariableData(mergedVO, label_y2);
-	    		if(value != null) {
+	    		if(value != null && !mergedVO.getFailed()) {
 	    			ts_var2.add(new Minute(mergedVO.getUnitDate()), value);
 	    		}
 			    tsc_var2.addSeries(ts_var2);	    
@@ -185,16 +199,20 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		    		} else if(dt_prev.equals(dt)) {
 	    				mergedVO = mergedVO.merge(vo, resource_merge_type);
 		    		} else {
-			    		ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), RegressionChart.getVariableData(mergedVO, label_y));
+		    			value = RegressionChart.getVariableData(mergedVO, label_y);
+					    setFirstAndLastDateByValue(value, mergedVO.getUnitDate());
+	    				ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), value);
 			    		value = RegressionChart.getVariableData(mergedVO, label_y2);
-			    		if(value != null) {
+			    		if(value != null && !mergedVO.getFailed()) {
 			    			ts_var2.add(new Minute(mergedVO.getUnitDate()), value);
 			    		}
 			    		mergedVO = vo;
 		    		}
 		    		dt_prev = dt;
 				}
-	    		ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), RegressionChart.getVariableData(mergedVO, label_y));
+				value = RegressionChart.getVariableData(mergedVO, label_y);
+			    setFirstAndLastDateByValue(value, mergedVO.getUnitDate());
+				ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), value);
 	    		value = RegressionChart.getVariableData(mergedVO, label_y2);
 	    		if(value != null) {
 	    			ts_var2.add(new Minute(mergedVO.getUnitDate()), value);
@@ -232,6 +250,9 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 	    dateAxis.setTickLabelFont(xyPlot.getRangeAxis(0).getTickLabelFont());
 	    dateAxis.setLowerMargin(0.0D);
 	    dateAxis.setUpperMargin(0.0D);
+	    if(firstDate != null && lastDate != null) {
+	    	dateAxis.setRange(firstDate.getTime()-60000, lastDate.getTime()+60000);
+	    }
 
 		NumberAxis primaryAxis = (NumberAxis)xyPlot.getRangeAxis();
 		primaryAxis.setRangeType(RangeType.POSITIVE);
@@ -522,4 +543,11 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		}
 	}
 
+	private void setFirstAndLastDateByValue(Number val, Date dt) {
+		if(val != null) {
+			if(firstDate == null) firstDate = dt;
+			lastDate = dt;
+		}
+	}
+	
 }

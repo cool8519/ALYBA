@@ -186,9 +186,7 @@ public class ResourceChart extends TimeSeriesChart {
 		    		}
 			    	if(merge_item_count == count) {
 						double value = getValue(mergedVO, type);
-						if(value > -1D) {
-							ts.add(new Minute(mergedVO.getUnitDate()), value);
-						}
+						ts.add(new Minute(mergedVO.getUnitDate()), value<0?null:value);
 		    			count = 0;
 		    			mergedVO = null;
 		    		}
@@ -208,9 +206,7 @@ public class ResourceChart extends TimeSeriesChart {
 		    			str_name_prev = str_name;
 		    		}		    	
 		    		double value = getValue(vo, type);
-					if(value > -1D) {
-						ts.add(new Minute(vo.getUnitDate()), value);
-					}
+					ts.add(new Minute(vo.getUnitDate()), value<0?null:value);
     	    	}
     	    	ts_collection.addSeries(ts);
     		} else if(aggregationType == AggregationType.GROUP) {
@@ -220,9 +216,7 @@ public class ResourceChart extends TimeSeriesChart {
 		    		if(str_name_prev == null || !str_name_prev.equals(str_name)) {
 		    			if(str_name_prev != null) {
 		    	    		double value = getValue(mergedVO, type);
-							if(value > -1D) {
-								ts.add(new Minute(mergedVO.getUnitDate()), value);
-							}
+							ts.add(new Minute(mergedVO.getUnitDate()), value<0?null:value);
 		    				ts_collection.addSeries(ts);
 		    				dt_prev = null;
 		    			}
@@ -236,17 +230,13 @@ public class ResourceChart extends TimeSeriesChart {
 	    				mergedVO = mergedVO.merge(vo);
 		    		} else {
 			    		double value = getValue(mergedVO, type);
-						if(value > -1D) {
-							ts.add(new Minute(mergedVO.getUnitDate()), value);
-						}
+						ts.add(new Minute(mergedVO.getUnitDate()), value<0?null:value);
 			    		mergedVO = vo;
 		    		}
 		    		dt_prev = dt;
     	    	}
 	    		double value = getValue(mergedVO, type);
-				if(value > -1D) {
-					ts.add(new Minute(mergedVO.getUnitDate()), value);
-				}
+				ts.add(new Minute(mergedVO.getUnitDate()), value<0?null:value);
     	    	ts_collection.addSeries(ts);    			
     		} else {
     			ts = new TimeSeries(resourceType.name());
@@ -259,17 +249,13 @@ public class ResourceChart extends TimeSeriesChart {
 	    				mergedVO = mergedVO.merge(vo);
 		    		} else {
 			    		double value = getValue(mergedVO, type);
-						if(value > -1D) {
-							ts.add(new Minute(mergedVO.getUnitDate()), value);
-						}			    		
+						ts.add(new Minute(mergedVO.getUnitDate()), value<0?null:value);
 			    		mergedVO = vo;
 		    		}
 		    		dt_prev = dt;
     			}
 	    		double value = getValue(mergedVO, type);
-				if(value > -1D) {
-					ts.add(new Minute(mergedVO.getUnitDate()), value);
-				}
+				ts.add(new Minute(mergedVO.getUnitDate()), value<0?null:value);
 				ts_collection.addSeries(ts);    			
     		}
 	    }	    

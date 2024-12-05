@@ -239,7 +239,7 @@ public class TransactionCountParser extends LogLineParser {
 		}		
 		Calendar unit = null;
 		Calendar cal = Calendar.getInstance();
-		int sum = 0;
+		int sum = -1;
 		for(EntryVO vo : aggr_tps) {
 			TPSEntryVO tpsVo = (TPSEntryVO)vo;
 			if(unit == null) {
@@ -255,9 +255,14 @@ public class TransactionCountParser extends LogLineParser {
 					aggr_tpm.add(new TPMEntryVO(unit.getTime(), 0));
 					unit.add(Calendar.MINUTE, 1);
 				}
-				sum = tpsVo.getRequestCount();
+				if(tpsVo.getRequestCount() >= 0) {
+					sum = tpsVo.getRequestCount();
+				}
 			} else {				
-				sum += tpsVo.getRequestCount();
+				if(tpsVo.getRequestCount() >= 0) {
+					sum = sum>=0 ? sum : 0;
+					sum += tpsVo.getRequestCount();
+				}
 			}
 		}
 		aggr_tpm.add(new TPMEntryVO(unit.getTime(), sum));
@@ -281,7 +286,7 @@ public class TransactionCountParser extends LogLineParser {
 		}		
 		Calendar unit = null;
 		Calendar cal = Calendar.getInstance();
-		int sum = 0;
+		int sum = -1;
 		for(EntryVO vo : aggr_tpm) {
 			TPMEntryVO tpmVo = (TPMEntryVO)vo;
 			if(unit == null) {
@@ -302,9 +307,14 @@ public class TransactionCountParser extends LogLineParser {
 					aggr_day.add(new TimeAggregationEntryVO(TimeAggregationEntryVO.Type.DAY, unit.getTime(), 0));
 					unit.add(Calendar.DATE, 1);
 				}
-				sum = tpmVo.getRequestCount();
-			} else {				
-				sum += tpmVo.getRequestCount();
+				if(tpmVo.getRequestCount() >= 0) {
+					sum = tpmVo.getRequestCount();
+				}
+			} else {
+				if(tpmVo.getRequestCount() >= 0) {
+					sum = sum>=0 ? sum : 0;
+					sum += tpmVo.getRequestCount();
+				}
 			}
 		}
 		aggr_day.add(new TimeAggregationEntryVO(TimeAggregationEntryVO.Type.DAY, unit.getTime(), sum));
@@ -348,13 +358,16 @@ public class TransactionCountParser extends LogLineParser {
 			int size = aggr_time.size();
 			if(size > 0) {
 				DateEntryVO vo_f = (DateEntryVO)aggr_time.get(0);
-				Date dt_f = vo_f.getUnitDate();
+				Date dt_f = DateUtil.getFirstOfDay(vo_f.getUnitDate());
+				//Date dt_f = vo_f.getUnitDate();
 				Calendar first = Calendar.getInstance();
 				first.setTime(dt_f);
 				DateEntryVO vo_l = (DateEntryVO)aggr_time.get(size - 1);
-				Date dt_l = vo_l.getUnitDate();
+				Date dt_l = DateUtil.getLastOfDay(vo_l.getUnitDate());
+				//Date dt_l = vo_l.getUnitDate();
 				Calendar last = Calendar.getInstance();
-				last.setTime(dt_l);
+				last.setTime(DateUtil.getLastOfDay(dt_l));
+				//last.setTime(dt_l);
 				int tpmUnitMinutes = tpmAnalyzerSetting.getFieldMapping().isTPS ? 1 : tpmAnalyzerSetting.getFieldMapping().countUnit;
 				int total_count = (int)((DateUtil.diff(dt_f, dt_l, TimeUnit.MINUTES)+1) / tpmUnitMinutes);
 				int curr_count = 1;

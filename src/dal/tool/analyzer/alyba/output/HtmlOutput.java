@@ -232,9 +232,9 @@ public class HtmlOutput extends ResultOutput {
 			int size = data.size();
 			int cnt = 1;
 			for(int i = 0; i < size; i++) {
-				sb.append("<tr class=\"TableRow" + cnt + "\">");
 				if(type == Type.BAD_TIME || type == Type.BAD_BYTE || type == Type.BAD_CODE) {
 					TransactionEntryVO vo = (TransactionEntryVO)data.get(i);
+					sb.append("<tr class=\"TableRow" + cnt + "\">");
 					sb.append(td_front_right + (i + 1) + td_rear);
 					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getRequestDate(), SDF_DateSecond)) + td_rear);
 					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getResponseDate(), SDF_DateSecond)) + td_rear);
@@ -246,8 +246,13 @@ public class HtmlOutput extends ResultOutput {
 					sb.append(td_front_left + NVL(vo.getRequestMethod()) + td_rear);
 					sb.append(td_front_left + NVL(vo.getRequestVersion()) + td_rear);
 					sb.append(td_front_left + NVL(vo.getRequestExt()) + td_rear);
+					sb.append("</tr>");
 				} else if(type == Type.TPM || type == Type.DAY || type == Type.HOUR) {
 					DateEntryVO vo = (DateEntryVO)data.get(i);
+					if(vo.getRequestCount() < 0) {
+						continue;
+					}
+					sb.append("<tr class=\"TableRow" + cnt + "\">");
 					if(type == Type.TPM) {
 						sb.append(td_front_center + DateUtil.dateToString(vo.getUnitDate(), SDF_DateMinute) + "&nbsp;&nbsp;~&nbsp;&nbsp;" + DateUtil.dateToString(DateUtil.addDateUnit(vo.getUnitDate(), Calendar.MINUTE, setting.tpmUnitMinutes), SDF_NoDateMinute) + td_rear);
 					} else if(type == Type.DAY) {
@@ -268,8 +273,10 @@ public class HtmlOutput extends ResultOutput {
 					sb.append(td_front_right + vo.getEntryErrorRatio() + td_rear);
 					sb.append(td_front_left + NVL(vo.getLastError().getResponseCode()) + td_rear);
 					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getLastError().getDate(), SDF_DateSecond)) + td_rear);					
+					sb.append("</tr>");
 				} else {
 					KeyEntryVO vo = (KeyEntryVO)data.get(i);
+					sb.append("<tr class=\"TableRow" + cnt + "\">");
 					sb.append(td_front_right + (i + 1) + td_rear);
 					sb.append(td_front_center + vo.getKey() + td_rear);
 					if(type == Type.IP || type == Type.CODE) {
@@ -287,8 +294,8 @@ public class HtmlOutput extends ResultOutput {
 					sb.append(td_front_right + vo.getEntryErrorRatio() + td_rear);
 					sb.append(td_front_left + NVL(vo.getLastError().getResponseCode()) + td_rear);
 					sb.append(td_front_center + NVL(DateUtil.dateToString(vo.getLastError().getDate(), SDF_DateSecond)) + td_rear);
+					sb.append("</tr>");
 				}
-				sb.append("</tr>");
 				cnt = (cnt == 1) ? 2 : 1;
 			}
 		}
