@@ -148,6 +148,9 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 				Collections.sort(dataList, new ResourceGroupAndNameComparator(SortBy.GROUP_TIME));
 			    for(EntryVO data : dataList) {
 			    	RegressionEntryVO vo = (RegressionEntryVO)data;
+			    	if(vo.getFailed()) {
+			    		continue;
+			    	}
 		    		String str_name = vo.getServerGroup();
 		    		if(str_name_prev == null || !str_name_prev.equals(str_name)) {
 		    			if(str_name_prev != null && ts_var2.getItemCount() > 0) {
@@ -193,7 +196,10 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 				ts_var2 = new TimeSeries(label_y2);
 				for(Object data : dataList) {
 					RegressionEntryVO vo = (RegressionEntryVO)data;
-		    		Date dt = vo.getUnitDate();
+			    	if(vo.getFailed()) {
+			    		continue;
+			    	}
+			    	Date dt = vo.getUnitDate();
 		    		if(dt_prev == null) {
 		    			mergedVO = vo;
 		    		} else if(dt_prev.equals(dt)) {

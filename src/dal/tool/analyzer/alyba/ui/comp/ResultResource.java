@@ -111,7 +111,6 @@ public class ResultResource extends Composite {
 	private Button btn_file_removeAll;
 	private Button btn_analyzing;
 
-	@SuppressWarnings("unused")
 	private ResultAnalyzer resultAnalyzer;
 	private ResourceFieldMapping fieldMapping;
 	private ObjectDBUtil db = null;

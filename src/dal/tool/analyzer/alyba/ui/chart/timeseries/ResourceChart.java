@@ -6,6 +6,7 @@ import java.awt.Font;
 import java.awt.geom.Ellipse2D;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import org.jfree.data.time.Minute;
 import org.jfree.data.time.MovingAverage;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
+import org.jfree.data.time.TimeSeriesDataItem;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.RectangleInsets;
@@ -41,6 +43,7 @@ import dal.tool.analyzer.alyba.output.ResourceGroupAndNameComparator.SortBy;
 import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.ResourceUsageEntryVO;
 import dal.tool.analyzer.alyba.ui.chart.TimeSeriesChart;
+import dal.util.DateUtil;
 
 public class ResourceChart extends TimeSeriesChart {
 
@@ -164,31 +167,38 @@ public class ResourceChart extends TimeSeriesChart {
 			Collections.sort(dataList, new ResourceGroupAndNameComparator(SortBy.TIME));
 		}
 	    if(merge_item) {
-	    	int count = 0;
 	    	for(Object data : dataList) {
 	    		ResourceUsageEntryVO vo = (ResourceUsageEntryVO) data;
-		    	String str_name = vo.getServerGroup() + ":" + vo.getServerName();
+		    	String str_name = null;
+		    	if(aggregationType == AggregationType.NAME) {
+		    		str_name = vo.getServerGroup() + ":" + vo.getServerName();
+				} else if(aggregationType == AggregationType.GROUP) {
+					str_name = vo.getServerGroup();
+				} else {
+					str_name = resourceType.name();
+				}
 		    	if(str_name_prev == null || !str_name_prev.equals(str_name)) {
 		    		if(str_name_prev != null) {
 		    			ts_collection.addSeries(ts);
 		    		}
 		    		ts = new TimeSeries(str_name);
 		    		str_name_prev = str_name;
-	    			count = 0;
 	    			mergedVO = vo;
 		    	} else {
-		    		if(merge_item_count > count++) {
-		    			if(mergedVO == null) {
-		    				mergedVO = vo;
-		    			} else {
-		    				mergedVO = mergedVO.merge(vo);
-		    			}
-		    		}
-			    	if(merge_item_count == count) {
+	    			if(mergedVO == null) {
+	    				mergedVO = vo;
+	    			}
+		    		Date next_dt = DateUtil.addDateUnit(mergedVO.getUnitDate(), Calendar.MINUTE, merge_item_count);
+		    		if(next_dt.equals(vo.getUnitDate())) {
 						double value = getValue(mergedVO, type);
-						ts.add(new Minute(mergedVO.getUnitDate()), value<0?null:value);
-		    			count = 0;
+						if(value > -1D) {
+							ts.add(new Minute(mergedVO.getUnitDate()), value);
+						} else if(ts.getItemCount() > 0) {
+							ts.add(new Minute(mergedVO.getUnitDate()), getRecentValue(ts));
+						}
 		    			mergedVO = null;
+		    		} else {
+		    			mergedVO = mergedVO.merge(vo);
 		    		}
 		    	}
 	    	}
@@ -206,7 +216,11 @@ public class ResourceChart extends TimeSeriesChart {
 		    			str_name_prev = str_name;
 		    		}		    	
 		    		double value = getValue(vo, type);
-					ts.add(new Minute(vo.getUnitDate()), value<0?null:value);
+					if(value > -1D) {
+						ts.add(new Minute(vo.getUnitDate()), value);
+					} else if(ts.getItemCount() > 0) {
+						ts.add(new Minute(vo.getUnitDate()), getRecentValue(ts));
+					}
     	    	}
     	    	ts_collection.addSeries(ts);
     		} else if(aggregationType == AggregationType.GROUP) {
@@ -216,7 +230,11 @@ public class ResourceChart extends TimeSeriesChart {
 		    		if(str_name_prev == null || !str_name_prev.equals(str_name)) {
 		    			if(str_name_prev != null) {
 		    	    		double value = getValue(mergedVO, type);
-							ts.add(new Minute(mergedVO.getUnitDate()), value<0?null:value);
+							if(value > -1D) {
+								ts.add(new Minute(mergedVO.getUnitDate()), value);
+							} else if(ts.getItemCount() > 0) {
+								ts.add(new Minute(mergedVO.getUnitDate()), getRecentValue(ts));
+							}
 		    				ts_collection.addSeries(ts);
 		    				dt_prev = null;
 		    			}
@@ -230,13 +248,15 @@ public class ResourceChart extends TimeSeriesChart {
 	    				mergedVO = mergedVO.merge(vo);
 		    		} else {
 			    		double value = getValue(mergedVO, type);
-						ts.add(new Minute(mergedVO.getUnitDate()), value<0?null:value);
+						if(value > -1D) {
+							ts.add(new Minute(mergedVO.getUnitDate()), value);
+						} else if(ts.getItemCount() > 0) {
+							ts.add(new Minute(mergedVO.getUnitDate()), getRecentValue(ts));
+						}
 			    		mergedVO = vo;
 		    		}
 		    		dt_prev = dt;
     	    	}
-	    		double value = getValue(mergedVO, type);
-				ts.add(new Minute(mergedVO.getUnitDate()), value<0?null:value);
     	    	ts_collection.addSeries(ts);    			
     		} else {
     			ts = new TimeSeries(resourceType.name());
@@ -249,13 +269,15 @@ public class ResourceChart extends TimeSeriesChart {
 	    				mergedVO = mergedVO.merge(vo);
 		    		} else {
 			    		double value = getValue(mergedVO, type);
-						ts.add(new Minute(mergedVO.getUnitDate()), value<0?null:value);
+						if(value > -1D) {
+							ts.add(new Minute(mergedVO.getUnitDate()), value);
+						} else if(ts.getItemCount() > 0) {
+							ts.add(new Minute(mergedVO.getUnitDate()), getRecentValue(ts));
+						}			    		
 			    		mergedVO = vo;
 		    		}
 		    		dt_prev = dt;
     			}
-	    		double value = getValue(mergedVO, type);
-				ts.add(new Minute(mergedVO.getUnitDate()), value<0?null:value);
 				ts_collection.addSeries(ts);    			
     		}
 	    }	    
@@ -276,6 +298,15 @@ public class ResourceChart extends TimeSeriesChart {
 		return value;
 	}
 
+	private Number getRecentValue(TimeSeries ts) {
+		if(ts.getItemCount() > 0) {
+			TimeSeriesDataItem item = (TimeSeriesDataItem)ts.getItems().get(ts.getItemCount() - 1);
+			return item.getValue();
+		} else {
+			return -1D;
+		}
+	}
+	
 	
 	public void createChart() {
 		if(resourceType == ResourceType.ALL) {
@@ -403,12 +434,10 @@ public class ResourceChart extends TimeSeriesChart {
 									renderer.setSeriesStroke(index, new BasicStroke(BOLD_LINE_WIDTH, 2, 2));
 								} else {
 									renderer.setSeriesLinesVisible(index, false);
-									renderer.setSeriesShapesVisible(index, false);
 								}
 							} else {
 								renderer.setSeriesLinesVisible(index, true);
 								renderer.setSeriesStroke(index, new BasicStroke(DEFAULT_LINE_WIDTH, 2, 2));
-								renderer.setSeriesShapesVisible(index, show_shape);
 							}
 							renderer.setDrawSeriesLineAsPath(true);								
 						}
