@@ -247,6 +247,9 @@ public abstract class TimeSeriesChart extends Chart {
 		    NumberAxis secondaryAxis = new NumberAxis(label_y2);
 		    secondaryAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
 		    secondaryAxis.setLabelFont(xyPlot.getRangeAxis(0).getLabelFont());
+		    secondaryAxis.setTickLabelFont(xyPlot.getRangeAxis(0).getTickLabelFont());
+		    secondaryAxis.setLabelPaint(xyPlot.getRangeAxis(0).getLabelPaint());
+		    secondaryAxis.setTickLabelPaint(xyPlot.getRangeAxis(0).getTickLabelPaint());
 		    xyPlot.setRangeAxis(1, secondaryAxis);
 		    xyPlot.setRangeAxisLocation(1, AxisLocation.BOTTOM_OR_RIGHT);
 		    xyPlot.setDataset(1, dataset2);
@@ -254,7 +257,7 @@ public abstract class TimeSeriesChart extends Chart {
 		    XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, show_shape);
 		    renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator("{0}: (\"{1}\", {2})", new SimpleDateFormat(date_format), DF_NUMBER));
 		    xyPlot.setRenderer(1, renderer);
-	
+
 			TimeSeriesCollection ts_collection = (TimeSeriesCollection)dataset2;
 			if(show_moving_average) {
 				int series_count = ts_collection.getSeriesCount();
