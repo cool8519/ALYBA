@@ -24,7 +24,7 @@ public abstract class DateEntryVO extends EntryVO {
 
 	private long req_total = 0;
 	private long filter_req_total = 0;
-	private int req_count = -1;
+	private int req_count = 0;
 	private float req_ratio = 0F;
 	private float filter_req_ratio = 0F;
 	private double avg_response_time = 0D;

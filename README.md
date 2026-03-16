@@ -327,6 +327,9 @@ Release Note
 - 자동 매핑시 Time Offset 변경 지원
 - 빈 데이터와 0건 데이터 구분
 
+##### v1.9.3
+- (Bug) 시간 기반 데이터가 빈 데이터로 인식되는 문제 수정
+
 To-do
 --------------
 What ALYBA will implement in the future:

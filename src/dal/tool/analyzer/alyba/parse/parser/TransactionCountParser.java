@@ -239,7 +239,7 @@ public class TransactionCountParser extends LogLineParser {
 		}		
 		Calendar unit = null;
 		Calendar cal = Calendar.getInstance();
-		int sum = -1;
+		int sum = 0;
 		for(EntryVO vo : aggr_tps) {
 			TPSEntryVO tpsVo = (TPSEntryVO)vo;
 			if(unit == null) {
@@ -286,7 +286,7 @@ public class TransactionCountParser extends LogLineParser {
 		}		
 		Calendar unit = null;
 		Calendar cal = Calendar.getInstance();
-		int sum = -1;
+		int sum = 0;
 		for(EntryVO vo : aggr_tpm) {
 			TPMEntryVO tpmVo = (TPMEntryVO)vo;
 			if(unit == null) {
