@@ -80,8 +80,6 @@ public class RegressionVariablesChart extends TimeSeriesChart {
     private Range autoValueRange = null;
     private Range resetValueRangeP = null;
     private Range resetValueRangeS = null;
-    private Date firstDate = null;
-    private Date lastDate = null;
     
 	public RegressionVariablesChart(RegressionChart parent, String title, VariableX varX, VariableY varY, AggregationType aggregationType, ResourceMergeType resourceMergeType, boolean axisYto100) {
 		super(title);
@@ -135,7 +133,6 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		    			str_name_prev = str_name;
 		    		}
 		    		value = RegressionChart.getVariableData(vo, label_y);
-		    		setFirstAndLastDateByValue(value, vo.getUnitDate());
 	    			ts_var1.addOrUpdate(new Minute(vo.getUnitDate()), value);
 		    		value = RegressionChart.getVariableData(vo, label_y2);
 		    		if(value != null) {
@@ -172,7 +169,6 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 	    				mergedVO = mergedVO.merge(vo, resource_merge_type);
 		    		} else {
 		    			value = RegressionChart.getVariableData(mergedVO, label_y);
-			    		setFirstAndLastDateByValue(value, mergedVO.getUnitDate());
 	    				ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), value);
 			    		value = RegressionChart.getVariableData(mergedVO, label_y2);
 			    		if(value != null && !mergedVO.getFailed()) {
@@ -183,7 +179,6 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		    		dt_prev = dt;
 			    }
 			    value = RegressionChart.getVariableData(mergedVO, label_y);
-			    setFirstAndLastDateByValue(value, mergedVO.getUnitDate());
 				ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), value);
 	    		value = RegressionChart.getVariableData(mergedVO, label_y2);
 	    		if(value != null && !mergedVO.getFailed()) {
@@ -206,7 +201,6 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 	    				mergedVO = mergedVO.merge(vo, resource_merge_type);
 		    		} else {
 		    			value = RegressionChart.getVariableData(mergedVO, label_y);
-					    setFirstAndLastDateByValue(value, mergedVO.getUnitDate());
 	    				ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), value);
 			    		value = RegressionChart.getVariableData(mergedVO, label_y2);
 			    		if(value != null && !mergedVO.getFailed()) {
@@ -217,7 +211,6 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		    		dt_prev = dt;
 				}
 				value = RegressionChart.getVariableData(mergedVO, label_y);
-			    setFirstAndLastDateByValue(value, mergedVO.getUnitDate());
 				ts_var1.addOrUpdate(new Minute(mergedVO.getUnitDate()), value);
 	    		value = RegressionChart.getVariableData(mergedVO, label_y2);
 	    		if(value != null) {
@@ -256,8 +249,9 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 	    dateAxis.setTickLabelFont(xyPlot.getRangeAxis(0).getTickLabelFont());
 	    dateAxis.setLowerMargin(0.0D);
 	    dateAxis.setUpperMargin(0.0D);
-	    if(firstDate != null && lastDate != null) {
-	    	dateAxis.setRange(firstDate.getTime()-60000, lastDate.getTime()+60000);
+	    long[] dateRange = getDateRangeFromDatasets();
+	    if(dateRange != null) {
+	    	dateAxis.setRange(dateRange[0] - 60000, dateRange[1] + 60000);
 	    }
 
 		NumberAxis primaryAxis = (NumberAxis)xyPlot.getRangeAxis();
@@ -549,11 +543,27 @@ public class RegressionVariablesChart extends TimeSeriesChart {
 		}
 	}
 
-	private void setFirstAndLastDateByValue(Number val, Date dt) {
-		if(val != null) {
-			if(firstDate == null) firstDate = dt;
-			lastDate = dt;
+	/**
+	 * Variable X와 Y 데이터셋에서 시간 범위(최소·최대)를 구한다.
+	 * @return [minMillis, maxMillis] 또는 데이터가 없으면 null
+	 */
+	private long[] getDateRangeFromDatasets() {
+		long minMs = Long.MAX_VALUE;
+		long maxMs = Long.MIN_VALUE;
+		for(XYDataset ds : new XYDataset[]{ dataset, dataset2 }) {
+			if(ds == null || !(ds instanceof TimeSeriesCollection)) continue;
+			TimeSeriesCollection tsc = (TimeSeriesCollection)ds;
+			for(int i = 0; i < tsc.getSeriesCount(); i++) {
+				TimeSeries ts = tsc.getSeries(i);
+				for(Object itemObj : ts.getItems()) {
+					long ms = ((TimeSeriesDataItem)itemObj).getPeriod().getFirstMillisecond();
+					if(ms < minMs) minMs = ms;
+					if(ms > maxMs) maxMs = ms;
+				}
+			}
 		}
+		if(minMs == Long.MAX_VALUE || maxMs == Long.MIN_VALUE) return null;
+		return new long[]{ minMs, maxMs };
 	}
-	
+
 }
