@@ -331,9 +331,11 @@ Release Note
 - (Bug) 시간 기반 데이터가 빈 데이터로 인식되는 문제 수정
 - (Bug) 듀얼축 차트 사용시 폰트가 동일하게 설정되도록 수정
 - (Bug) 회귀변수 차트의 날짜 범위 설정 오류 수정
+- 시간 기반 차트의 이동평균 및 병합 설정을 시간으로 환산하여 표기
 
 To-do
 --------------
 What ALYBA will implement in the future:
+* Separate logs by server
 * Non-linear Regression Analysis
 

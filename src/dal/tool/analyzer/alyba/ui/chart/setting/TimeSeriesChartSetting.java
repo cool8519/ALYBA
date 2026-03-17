@@ -1,6 +1,8 @@
 package dal.tool.analyzer.alyba.ui.chart.setting;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FillLayout;
@@ -31,8 +33,10 @@ public class TimeSeriesChartSetting extends ChartSetting {
 	private Spinner sp_merge_items;
 	private Label lb_sma_avg;
 	private Label lb_sma_unit;
+	private Label lb_sma_duration;
 	private Label lb_merge_every;
 	private Label lb_merge_unit;
+	private Label lb_merge_duration;
 
 	public TimeSeriesChartSetting(Composite parent, ResultChart result_chart) {
 		super(parent, result_chart);
@@ -89,8 +93,16 @@ public class TimeSeriesChartSetting extends ChartSetting {
 		lb_sma_unit.setFont(Utility.getFont());
 		lb_sma_unit.setText("unit(s)");		
 
+		FormData fd_lb_sma_duration = new FormData();
+		fd_lb_sma_duration.left = new FormAttachment(sp_sma_items, 0, SWT.LEFT);
+		fd_lb_sma_duration.top = new FormAttachment(sp_sma_items, 2);
+		fd_lb_sma_duration.right = new FormAttachment(lb_sma_unit, -10, SWT.RIGHT);
+		lb_sma_duration = new Label(grp_setting, SWT.NONE);
+		lb_sma_duration.setLayoutData(fd_lb_sma_duration);
+		lb_sma_duration.setFont(Utility.getFont(SWT.ITALIC));
+
 		FormData fd_chk_merge = new FormData();
-		fd_chk_merge.top = new FormAttachment(sp_sma_items, 30);
+		fd_chk_merge.top = new FormAttachment(lb_sma_duration, 8);
 		fd_chk_merge.left = new FormAttachment(chk_sma, 0, SWT.LEFT);
 		chk_merge = new Button(grp_setting, SWT.CHECK);
 		chk_merge.setLayoutData(fd_chk_merge);
@@ -129,8 +141,16 @@ public class TimeSeriesChartSetting extends ChartSetting {
 		lb_merge_unit.setFont(Utility.getFont());
 		lb_merge_unit.setText("unit(s)");
 
+		FormData fd_lb_merge_duration = new FormData();
+		fd_lb_merge_duration.left = new FormAttachment(sp_merge_items, 0, SWT.LEFT);
+		fd_lb_merge_duration.top = new FormAttachment(sp_merge_items, 2);
+		fd_lb_merge_duration.right = new FormAttachment(lb_merge_unit, -10, SWT.RIGHT);
+		lb_merge_duration = new Label(grp_setting, SWT.NONE);
+		lb_merge_duration.setLayoutData(fd_lb_merge_duration);
+		lb_merge_duration.setFont(Utility.getFont(SWT.ITALIC));
+
 		FormData fd_chk_shape = new FormData();
-		fd_chk_shape.top = new FormAttachment(sp_merge_items, 30);
+		fd_chk_shape.top = new FormAttachment(lb_merge_duration, 8);
 		fd_chk_shape.left = new FormAttachment(chk_sma, 0, SWT.LEFT);
 		chk_shape = new Button(grp_setting, SWT.CHECK);
 		chk_shape.setLayoutData(fd_chk_shape);
@@ -169,15 +189,52 @@ public class TimeSeriesChartSetting extends ChartSetting {
 		chk_sma.addSelectionListener(new SelectionAdapter() {
 	    	public void widgetSelected(SelectionEvent e) {
 	    		sp_sma_items.setEnabled(chk_sma.getSelection());
+	    		updateSmaMergeLabels();
 	    	}
 	    });
 
 		chk_merge.addSelectionListener(new SelectionAdapter() {
 	    	public void widgetSelected(SelectionEvent e) {
 	    		sp_merge_items.setEnabled(chk_merge.getSelection());
+	    		updateSmaMergeLabels();
 	    	}
 	    });
 
+		sp_sma_items.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				updateSmaMergeLabels();
+			}
+		});
+
+		sp_merge_items.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				updateSmaMergeLabels();
+			}
+		});
+
+	}
+
+	private void updateSmaMergeLabels() {
+		long unitSec = result_chart.getUnitDurationSeconds(result_chart.getCurrentDataName());
+		if(unitSec <= 0) {
+			lb_sma_duration.setText("");
+			lb_merge_duration.setText("");
+			return;
+		}
+		if(chk_sma.getSelection()) {
+			long totalSec = (long)sp_sma_items.getSelection() * unitSec;
+			String formatted = Utility.formatDurationEnglish(totalSec);
+			lb_sma_duration.setText(formatted.isEmpty() ? "" : "→ " + formatted);
+		} else {
+			lb_sma_duration.setText("");
+		}
+		if(chk_merge.getSelection()) {
+			long totalSec = (long)sp_merge_items.getSelection() * unitSec;
+			String formatted = Utility.formatDurationEnglish(totalSec);
+			lb_merge_duration.setText(formatted.isEmpty() ? "" : "→ " + formatted);
+		} else {
+			lb_merge_duration.setText("");
+		}
 	}
 	
 	public void init() {
@@ -193,8 +250,8 @@ public class TimeSeriesChartSetting extends ChartSetting {
 			sp_merge_items.setSelection(tsChart.getMergeItemCount());
 			sp_merge_items.setEnabled(tsChart.getMergeItem());
 			chk_shape.setSelection(tsChart.getShowShape());
-			lb_sma_unit.setText(tsChart.getUnitString());		
-			lb_merge_unit.setText(tsChart.getUnitString());
+			lb_sma_unit.setText("unit(s)");		
+			lb_merge_unit.setText("unit(s)");
 			chk_secondary_data.setSelection(tsChart.getShowSecondaryAxis());
 		} else {
 			chk_sma.setSelection(false);
@@ -208,6 +265,7 @@ public class TimeSeriesChartSetting extends ChartSetting {
 			lb_merge_unit.setText("unit(s)");
 			chk_secondary_data.setSelection(false);
 		}
+		updateSmaMergeLabels();
 	}
 	
 	public void configure(Chart chart) {

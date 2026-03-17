@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.awt.SWT_AWT;
@@ -36,6 +37,7 @@ import dal.tool.analyzer.alyba.output.vo.EntryVO;
 import dal.tool.analyzer.alyba.output.vo.KeyEntryVO;
 import dal.tool.analyzer.alyba.output.vo.RegressionEntryVO;
 import dal.tool.analyzer.alyba.output.vo.ResourceUsageEntryVO;
+import dal.tool.analyzer.alyba.output.vo.SettingEntryVO;
 import dal.tool.analyzer.alyba.ui.Logger;
 import dal.tool.analyzer.alyba.ui.chart.Chart;
 import dal.tool.analyzer.alyba.ui.chart.Chart.Type;
@@ -951,6 +953,77 @@ public class ResultChart extends Composite {
 	
 	public Chart getCurrentChart() {
 		return current_chart;
+	}
+
+	public String getCurrentDataName() {
+		return cb_data.getText();
+	}
+
+	/**
+	 * Returns the unit duration in seconds for the given data type.
+	 * Used for SMA/Merge tooltip display. Returns -1 if unable to determine.
+	 */
+	public long getUnitDurationSeconds(String dataName) {
+		if(dataName == null || em == null) {
+			return -1L;
+		}
+		try {
+			switch(dataName) {
+				case "Tx: per Sec(s)":
+					return 1L;
+				case "Tx: Hourly":
+					return 3600L;
+				case "Tx: Daily":
+					return 86400L;
+				case "Tx: per Min(s)":
+				case "Tx: Daily per Min(s)":
+				case "Tx/ResTime: per Min(s)":
+				case "IP/ResTime: per Min(s)": {
+					SettingEntryVO setting = db.select(em, SettingEntryVO.class);
+					return setting != null ? (long)setting.getTPMUnitMinutes() * 60L : -1L;
+				}
+				case "System Resource":
+					return getResourceUnitDurationSeconds();
+				default:
+					return -1L;
+			}
+		} catch(Exception e) {
+			Logger.debug("Failed to get unit duration for: " + dataName);
+			Logger.error(e);
+			return -1L;
+		}
+	}
+
+	private long getResourceUnitDurationSeconds() {
+		try {
+			TypedQuery<ResourceUsageEntryVO> query = em.createQuery(
+				"SELECT o FROM ResourceUsageEntryVO o ORDER BY o.group, o.name, o.unit_date",
+				ResourceUsageEntryVO.class);
+			query.setMaxResults(100);
+			java.util.List<ResourceUsageEntryVO> list = query.getResultList();
+			if(list.size() < 2) {
+				return 60L;
+			}
+			String prevKey = null;
+			Date prevDate = null;
+			long minDiff = Long.MAX_VALUE;
+			for(ResourceUsageEntryVO vo : list) {
+				String key = vo.getServerGroup() + "|" + vo.getServerName();
+				if(prevKey != null && key.equals(prevKey)) {
+					long diff = vo.getUnitDate().getTime() - prevDate.getTime();
+					if(diff > 0 && diff < minDiff) {
+						minDiff = diff;
+					}
+				}
+				prevKey = key;
+				prevDate = vo.getUnitDate();
+			}
+			return minDiff == Long.MAX_VALUE ? 60L : (minDiff / 1000L);
+		} catch(Exception e) {
+			Logger.debug("Failed to infer resource unit duration");
+			Logger.error(e);
+			return 60L;
+		}
 	}
 	
 	private String getDataTypeByName(String name) {

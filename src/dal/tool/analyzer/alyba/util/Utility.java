@@ -221,4 +221,38 @@ public class Utility {
 		return SWTResourceManager.getFont(Constant.DEFAULT_FONT_NAME, Constant.DEFAULT_FONT_SIZE, SWT.NONE);
 	}
 
+	/**
+	 * Formats duration in seconds to human-readable English string.
+	 * e.g. 30 -> "30 sec", 90 -> "1 min 30 sec", 3665 -> "1 hr 1 min 5 sec"
+	 */
+	public static String formatDurationEnglish(long totalSeconds) {
+		if(totalSeconds < 0) {
+			return "";
+		}
+		if(totalSeconds == 0) {
+			return "0 sec";
+		}
+		long seconds = totalSeconds % 60;
+		long minutes = (totalSeconds / 60) % 60;
+		long hours = (totalSeconds / 3600) % 24;
+		long days = totalSeconds / 86400;
+		StringBuilder sb = new StringBuilder();
+		if(days > 0) {
+			sb.append(days).append(days == 1 ? " day" : " days");
+		}
+		if(hours > 0) {
+			if(sb.length() > 0) sb.append(" ");
+			sb.append(hours).append(hours == 1 ? " hr" : " hrs");
+		}
+		if(minutes > 0) {
+			if(sb.length() > 0) sb.append(" ");
+			sb.append(minutes).append(minutes == 1 ? " min" : " mins");
+		}
+		if(seconds > 0 || sb.length() == 0) {
+			if(sb.length() > 0) sb.append(" ");
+			sb.append(seconds).append(seconds == 1 ? " sec" : " secs");
+		}
+		return sb.toString();
+	}
+
 }
