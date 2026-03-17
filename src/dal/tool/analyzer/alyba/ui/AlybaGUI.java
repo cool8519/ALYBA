@@ -562,24 +562,31 @@ public class AlybaGUI {
 
 		tblv_files.addDropSupport(DND.DROP_MOVE | DND.DROP_COPY, Constant.FILE_TRANSFER_TYPE, new DropTargetListener() {
 			public void drop(DropTargetEvent event) {
-				String[] sourceFileList = (String[])event.data;
-				String filename_pattern = null;
+				final String[] sourceFileList = (String[])event.data;
 				if(event.detail == DND.DROP_COPY) {
 					// Drop with Ctrl(Copy on windows) key
-					InputDialog dlg = new InputDialog(shell, "Input", "Enter pattern of filenames (* and ? characters are available)", "*", new IInputValidator() {
-						public String isValid(String s) {
-							if(s.length() < 1)
-								return "Too short";
-							return null;
+					display.asyncExec(new Runnable() {
+						public void run() {
+							Shell s = shell;
+							if(s != null && !s.isDisposed()) {
+								s.forceActive();
+								s.forceFocus();
+							}
+							InputDialog dlg = new InputDialog(shell, "Input", "Enter pattern of filenames (* and ? characters are available)", "*", new IInputValidator() {
+								public String isValid(String s) {
+									if(s.length() < 1)
+										return "Too short";
+									return null;
+								}
+							});
+							if(dlg.open() == Window.OK) {
+								addTableItems(sourceFileList, dlg.getValue());
+							}
 						}
 					});
-					if(dlg.open() == Window.OK) {
-						filename_pattern = dlg.getValue();
-					} else {
-						return;
-					}
+				} else {
+					addTableItems(sourceFileList, null);
 				}
-				addTableItems(sourceFileList, filename_pattern);
 			}
 			public void dropAccept(DropTargetEvent event) {}
 			public void dragOver(DropTargetEvent event) {}

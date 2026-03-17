@@ -44,6 +44,7 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
@@ -521,8 +522,17 @@ public class ResultResource extends Composite {
 
 		tblv_files.addDropSupport(DND.DROP_MOVE | DND.DROP_COPY, Constant.FILE_TRANSFER_TYPE, new DropTargetListener() {
 			public void drop(DropTargetEvent event) {
-				String[] sourceFileList = (String[])event.data;
-				addTableItems(sourceFileList);
+				final String[] sourceFileList = (String[])event.data;
+				getDisplay().asyncExec(new Runnable() {
+					public void run() {
+						Shell s = getShell();
+						if(s != null && !s.isDisposed()) {
+							s.forceActive();
+							s.forceFocus();
+						}
+						addTableItems(sourceFileList);
+					}
+				});
 			}
 			public void dropAccept(DropTargetEvent event) {}
 			public void dragOver(DropTargetEvent event) {}
