@@ -31,6 +31,7 @@ import dal.tool.analyzer.alyba.output.vo.TransactionEntryVO;
 import dal.tool.analyzer.alyba.parse.FieldIndex;
 import dal.tool.analyzer.alyba.parse.FileInfo;
 import dal.tool.analyzer.alyba.parse.ParserUtil;
+import dal.tool.analyzer.alyba.setting.FieldMappingInfo;
 import dal.tool.analyzer.alyba.setting.LogAnalyzerSetting;
 import dal.tool.analyzer.alyba.ui.AlybaGUI;
 import dal.tool.analyzer.alyba.ui.Logger;
@@ -45,7 +46,13 @@ public abstract class LogLineParser extends FileLineParser {
 
 	protected static final String STR_DATE = "yyyy.MM.dd";
 	protected static final String STR_DATETIME = "yyyy.MM.dd HH:mm:ss";
-	protected static ThreadLocal<List<PatternItem>> threadURIMappingPatterns = new ThreadLocal<List<PatternItem>>();
+	private static final class URIPatternCache {
+		List<String> sourcePatterns;
+		long revision;
+		List<PatternItem> items;
+	}
+
+	protected static ThreadLocal<URIPatternCache> threadURIMappingPatternCache = new ThreadLocal<URIPatternCache>();
 
 	protected String tid = null;
 	protected LogAnalyzerSetting setting = null;
@@ -263,7 +270,7 @@ public abstract class LogLineParser extends FileLineParser {
 		if(uri_result != null && setting.uriIncludeParams) {
 			uri_result = (uri_result.indexOf("?") > 0) ? uri_result.substring(0, uri_result.indexOf("?")) : uri_result;
 		}
-		String uri_result_pattern = getMatchURIPattern(setting.getFieldMapping().getURIMappingPatterns(), uri_result);
+		String uri_result_pattern = getMatchURIPattern(setting.getFieldMapping(), uri_result);
 		if(uri_result_pattern != null) {
 			Logger.debug("[" + Thread.currentThread().getName() + "] uri=" + uri_result + ", pattern=" + uri_result_pattern);
 		}
@@ -297,63 +304,73 @@ public abstract class LogLineParser extends FileLineParser {
 		aggregate(vo);
 	}
 	
-	private String getMatchURIPattern(List<String> uri_mapping_patterns, String uri) {
+	private String getMatchURIPattern(FieldMappingInfo fieldMapping, String uri) {
+		List<String> uri_mapping_patterns = fieldMapping.getURIMappingPatterns();
 		if(uri_mapping_patterns == null) {
 			return null;
 		}
-		List<PatternItem> list = threadURIMappingPatterns.get();
-		if(list == null) {
-			list = new ArrayList<PatternItem>(uri_mapping_patterns.size());
-			for(String pattern_str : uri_mapping_patterns) {
-				String regex = "";
-				try {
-					int prev = 0;
-					int init = pattern_str.indexOf("{");
-					int end = pattern_str.indexOf("}", init);
-					while(init > -1 && end > -1) {
-						String before = pattern_str.substring(prev, init).replaceAll("/", "\\/").replaceAll("\\.", "\\\\."); 
-						String pattern_str_in = pattern_str.substring(init+1, end);
-						String regex_str = "[^/]+";
-						if(pattern_str_in.indexOf(":") > -1) {
-							// include regex
-							regex_str = pattern_str_in.substring(pattern_str_in.indexOf(":")+1);
-							int openCnt;
-							String added = regex_str;
-							while((openCnt = StringUtil.countCharacters(added, '{')) > 0) {
-								added = "";
-								for(int i = 0; i < openCnt; i++) {						
-									prev = end;
-									init = end;
-									end = pattern_str.indexOf("}", init+1);
-									added += pattern_str.substring(init, end);
-								}
-								regex_str += added;
-							}
-							regex_str = regex_str.replaceAll("\\\\\\\\", "\\\\");
-						}
-						regex += before + "(" + regex_str + ")";
-						prev = end + 1;
-						init = pattern_str.indexOf("{", prev);
-						end = pattern_str.indexOf("}", init);
-					}
-					if(prev < pattern_str.length()) {
-						regex += pattern_str.substring(prev).replaceAll("/", "\\/").replaceAll("\\.", "\\\\.");
-					}
-					Pattern pattern = Pattern.compile("^" + regex + "$");
-					list.add(new PatternItem(pattern_str, pattern));
-					Logger.debug("[" + Thread.currentThread().getName() + "] URI Pattern(" + pattern_str + ") compiled successfully.");
-				} catch(Exception e) {
-					Logger.debug(e);
-				}
-			}
-			threadURIMappingPatterns.set(list);
+		long rev = fieldMapping.getUriMappingPatternsRevision();
+		URIPatternCache cache = threadURIMappingPatternCache.get();
+		if(cache == null || cache.sourcePatterns != uri_mapping_patterns || cache.revision != rev) {
+			cache = new URIPatternCache();
+			cache.sourcePatterns = uri_mapping_patterns;
+			cache.revision = rev;
+			cache.items = compileUriPatternItems(uri_mapping_patterns);
+			threadURIMappingPatternCache.set(cache);
 		}
-		for(PatternItem item : list) {
+		for(PatternItem item : cache.items) {
 			if(item.patternObj.matcher(uri).matches()) {
 				return item.patternStr;
 			}
 		}
 		return null;
+	}
+
+	private List<PatternItem> compileUriPatternItems(List<String> uri_mapping_patterns) {
+		List<PatternItem> list = new ArrayList<PatternItem>(uri_mapping_patterns.size());
+		for(String pattern_str : uri_mapping_patterns) {
+			String regex = "";
+			try {
+				int prev = 0;
+				int init = pattern_str.indexOf("{");
+				int end = pattern_str.indexOf("}", init);
+				while(init > -1 && end > -1) {
+					String before = pattern_str.substring(prev, init).replaceAll("/", "\\/").replaceAll("\\.", "\\\\."); 
+					String pattern_str_in = pattern_str.substring(init+1, end);
+					String regex_str = "[^/]+";
+					if(pattern_str_in.indexOf(":") > -1) {
+						// include regex
+						regex_str = pattern_str_in.substring(pattern_str_in.indexOf(":")+1);
+						int openCnt;
+						String added = regex_str;
+						while((openCnt = StringUtil.countCharacters(added, '{')) > 0) {
+							added = "";
+							for(int i = 0; i < openCnt; i++) {						
+								prev = end;
+								init = end;
+								end = pattern_str.indexOf("}", init+1);
+								added += pattern_str.substring(init, end);
+							}
+							regex_str += added;
+						}
+						regex_str = regex_str.replaceAll("\\\\\\\\", "\\\\");
+					}
+					regex += before + "(" + regex_str + ")";
+					prev = end + 1;
+					init = pattern_str.indexOf("{", prev);
+					end = pattern_str.indexOf("}", init);
+				}
+				if(prev < pattern_str.length()) {
+					regex += pattern_str.substring(prev).replaceAll("/", "\\/").replaceAll("\\.", "\\\\.");
+				}
+				Pattern pattern = Pattern.compile("^" + regex + "$");
+				list.add(new PatternItem(pattern_str, pattern));
+				Logger.debug("[" + Thread.currentThread().getName() + "] URI Pattern(" + pattern_str + ") compiled successfully.");
+			} catch(Exception e) {
+				Logger.debug(e);
+			}
+		}
+		return list;
 	}
 
 	protected boolean allowedAggregation(Date dt, String ip, String uri, String ext, String code, String method, String version) throws Exception {

@@ -11,6 +11,8 @@ public class FieldMappingInfo {
 	public String fieldBracelet;
 	public HashMap<String, String> mappingInfo = new HashMap<String, String>();
 	public List<String> uriMappingPatterns;
+	/** Incremented on each {@link #setURIMappingPatterns(List)}; used to invalidate URI pattern caches. */
+	private volatile long uriMappingPatternsRevision = 0L;
 	public int fieldCount;
 
 	public FieldMappingInfo() {
@@ -61,9 +63,14 @@ public class FieldMappingInfo {
 	public List<String> getURIMappingPatterns() {
 		return uriMappingPatterns;
 	}
+
+	public long getUriMappingPatternsRevision() {
+		return uriMappingPatternsRevision;
+	}
 	
 	public void setURIMappingPatterns(List<String> patterns) {
 		this.uriMappingPatterns = patterns;
+		uriMappingPatternsRevision++;
 	}
 	
 	public void setMappingInfo(String[] field_idx_arr) {
