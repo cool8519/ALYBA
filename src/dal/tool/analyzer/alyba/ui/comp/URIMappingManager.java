@@ -255,13 +255,41 @@ public class URIMappingManager extends Shell {
 		
 		tblv_uri_mapping.addDropSupport(DND.DROP_MOVE | DND.DROP_COPY, Constant.FILE_TRANSFER_TYPE, new DropTargetListener() {
 			public void drop(DropTargetEvent event) {
-				String[] sourceFileList = (String[])event.data;
-				if(sourceFileList != null && sourceFileList.length > 0) {
-					List<File> files = new ArrayList<File>(sourceFileList.length);
-					for(String f : sourceFileList) {
-						files.add(new File(f));
+				try {
+					Object data = event.data;
+					if(data instanceof String[]) {
+						String[] sourceFileList = (String[])data;
+						if(sourceFileList != null && sourceFileList.length > 0) {
+							List<File> files = new ArrayList<File>(sourceFileList.length);
+							int dir_cnt = 0;
+							for(String f : sourceFileList) {
+								File file = new File(f);
+								if(file.isDirectory()) {
+									dir_cnt++;
+									continue;
+								}
+								files.add(file);
+							}
+							if(dir_cnt > 0) {
+								MessageUtil.showWarningMessage(instance, dir_cnt + " folder(s) are not supported. Please drop files only.");
+							}
+							if(files.size() > 0) {
+								addPatternItems(files);
+							}
+						}
+					} else {
+						MessageUtil.showErrorMessage(instance, "Failed to load URI patterns from dropped file(s).");
 					}
-					addPatternItems(files);
+				} catch(Exception ex) {
+					Logger.error(ex);
+					String msg = ex.getMessage();
+					msg = (msg == null || msg.trim().equals("")) ? null : msg.trim();
+					if(msg != null) {
+						msg = msg.replaceAll("\\.\\s", "\\.\n");
+						MessageUtil.showErrorMessage(instance, msg);
+					} else {
+						MessageUtil.showErrorMessage(instance, "Failed to load URI patterns from dropped file(s).");
+					}
 				}
 			}
 			public void dropAccept(DropTargetEvent event) {}
@@ -309,6 +337,8 @@ public class URIMappingManager extends Shell {
 		int from_idx = tbl_uri_mapping.getItemCount();
 		int s_cnt = 0;
 		int f_cnt = 0;
+		int file_fail_cnt = 0;
+		List<String> file_fail_msgs = new ArrayList<String>();
 		for(int i = 0; i < files.size(); i++) {
 			File f = (File)files.get(i);			
 			Reader reader = null;
@@ -364,8 +394,12 @@ public class URIMappingManager extends Shell {
 					}
 				}
 			} catch(Exception ex) {
+				file_fail_cnt++;
 				Logger.debug("Failed to read patterns from the file : " + f.getAbsolutePath());
 				Logger.error(ex);
+				if(file_fail_msgs.size() < 3) {
+					file_fail_msgs.add(formatFileReadErrorDetail(f, ex));
+				}
 			} finally {
 				if(reader != null) {
 					try { reader.close(); } catch(Exception e) {}
@@ -382,6 +416,39 @@ public class URIMappingManager extends Shell {
 		if(f_cnt > 0) {
 			MessageUtil.showWarningMessage(instance, f_cnt + " pattern(s) has been ignored.");
 		}
+		if(file_fail_cnt > 0) {
+			String detail = (file_fail_msgs.size() > 0) ? file_fail_msgs.get(0) : "";
+			String msg = "Failed to load URI patterns from the file.";
+			if(!detail.equals("")) {
+				msg += "\n" + detail;
+			}
+			MessageUtil.showErrorMessage(instance, msg);
+		}
+	}
+
+	/**
+	 * {@link java.io.FileInputStream} / {@link java.io.FileReader} 실패 시, OS·JDK에 따라
+	 * {@code getMessage()}가 이미 "전체경로 (이유)" 형태인 경우가 많다.
+	 * UI에서 경로가 두 번 반복되지 않도록 한 줄로 정리한다.
+	 */
+	private static String formatFileReadErrorDetail(File file, Throwable ex) {
+		String path = file.getAbsolutePath();
+		String message = ex.getMessage();
+		if(message == null || message.trim().equals("")) {
+			return path;
+		}
+		message = message.trim();
+		if(message.startsWith(path)) {
+			return message;
+		}
+		String pathFwd = path.replace('\\', '/');
+		if(message.startsWith(pathFwd)) {
+			return message;
+		}
+		if(message.indexOf(path) >= 0) {
+			return message;
+		}
+		return path + " : " + message;
 	}
 
 	private String removeQuotation(String value) {
