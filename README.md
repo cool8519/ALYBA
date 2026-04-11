@@ -10,8 +10,8 @@ Requirements
 Getting Started
 ---------------
 아래의 두개 버전 중 하나를 다운로드 한다.
-* Windows Executable : [ALYBA_v1.9.2.exe](https://github.com/cool8519/ALYBA/releases/download/v1.9.2/ALYBA_v1.9.2.exe)
-* Java Archive File : [ALYBA_v1.9.2.jar](https://github.com/cool8519/ALYBA/releases/download/v1.9.2/ALYBA_v1.9.2.jar)
+* Windows Executable : [ALYBA_v1.9.3.exe](https://github.com/cool8519/ALYBA/releases/download/v1.9.3/ALYBA_v1.9.3.exe)
+* Java Archive File : [ALYBA_v1.9.3.jar](https://github.com/cool8519/ALYBA/releases/download/v1.9.3/ALYBA_v1.9.3.jar)
 
 ALYBA 실행파일을 클릭하거나, 커맨드 창에서 실행시키면 된다.
 `C:\> ALYBA.exe`
@@ -335,6 +335,7 @@ Release Note
 - (Bug) URI Mapping 패턴 등록 실패시 오류창이 표시되지 않는 문제 수정
 - 시간 기반 차트의 이동평균 및 병합 설정을 시간으로 환산하여 표기
 - 입력창이 열리는 파일 드롭 이벤트 발생시 자동 포커싱
+- Spring 프로젝트 폴더의 소스를 읽어 URI Mapping 패턴 등록 기능 추가
 
 To-do
 --------------

@@ -76,6 +76,8 @@ public class Constant {
 	public static final String[] DB_FILTER_EXTS = { "*.adb" };
 	public static final String[] ALLFILES_FILTER_NAMES = { "All Files (*.*)" };
 	public static final String[] ALLFILES_FILTER_EXTS = { "*.*" };
+	public static final String[] JAVA_SOURCE_FILTER_NAMES = { "Java Sources (*.java)", "All Files (*.*)" };
+	public static final String[] JAVA_SOURCE_FILTER_EXTS = { "*.java", "*.*" };
 
 	public static final String[] LOG_TYPES = { "Customize", "Apache", "Tomcat", "WebtoB", "Nginx", "JEUS", "IIS", "JSON" };
 	public static final String[] FILE_TYPES = { "Customize", "vmstat", "sar" };

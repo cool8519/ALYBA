@@ -196,6 +196,10 @@ public abstract class ProgressBarTask implements Runnable {
 		}
 	}
 
+	public String getCompletionSummaryForDialog() {
+		return null;
+	}
+
 	protected void updatePercentAndTimeMessage() {
 		try {
 			String total_str = "Unknown";

@@ -19,6 +19,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 
 import dal.tool.analyzer.alyba.Constant;
 
@@ -30,6 +31,7 @@ public class ProgressBarDialog extends Dialog {
 	private Display display;
 	private Shell shell;
 	private Button btn_cancel;
+	private Button btn_ok;
 	private Composite comp_mainMsg;
 	private Composite comp_totalmsg;
 	private Composite comp_progressBar;
@@ -39,6 +41,7 @@ public class ProgressBarDialog extends Dialog {
 	private Label lb_totalTime;
 	private Label[] lb_detailView;
 	private Label lb_detailMsg;
+	private Text txt_completionSummary;
 	private Label lb_line;
 	private CLabel clb_mainMsg;
 	private ProgressBar pbar_progressBar;
@@ -50,10 +53,20 @@ public class ProgressBarDialog extends Dialog {
 	protected Image processImage;
 	protected boolean showCancel;
 	protected boolean isCanceled = false;
+	protected boolean confirmOnComplete = false;
+	protected String completeConfirmLabel = "OK";
+	protected String completeCancelLabel = "Cancel";
+	protected String completeEmptySummaryMessage = "Completed without any errors.";
+	protected boolean resizable = false;
+	protected int initialWidth = 480;
+	protected int initialHeight = 220;
+	protected int minimumWidth = 480;
+	protected int minimumHeight = 220;
+	protected boolean showDetailIndicators = true;
+	private volatile boolean confirmUiShown = false;
+	private volatile boolean completionAccepted = true;
+	private volatile boolean completionDecisionMode = false;
 
-	/**
-	 * @wbp.parser.constructor
-	 */
 	public ProgressBarDialog(Shell parent) {
 		super(parent);
 		title = "Progress";
@@ -87,6 +100,10 @@ public class ProgressBarDialog extends Dialog {
 		this.detailViewCount = count;
 	}
 
+	public void setShowDetailIndicators(boolean show) {
+		this.showDetailIndicators = show;
+	}
+
 	public void setProcessMessage(String processMessage) {
 		this.processMessage = processMessage;
 	}
@@ -99,14 +116,63 @@ public class ProgressBarDialog extends Dialog {
 		this.showCancel = showCancel;
 	}
 
+	public void setConfirmOnComplete(boolean confirmOnComplete) {
+		this.confirmOnComplete = confirmOnComplete;
+	}
+
+	public void setCompleteDecisionButtonLabels(String confirmLabel, String cancelLabel) {
+		if(confirmLabel != null && confirmLabel.trim().length() > 0) {
+			this.completeConfirmLabel = confirmLabel.trim();
+		}
+		if(cancelLabel != null && cancelLabel.trim().length() > 0) {
+			this.completeCancelLabel = cancelLabel.trim();
+		}
+	}
+
+	public void setCompleteEmptySummaryMessage(String message) {
+		if(message != null && message.trim().length() > 0) {
+			this.completeEmptySummaryMessage = message.trim();
+		}
+	}
+
+	public boolean isCompletionAccepted() {
+		return completionAccepted;
+	}
+
+	public void setResizable(boolean resizable) {
+		this.resizable = resizable;
+	}
+
+	public void setDialogSize(int width, int height) {
+		if(width > 0) {
+			this.initialWidth = width;
+		}
+		if(height > 0) {
+			this.initialHeight = height;
+		}
+	}
+
+	public void setMinimumDialogSize(int width, int height) {
+		if(width > 0) {
+			this.minimumWidth = width;
+		}
+		if(height > 0) {
+			this.minimumHeight = height;
+		}
+	}
+
 	public boolean open() {
 		display = getParent().getDisplay();
-		shell = new Shell(getParent(), SWT.TITLE | SWT.PRIMARY_MODAL);
+		int style = SWT.TITLE | SWT.PRIMARY_MODAL;
+		if(resizable) {
+			style |= SWT.RESIZE | SWT.MAX;
+		}
+		shell = new Shell(getParent(), style);
 		createContents();
 		addEventListener();
 		shell.open();
 		shell.layout();
-		Utility.centralize(shell, getParent());
+		Utility.centralizeOnMonitorOf(shell, getParent());
 		new ProcessThread().start();
 		while(!shell.isDisposed()) {
 			if(!display.readAndDispatch()) {
@@ -121,7 +187,10 @@ public class ProgressBarDialog extends Dialog {
 		GridLayout gl_progress = new GridLayout();
 		gl_progress.verticalSpacing = 5;
 
-		shell.setSize(480, 220);
+		shell.setSize(initialWidth, initialHeight);
+		if(resizable) {
+			shell.setMinimumSize(minimumWidth, minimumHeight);
+		}
 		shell.setText(title);
 		shell.setLayout(gl_progress);
 
@@ -138,7 +207,7 @@ public class ProgressBarDialog extends Dialog {
 		GridLayout gl_totalmsg = new GridLayout();
 		gl_totalmsg.numColumns = 3;
 
-		GridData gd_comp_totalmsg = new GridData(GridData.FILL, SWT.CENTER, false, false);
+		GridData gd_comp_totalmsg = new GridData(GridData.FILL, SWT.CENTER, true, false);
 		gd_comp_totalmsg.heightHint = 25;
 		comp_totalmsg = new Composite(shell, SWT.NONE);
 		comp_totalmsg.setLayout(gl_totalmsg);
@@ -159,7 +228,7 @@ public class ProgressBarDialog extends Dialog {
 		lb_totalTime.setFont(TEXT_FONT);
 		new Label(comp_totalmsg, SWT.NONE);
 
-		GridData gd_comp_progressBar = new GridData(GridData.FILL, GridData.CENTER, false, false);
+		GridData gd_comp_progressBar = new GridData(GridData.FILL, GridData.CENTER, true, false);
 		gd_comp_progressBar.heightHint = 17;
 		comp_progressBar = new Composite(shell, SWT.NONE);
 		comp_progressBar.setLayoutData(gd_comp_progressBar);
@@ -169,7 +238,7 @@ public class ProgressBarDialog extends Dialog {
 		GridLayout gl_detailview = new GridLayout(30, true);
 		gl_detailview.marginHeight = 2;
 
-		GridData gd_comp_detailview = new GridData(GridData.FILL, SWT.FILL, false, false);
+		GridData gd_comp_detailview = new GridData(GridData.FILL, SWT.FILL, true, false);
 		gd_comp_detailview.heightHint = (int)(20 * Math.ceil((double)detailViewCount/30));
 		comp_detailview = new Composite(shell, SWT.NONE);
 		comp_detailview.setLayout(gl_detailview);
@@ -186,14 +255,30 @@ public class ProgressBarDialog extends Dialog {
 			lb_detailView[i].setLayoutData(gd_lb_detailView);
 		}
 
+		if(!showDetailIndicators) {
+			comp_detailview.setVisible(false);
+			Object ld = comp_detailview.getLayoutData();
+			if(ld instanceof GridData) {
+				((GridData)ld).exclude = true;
+			}
+		}
+
 		lb_detailMsg = new Label(shell, SWT.NONE);
-		GridData gd_lb_detailMsg = new GridData(GridData.FILL, GridData.CENTER, false, false);
+		GridData gd_lb_detailMsg = new GridData(GridData.FILL, GridData.CENTER, true, false);
 		gd_lb_detailMsg.heightHint = 20;
 		lb_detailMsg.setAlignment(SWT.CENTER);
 		lb_detailMsg.setLayoutData(gd_lb_detailMsg);
 		lb_detailMsg.setFont(TEXT_FONT);
 
-		GridData gd_lb_line = new GridData(GridData.FILL, GridData.CENTER, false, false);
+		txt_completionSummary = new Text(shell, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL | SWT.BORDER);
+		GridData gd_txt = new GridData(GridData.FILL, GridData.FILL, true, true);
+		gd_txt.heightHint = 100;
+		txt_completionSummary.setLayoutData(gd_txt);
+		txt_completionSummary.setFont(TEXT_FONT);
+		txt_completionSummary.setVisible(true);
+		gd_txt.exclude = false;
+
+		GridData gd_lb_line = new GridData(GridData.FILL, GridData.CENTER, true, false);
 		gd_lb_line.heightHint = 10;
 		lb_line = new Label(shell, SWT.HORIZONTAL | SWT.SEPARATOR);
 		lb_line.setLayoutData(gd_lb_line);
@@ -203,10 +288,15 @@ public class ProgressBarDialog extends Dialog {
 
 		comp_cancel = new Composite(shell, SWT.NONE);
 		GridData gd_comp_cancel = new GridData(GridData.END, GridData.CENTER, false, false);
-		gd_comp_cancel.widthHint = 96;
 		gd_comp_cancel.heightHint = 30;
 		comp_cancel.setLayout(gl_cancel);
 		comp_cancel.setLayoutData(gd_comp_cancel);
+
+		btn_ok = new Button(comp_cancel, SWT.NONE);
+		btn_ok.setLayoutData(new GridData(78, SWT.DEFAULT));
+		btn_ok.setFont(TEXT_FONT);
+		btn_ok.setText("OK");
+		btn_ok.setVisible(false);
 
 		if(showCancel) {
 			btn_cancel = new Button(comp_cancel, SWT.NONE);
@@ -229,9 +319,23 @@ public class ProgressBarDialog extends Dialog {
 			}
 		});
 
+		btn_ok.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				if(completionDecisionMode) {
+					completionAccepted = true;
+				}
+				shell.close();
+			}
+		});
+
 		if(showCancel) {
 			btn_cancel.addSelectionListener(new SelectionAdapter() {
 				public void widgetSelected(SelectionEvent e) {
+					if(completionDecisionMode) {
+						completionAccepted = false;
+						shell.close();
+						return;
+					}
 					if(!MessageUtil.showConfirmMessage(shell, "Do you really want to stop the task?")) {
 						return;
 					}
@@ -243,6 +347,9 @@ public class ProgressBarDialog extends Dialog {
 	}
 
 	protected void updateDetailView() {
+		if(!showDetailIndicators) {
+			return;
+		}
 		int[] status = task.getDetailStatus();
 		int[] percents = task.getTasksPercent();
 		String[] details = task.getTasksDetail();
@@ -290,13 +397,13 @@ public class ProgressBarDialog extends Dialog {
 			doBefore();
 			Thread thr = new Thread(task);
 			thr.start();
-			do {
-				if(display.isDisposed()) {
-					break;
-				}
-				display.asyncExec(new Runnable() {
+			while(shell != null && !shell.isDisposed() && !display.isDisposed()) {
+				display.syncExec(new Runnable() {
 					public void run() {
 						if(pbar_progressBar.isDisposed()) {
+							return;
+						}
+						if(confirmUiShown) {
 							return;
 						}
 						task.updatePercentAndTimeMessage();
@@ -310,30 +417,54 @@ public class ProgressBarDialog extends Dialog {
 						updateDetailView();
 						pbar_progressBar.setSelection(percent);
 						if(task.isComplete() || isCanceled) {
-							shell.close();
+							if(confirmOnComplete && task.isComplete() && !isCanceled && task.isSuccessed()) {
+								if(!confirmUiShown) {
+									confirmUiShown = true;
+									completionDecisionMode = true;
+									completionAccepted = false;
+									clb_mainMsg.setText(" Completed.");
+									btn_ok.setText(completeConfirmLabel);
+									btn_ok.setVisible(true);
+									if(btn_cancel != null) {
+										btn_cancel.setText(completeCancelLabel);
+										btn_cancel.setEnabled(true);
+									}
+									String extra = task.getCompletionSummaryForDialog();
+									if(extra != null && extra.length() > 0) {
+										txt_completionSummary.setText(extra.length() > 12000 ? extra.substring(0, 12000) + "\n..." : extra);
+									} else {
+										txt_completionSummary.setText(completeEmptySummaryMessage);
+									}
+									txt_completionSummary.setVisible(true);
+									Object ld = txt_completionSummary.getLayoutData();
+									if(ld instanceof GridData) {
+										((GridData)ld).exclude = false;
+									}
+									shell.layout(true, true);
+								}
+							} else {
+								shell.close();
+							}
 						}
 					}
 				});
+				if(confirmUiShown) {
+					break;
+				}
 				if(task.isComplete() || isCanceled) {
-					if(isCanceled) {
-						cleanUp();
+					if(!(confirmOnComplete && task.isComplete() && !isCanceled && task.isSuccessed())) {
+						break;
 					}
 				}
 				try {
 					Thread.sleep(CHECK_INTERVAL);
 				} catch(InterruptedException e) {
 				}
-			} while(!task.isComplete() && !isCanceled);
-			doAfter();
-			if(!display.isDisposed()) {
-				display.syncExec(new Runnable() {
-					public void run() {
-						if(!shell.isDisposed()) {
-							shell.close();
-						}
-					}
-				});
 			}
+			if(isCanceled) {
+				cleanUp();
+			}
+			doAfter();
 		}
 	}
 
