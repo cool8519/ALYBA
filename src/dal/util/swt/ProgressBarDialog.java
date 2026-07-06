@@ -275,8 +275,8 @@ public class ProgressBarDialog extends Dialog {
 		gd_txt.heightHint = 100;
 		txt_completionSummary.setLayoutData(gd_txt);
 		txt_completionSummary.setFont(TEXT_FONT);
-		txt_completionSummary.setVisible(true);
-		gd_txt.exclude = false;
+		txt_completionSummary.setVisible(confirmOnComplete);
+		gd_txt.exclude = !confirmOnComplete;
 
 		GridData gd_lb_line = new GridData(GridData.FILL, GridData.CENTER, true, false);
 		gd_lb_line.heightHint = 10;
