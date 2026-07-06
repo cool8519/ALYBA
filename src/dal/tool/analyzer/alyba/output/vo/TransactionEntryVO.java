@@ -222,6 +222,7 @@ public class TransactionEntryVO extends EntryVO {
 		vo.request_method = request_method == null ? null : new String(request_method);
 		vo.request_version = request_version == null ? null : new String(request_version);
 		vo.request_ext = request_ext == null ? null : new String(request_ext);
+		vo.response_is_error = response_is_error;
 		return vo;
 	}
 

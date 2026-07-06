@@ -29,6 +29,7 @@ public class BadTransactionEntryVO extends TransactionEntryVO {
 		request_method = vo.request_method;
 		request_version = vo.request_version;
 		request_ext = vo.request_ext;
+		response_is_error = vo.response_is_error;
 	}
 
 }
