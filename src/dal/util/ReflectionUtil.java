@@ -1,9 +1,12 @@
 package dal.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.persistence.Transient;
 
 public class ReflectionUtil {
 	
@@ -36,6 +39,14 @@ public class ReflectionUtil {
         return fields;
     }
 	
+	public static boolean isTransientField(Field f) {
+		return f.getAnnotation(Transient.class) != null;
+	}
+
+	public static boolean isTableColumnField(Field f) {
+		return !Modifier.isStatic(f.getModifiers()) && !"type".equals(f.getName()) && !isTransientField(f);
+	}
+
 	public static boolean isNumberType(Field f) {
 		Class<?> type = f.getType();
 		if(type == int.class || type == Integer.class || type == long.class || type == Long.class ||

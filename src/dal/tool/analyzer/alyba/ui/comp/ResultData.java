@@ -2,7 +2,6 @@ package dal.tool.analyzer.alyba.ui.comp;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -557,7 +556,7 @@ public class ResultData extends Composite {
 	    int columnIdx = 0;
 		List<Field> fields = ReflectionUtil.getFields(map_table.get(table_name));
 		for(Field f : fields) {
-			if(!Modifier.isStatic(f.getModifiers()) && !"type".equals(f.getName())) {
+			if(ReflectionUtil.isTableColumnField(f)) {
 				TableItem tbli = new TableItem(tbl_columns, SWT.NONE);
 				tbli.setText(f.getName());
 				tbli.setChecked(true);
@@ -729,7 +728,7 @@ public class ResultData extends Composite {
 				fields = ReflectionUtil.getFields(entry.getClass());
 			}
 			for(Field f : fields) {
-				if(!Modifier.isStatic(f.getModifiers()) && !"type".equals(f.getName())) {
+				if(ReflectionUtil.isTableColumnField(f)) {
 					f.setAccessible(true);
 					Object value = f.get(entry);
 					item.setText(columnIdx++, objectToStringByColumn(f.getName(), value));

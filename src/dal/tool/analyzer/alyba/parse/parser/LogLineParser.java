@@ -301,6 +301,9 @@ public abstract class LogLineParser extends FileLineParser {
 		}
 
 		TransactionEntryVO vo = new TransactionEntryVO(dt, uri_result, uri_result_pattern, ip, rtime, rbyte, code, method, version, ext, "Res".equals(setting.getFieldMapping().getTimestampType()), isError);
+		if(uri != null && setting.uriIncludeParams && uri.indexOf("?") > 0) {
+			vo.setRequestURIFull(uri);
+		}
 		aggregate(vo);
 	}
 	

@@ -223,17 +223,25 @@ public class DefaultParser extends LogLineParser {
 		long rbyte = vo.getResponseBytes();
 		String code = vo.getResponseCode();
 		if(setting.fieldMapping.isMappedElapsed() && setting.collectElapsedTime && rtime > 0 && rtime >= setting.collectElapsedTimeMS) {
-			db.insertWithTransaction(em, new BadTransactionEntryVO(BadTransactionEntryVO.Type.TIME, vo.copy()), false);
+			db.insertWithTransaction(em, createBadTransactionEntry(BadTransactionEntryVO.Type.TIME, vo), false);
 			Logger.debug("Inserted Response of time to DB : time=" + rtime + ", Parser=" + tid + ", Size=" + ++count_time);
 		}
 		if(setting.fieldMapping.isMappedBytes() && setting.collectResponseBytes && rbyte > 0 && (int)(rbyte / 1024) >= setting.collectResponseBytesKB) {
-			db.insertWithTransaction(em, new BadTransactionEntryVO(BadTransactionEntryVO.Type.SIZE, vo.copy()), false);
+			db.insertWithTransaction(em, createBadTransactionEntry(BadTransactionEntryVO.Type.SIZE, vo), false);
 			Logger.debug("Inserted Response of size to DB : size=" + rbyte + ", Parser=" + tid + ", Size=" + ++count_size);
 		}
 		if(setting.fieldMapping.isMappedCode() && setting.collectErrors && code != null && (code.startsWith("4") || code.startsWith("5"))) {
-			db.insertWithTransaction(em, new BadTransactionEntryVO(BadTransactionEntryVO.Type.CODE, vo.copy()), false);
+			db.insertWithTransaction(em, createBadTransactionEntry(BadTransactionEntryVO.Type.CODE, vo), false);
 			Logger.debug("Inserted Response of error to DB : code=" + code + ", Parser=" + tid + ", Size=" + ++count_error);
 		}
+	}
+
+	private BadTransactionEntryVO createBadTransactionEntry(BadTransactionEntryVO.Type type, TransactionEntryVO vo) {
+		BadTransactionEntryVO bad = new BadTransactionEntryVO(type, vo.copy());
+		if(vo.getRequestURIFull() != null) {
+			bad.setRequestURI(vo.getRequestURIFull());
+		}
+		return bad;
 	}
 
 	private void writeSummaryDataToDB() throws Exception {

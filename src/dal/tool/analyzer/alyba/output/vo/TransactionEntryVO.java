@@ -6,6 +6,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 import javax.persistence.Entity;
+import javax.persistence.Transient;
 
 import dal.tool.analyzer.alyba.util.Utility;
 import dal.util.DateUtil;
@@ -19,6 +20,8 @@ public class TransactionEntryVO extends EntryVO {
 	protected Date request_date = null;
 	protected Date response_date = null;
 	protected String request_uri = null;
+	@Transient
+	protected String request_uri_full = null;
 	protected String request_uri_pattern = null;
 	protected String request_ip = null;
 	protected String request_ip_country = null;
@@ -56,6 +59,14 @@ public class TransactionEntryVO extends EntryVO {
 	
 	public void setRequestURI(String request_uri) {
 		this.request_uri = request_uri;
+	}
+
+	public String getRequestURIFull() {
+		return request_uri_full;
+	}
+
+	public void setRequestURIFull(String request_uri_full) {
+		this.request_uri_full = request_uri_full;
 	}
 
 	public String getRequestURI_Pattern() {
@@ -213,6 +224,7 @@ public class TransactionEntryVO extends EntryVO {
 		vo.request_date = request_date == null ? null : new Date(request_date.getTime());
 		vo.response_date = response_date == null ? null : new Date(response_date.getTime());
 		vo.request_uri = request_uri == null ? null : new String(request_uri);
+		vo.request_uri_full = request_uri_full == null ? null : new String(request_uri_full);
 		vo.request_uri_pattern = request_uri_pattern == null ? null : new String(request_uri_pattern);
 		vo.request_ip = request_ip == null ? null : new String(request_ip);
 		vo.request_ip_country = request_ip_country == null ? null : new String(request_ip_country);
