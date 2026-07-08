@@ -10,8 +10,8 @@ Requirements
 Getting Started
 ---------------
 아래의 두개 버전 중 하나를 다운로드 한다.
-* Windows Executable : [ALYBA_v1.9.3.exe](https://github.com/cool8519/ALYBA/releases/download/v1.9.3/ALYBA_v1.9.3.exe)
-* Java Archive File : [ALYBA_v1.9.3.jar](https://github.com/cool8519/ALYBA/releases/download/v1.9.3/ALYBA_v1.9.3.jar)
+* Windows Executable : [ALYBA_v1.9.4.exe](https://github.com/cool8519/ALYBA/releases/download/v1.9.4/ALYBA_v1.9.4.exe)
+* Java Archive File : [ALYBA_v1.9.4.jar](https://github.com/cool8519/ALYBA/releases/download/v1.9.4/ALYBA_v1.9.4.jar)
 
 ALYBA 실행파일을 클릭하거나, 커맨드 창에서 실행시키면 된다.
 `C:\> ALYBA.exe`
@@ -74,7 +74,8 @@ ALYBA를 사용하기 위해서는 아래의 순서를 따른다.
   * 시간은 기본적으로 UTC+0 기준으로 입력되므로, 로그가 기록된 서버의 TimeZone이 있는 경우는 Hour 단위로 Offset 설정을 한다. (예: IST=5.5시간)
   * 로그의 요청 URI가 RESTful URL 형식인 경우, URI Mapping에 패턴을 등록하면 매칭되는 패턴은 하나의 URI로 집계된다. (예: /user/myId123/get -> /user/{userId}/get)
 * URI Mapping
-  * 파일에서 읽어오려면 File Type을 선택한 뒤 파일을 선택하거나 드래그 앤 드롭한다.
+  * File Type에 따라 패턴을 불러온다. Text는 URI 목록 파일, OpenAPI Spec은 YAML 명세, Spring Project는 프로젝트 폴더 또는 Java 소스에서 Controller의 @RequestMapping을 스캔하여 등록한다.
+  * 파일(또는 Spring Project의 경우 폴더)을 선택하거나 드래그 앤 드롭한다.
   * 패턴을 직접 입력하여 목록을 작성하거나 수정할 수 있다.
   * 정의된 패턴은 정확히 일치해야 해당 패턴으로 요청이 그룹화 되며, 목록의 순서대로 매칭 여부를 확인한다.
   * 각 패턴 문자열에는 “{userID}”와 같이 가변 문자를 지정해야 하며, “{empNo:[\\d]+}”와 같이 ":" 뒤에 정규식 표현을 사용할 수 있다. (Springframework의 RequestMapping 문법 지원) 
@@ -336,6 +337,12 @@ Release Note
 - 시간 기반 차트의 이동평균 및 병합 설정을 시간으로 환산하여 표기
 - 입력창이 열리는 파일 드롭 이벤트 발생시 자동 포커싱
 - Spring 프로젝트 폴더의 소스를 읽어 URI Mapping 패턴 등록 기능 추가
+
+##### v1.9.4
+- (Bug) TransactionEntryVO 복사시 response_is_error 필드가 누락되는 문제 수정
+- Includes Parameters 옵션 사용시 비정상(시간/크기/에러) 건에 GET 파라미터를 포함한 전체 URL 수집
+- 분석 완료 확인이 필요한 경우에만 ProgressBarDialog 요약 텍스트박스 표시
+- SAR 시간 형식 자동 인식 기능 개선
 
 To-do
 --------------
