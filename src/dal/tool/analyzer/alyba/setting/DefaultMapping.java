@@ -15,6 +15,7 @@ public class DefaultMapping {
 
 	public static final ResourceFieldMappingInfo VMSTAT = new ResourceFieldMappingInfo(Constant.FILE_TYPES[1], " \t", "\"\"", "yyyy-MM-dd HH:mm:ss", Locale.ENGLISH, 0, true, false, false, false, new String[] { "TIME:18,19", "CPU:15", "MEM:4", "DISK:{$9+$10}" });
 	
+	public static final ResourceFieldMappingInfo SAR_ISO = new ResourceFieldMappingInfo(Constant.FILE_TYPES[2], " \t", "() \"\"", "yyyy-MM-dd HH:mm:ss", Locale.ENGLISH, 0, true, false, false, false, new String[] { "TIME:H4,1", "DEVICE:2", "CPU:'%idle'", "MEM:'%memused'", "DISK:'%util'", "NETWORK:{$5+$6}" });
 	public static final ResourceFieldMappingInfo SAR_C  = new ResourceFieldMappingInfo(Constant.FILE_TYPES[2], " \t", "() \"\"", "MM/dd/yy HH:mm:ss", Locale.ENGLISH, 0, true, false, false, false, new String[] { "TIME:H4,1", "DEVICE:2", "CPU:'%idle'", "MEM:'%memused'", "DISK:'%util'", "NETWORK:{$5+$6}" });
 	public static final ResourceFieldMappingInfo SAR_EN = new ResourceFieldMappingInfo(Constant.FILE_TYPES[2], " \t", "() \"\"", "MM/dd/yyyy hh:mm:ss a", Locale.ENGLISH, 0, true, false, false, false, new String[] { "TIME:H4,1,2", "DEVICE:3", "CPU:'%idle'", "MEM:'%memused'", "DISK:'%util'", "NETWORK:{$6+$7}" });
 	public static final ResourceFieldMappingInfo SAR_EN2 = new ResourceFieldMappingInfo(Constant.FILE_TYPES[2], " \t", "() \"\"", "yyyy-MM-dd hh:mm:ss a", Locale.ENGLISH, 0, true, false, false, false, new String[] { "TIME:H4,1,2", "DEVICE:3", "CPU:'%idle'", "MEM:'%memused'", "DISK:'%util'", "NETWORK:{$6+$7}" });

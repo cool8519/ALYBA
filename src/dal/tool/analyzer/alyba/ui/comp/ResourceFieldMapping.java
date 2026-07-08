@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -1324,6 +1323,7 @@ public class ResourceFieldMapping extends Composite {
 						fillTableDataWithLogLine(line);
 						Logger.debug(key + " Sampled Line(" + file.getCanonicalPath() + ":" + line_number + ") : \n" + line);
 						if(!completeTime) {
+							adjustSarMappingForTimeStyle(info, line);
 							getFieldDataByAutoMapping("TIME", info);
 							completeTime = true;
 						}
@@ -1399,6 +1399,65 @@ public class ResourceFieldMapping extends Composite {
 		}
 	}
 	
+	protected void adjustSarMappingForTimeStyle(ResourceFieldMappingInfo info, String sampleLine) {
+		String timeMapping = info.getMappingInfo().get("TIME");
+		if(timeMapping == null || (!timeMapping.equals("H4,1") && !timeMapping.equals("H4,1,2"))) {
+			return;
+		}
+		String delimeter = StringUtil.replaceMetaCharacter(info.getFieldDelimeter(), false);
+		String[] bracelets = StringUtil.getArrayFromString(info.getFieldBracelet(), " ");
+		List<String> tokens = ParserUtil.getTokenList(sampleLine, delimeter, bracelets);
+		if(tokens == null || tokens.size() < 2) {
+			return;
+		}
+		boolean hasAmPm = tokens.get(1).matches("(?i)^(AM|PM)$");
+		if(hasAmPm && timeMapping.equals("H4,1")) {
+			info.getMappingInfo().put("TIME", "H4,1,2");
+			adjustSarFieldIndices(info, 1);
+		} else if(!hasAmPm && timeMapping.equals("H4,1,2")) {
+			info.getMappingInfo().put("TIME", "H4,1");
+			adjustSarFieldIndices(info, -1);
+		}
+	}
+
+	protected void adjustSarFieldIndices(ResourceFieldMappingInfo info, int offset) {
+		String device = info.getMappingInfo().get("DEVICE");
+		if(device != null && device.matches("\\d+")) {
+			int idx = Integer.parseInt(device) + offset;
+			if(idx > 0) {
+				info.getMappingInfo().put("DEVICE", String.valueOf(idx));
+			}
+		}
+		String network = info.getMappingInfo().get("NETWORK");
+		if(network != null && network.startsWith("{$") && network.endsWith("}")) {
+			String expr = network.substring(2, network.length() - 1);
+			String[] parts = expr.split("\\+");
+			StringBuilder sb = new StringBuilder("{");
+			for(int i = 0; i < parts.length; i++) {
+				if(i > 0) {
+					sb.append("+");
+				}
+				int n = Integer.parseInt(parts[i].trim().replace("$", ""));
+				sb.append("$").append(n + offset);
+			}
+			sb.append("}");
+			info.getMappingInfo().put("NETWORK", sb.toString());
+		}
+	}
+
+	protected String[] buildSarTimeFormatCandidates(String preferredFormat) {
+		List<String> formats = new ArrayList<String>();
+		if(preferredFormat != null && !preferredFormat.equals("")) {
+			formats.add(preferredFormat);
+		}
+		for(String format : Constant.SAR_TIME_FORMATS) {
+			if(!formats.contains(format)) {
+				formats.add(format);
+			}
+		}
+		return formats.toArray(new String[formats.size()]);
+	}
+
 	protected String getFieldDataByAutoMapping(String key, ResourceFieldMappingInfo info) throws Exception {
 		String idx_str = info.getMappingInfo().get(key);
 		Logger.debug("auto mapping(" + key + ") : " + idx_str);
@@ -1406,9 +1465,21 @@ public class ResourceFieldMapping extends Composite {
 		if(data == null) {
 			throw new Exception("Failed to map default setting automatically. key=" + key + ", idx=" + idx_str);
 		} else if(key.equals("TIME")) {
-			SimpleDateFormat sdf = new SimpleDateFormat(info.getTimeFormat(), info.getTimeLocale());
-			sdf.setLenient(false);
-			sdf.parse(data);
+			String[] formats;
+			if("sar".equals(info.getFileType())) {
+				formats = buildSarTimeFormatCandidates(info.getTimeFormat());
+			} else {
+				formats = new String[] { info.getTimeFormat() };
+			}
+			Object[] matchFormat = ParserUtil.getMatchedTimeFormat(formats, data, Constant.TIME_LOCALES);
+			if(matchFormat == null) {
+				throw new Exception("Time format is invalid: " + data);
+			}
+			info.setTimeFormat((String)matchFormat[1]);
+			info.setTimeLocale((Locale)matchFormat[0]);
+			timeLocale = (Locale)matchFormat[0];
+			setComboValue(cb_timeFormat, (String)matchFormat[1]);
+			checkTimeString(new String[] { (String)matchFormat[1] }, data);
 		}
 		Logger.debug("[" + key + "] idx : " + idx_str + ", data : " + data);
 		return data;
@@ -1442,6 +1513,7 @@ public class ResourceFieldMapping extends Composite {
 		if(type.equals(Constant.FILE_TYPES[1])) {
 			infos.add(DefaultMapping.VMSTAT);
 		} else if(type.equals(Constant.FILE_TYPES[2])) {
+			infos.add(DefaultMapping.SAR_ISO.copy());
 			infos.add(DefaultMapping.SAR_KO.copy());
 			infos.add(DefaultMapping.SAR_EN.copy());
 			infos.add(DefaultMapping.SAR_EN2.copy());

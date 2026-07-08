@@ -9,7 +9,7 @@ import org.eclipse.swt.dnd.Transfer;
 
 public class Constant {
 
-	public static final String PROGRAM_VERSION = "1.9.3";
+	public static final String PROGRAM_VERSION = "1.9.4";
 
 	public static String DEFAULT_FONT_NAME = "Arial";
 	public static int DEFAULT_FONT_SIZE = 9;
@@ -98,6 +98,14 @@ public class Constant {
 												  "yyyy-MM-dd/HH:mm:ss"
 												};
 	public static final String UNIX_TIME_STR = "UnixTime";
+
+	public static final String[] SAR_TIME_FORMATS = {
+												  "yyyy-MM-dd HH:mm:ss",
+												  "MM/dd/yyyy hh:mm:ss a",
+												  "yyyy-MM-dd hh:mm:ss a",
+												  "MM/dd/yy HH:mm:ss",
+												  "yyyy'년' MM'월' dd'일' HH'시' mm'분' ss'초'"
+												};
 	
 	public static final int ANALYZER_DATA_PAGESIZE = 50;
 	
